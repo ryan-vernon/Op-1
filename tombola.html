@@ -702,6 +702,7 @@ function buildSprites() {
 }
 function size() {
   const r = display.getBoundingClientRect();
+  if (r.width < 40 || r.height < 40) return;   // not laid out yet (hidden tab, mid-load): try again next frame
   DPR = Math.min(window.devicePixelRatio || 1, 3);
   W = r.width; H = r.height; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
   CX = W / 2; CY = H / 2; R = Math.min(W * 0.40, H * 0.34); needSize = false;
@@ -1063,6 +1064,7 @@ let last = performance.now();
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000) || 0.016; last = now;
   if (needSize) size();
+  if (needSize) { last = now; requestAnimationFrame(frame); return; }
   if (ringName && !modeOpen) placeRing();
   step(dt);
   excite *= Math.exp(-dt * 2.2);

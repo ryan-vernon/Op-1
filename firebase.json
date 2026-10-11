@@ -1,0 +1,10 @@
+{
+  "hosting": {
+    "public": "public",
+    "predeploy": ["bash build.sh"],
+    "ignore": ["firebase.json", "**/.*"],
+    "headers": [
+      { "source": "**", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] }
+    ]
+  }
+}

@@ -24,3 +24,13 @@ python3 -m http.server 8765
 ```
 
 Then open http://localhost:8765/tombola.html.
+
+## Hosting
+
+The app is hosted with Firebase Hosting in the `tombola-ryanvernon` project at https://tombola-ryanvernon.web.app.
+
+`tombola.html` holds only the page content (the claude.ai artifact viewer adds the page header itself). `build.sh` wraps it into a complete page at `public/index.html`, and `firebase deploy` runs that step automatically:
+
+```bash
+firebase deploy --only hosting
+```
