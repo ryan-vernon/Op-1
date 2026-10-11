@@ -1,0 +1,1078 @@
+<title>Tombola</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400&display=swap">
+<style>
+/* Layout: one portrait "device" — black OP-1 display with encoder glyphs in its corners and mode icons under the tombola;
+   grey encoder row slides up beneath it; synth and fx modes take over the whole device in black. */
+:root{
+  --body:#85817c; --body-deep:#5e5b58; --cell:#85817c; --cell-sel:#94908b;
+  --rule:rgba(255,255,255,.26); --ink:#f3f1ec; --ink-dim:rgba(243,241,236,.66);
+  --screen:#08080a; --line-b:rgba(255,255,255,.13); --dim-b:rgba(236,236,234,.42);
+  --blue:#5b8cff; --lav:#a4a6ff; --green:#22d07c; --white:#ececea; --orange:#ff5a3a;
+  --knob-ring:#b9b5b0; --knob-edge:#6c6864; --bar-dark:#77736f; --knob-ring-b:#26262a; --knob-edge-b:#3f3f45;
+  --f-ui:"Jost","Futura","Avenir Next","Century Gothic",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html{height:100%;box-sizing:border-box;background:var(--body-deep)}
+@supports (height:100dvh){html{height:100dvh}}
+*,*::before,*::after{box-sizing:inherit}
+body{height:100%;margin:0;background:var(--body-deep);color:var(--ink);font-family:var(--f-ui);font-weight:300;
+  display:flex;justify-content:center;align-items:center;overflow:hidden;overscroll-behavior:none;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+button:focus-visible,.knob:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+#device{position:relative;width:100%;height:100%;background:var(--body);
+  display:flex;flex-direction:column;gap:10px;padding:10px 12px 12px;overflow:hidden}
+
+.topbar{display:flex;justify-content:space-between;align-items:baseline;font-size:15px;letter-spacing:.02em;padding-inline:2px}
+.topbar .dim{color:var(--ink-dim);font-size:13px}
+
+#display{position:relative;flex:1;min-height:0;background:var(--screen);border-radius:4px;overflow:hidden;touch-action:none}
+#screen{position:absolute;inset:0;width:100%;height:100%;display:block}
+.corner{position:absolute;display:flex;align-items:center;gap:18px;padding:20px;touch-action:none;z-index:2;line-height:1}
+.corner .letter{font-size:clamp(26px,8.4vw,36px);font-weight:400}
+.corner .num{font-size:clamp(26px,8.4vw,36px);color:var(--white);font-variant-numeric:tabular-nums;min-width:1.6em}
+.corner svg{width:clamp(26px,8vw,34px);height:auto;overflow:visible}
+#shIcon{width:clamp(34px,10vw,42px)}
+.corner .peek{font-size:clamp(20px,6vw,26px);color:var(--white);font-variant-numeric:tabular-nums}
+.tl{top:0;left:0}.tr{top:0;right:0}.br{bottom:0;right:0}.bl{bottom:0;left:0}
+.s{color:var(--lav)}.g{color:var(--green)}.m{color:var(--orange)}
+#hint{position:absolute;left:50%;bottom:92px;transform:translateX(-50%);width:calc(100% - 32px);font-size:13px;letter-spacing:.06em;color:var(--ink-dim);
+  pointer-events:none;transition:opacity .6s;text-align:center;text-wrap:balance}
+#modes{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:14px;z-index:2}
+#modes button{display:flex;flex-direction:column;align-items:center;gap:5px;font-size:11px;letter-spacing:.08em;color:var(--dim-b);padding:6px 6px 4px;min-width:58px}
+#modes svg{width:46px;height:26px;color:var(--white)}
+
+/* grey OP-1 body grid (physical encoders) */
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule)}
+.grid4>*{background:var(--cell);min-width:0}
+.kcell{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 0 9px;transition:background .2s}
+.kcell.sel{background:var(--cell-sel)}
+.knob{width:min(64px,15vw);aspect-ratio:1;touch-action:none;cursor:ns-resize;border-radius:50%}
+.knob svg{width:100%;height:100%;display:block}
+.knob .ring{fill:var(--knob-ring);stroke:var(--knob-edge);stroke-width:1}
+.klabel{font-size:15px;letter-spacing:.01em;font-variant-numeric:tabular-nums;height:1.2em;white-space:nowrap}
+
+.glyph{display:flex;align-items:center}
+#encRing{position:absolute;z-index:3;touch-action:none;cursor:ns-resize;border-radius:50%}
+#encRing svg{width:100%;height:100%;display:block;overflow:visible}
+
+/* synth + fx modes: the whole device goes black */
+.mode{position:absolute;inset:0;background:var(--screen);z-index:10;display:flex;flex-direction:column;
+  padding:14px max(14px, calc((100% - 640px) / 2)) 16px;transition:transform .3s ease}
+.mode.closed{transform:translateY(102%);pointer-events:none}
+.mhead{display:flex;justify-content:space-between;align-items:center;padding:0 2px 12px;gap:12px}
+.mhead .title{font-size:22px;display:flex;align-items:baseline;gap:10px}
+.mhead .title small{font-size:14px;color:var(--dim-b)}
+.mhead .done{font-size:14px;border:1px solid var(--line-b);padding:7px 16px;border-radius:2px}
+.picker{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border-top:1px solid var(--line-b)}
+.picker button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 0 10px;color:var(--dim-b);font-size:13px}
+.picker svg{width:40px;height:24px;opacity:.45}
+.picker button.on{color:var(--ink)}
+.picker button.on svg{opacity:1}
+.viz{position:relative;flex:1;min-height:170px;border-top:1px solid var(--line-b);border-bottom:1px solid var(--line-b)}
+.viz canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.mode .grid4{background:transparent;border:0;gap:0}
+.mode .grid4>*{background:transparent}
+.mode .knob .ring{fill:var(--knob-ring-b);stroke:var(--knob-edge-b)}
+.mode .kcell{padding:14px 0 10px}
+.trow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border-top:1px solid var(--line-b)}
+.trow button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 2px 4px;font-size:15px}
+.trow small{font-size:11px;color:var(--dim-b);letter-spacing:.06em}
+.trow button.on span{color:var(--green)}
+.fxtoggle{display:flex;border:1px solid var(--line-b)}
+.fxtoggle button{padding:5px 12px;font-size:13px;color:var(--dim-b)}
+.fxtoggle button.on{background:var(--ink);color:var(--screen)}
+</style>
+
+<div id="device">
+  <div class="topbar"><span>tombola</span><span class="dim" id="status">fm · spring</span></div>
+
+  <div id="display">
+    <canvas id="screen"></canvas>
+    <button class="corner tl" id="cSpeed" aria-label="Speed. Tap to show its encoder, drag up or down to turn">
+      <span class="letter s">S</span><span class="glyph"><span class="num" id="speedNum">34</span></span>
+    </button>
+    <button class="corner tr" id="cGrav" aria-label="Gravity. Tap to show its encoder, drag up or down to turn">
+      <span class="letter g">G</span>
+      <span class="glyph"><span class="peek" id="gPeek" hidden></span>
+      <svg id="gIcon" viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" fill="none" stroke="var(--green)" stroke-width="2.4"/><circle id="gDot" cx="16" cy="16" r="5" fill="var(--green)"/></svg></span>
+    </button>
+    <button class="corner br" id="cMass" aria-label="Mass and bounciness. Tap to show its encoder, drag up or down to turn">
+      <span class="letter m">M</span>
+      <span class="glyph"><span class="peek" id="mPeek" hidden></span>
+      <svg id="mIcon" viewBox="0 0 40 32"><g stroke="var(--orange)" stroke-width="2.4" stroke-linecap="round" fill="var(--orange)">
+        <line x1="5" y1="14" x2="35" y2="14"/><circle cx="5" cy="14" r="3" stroke="none"/><circle cx="35" cy="14" r="3" stroke="none"/>
+        <line id="mStem" x1="20" y1="14" x2="20" y2="26"/><circle id="mBob" cx="20" cy="26" r="2.6" stroke="none"/></g></svg></span>
+    </button>
+    <button class="corner bl" id="cShape" aria-label="Shape: opens the sides of the tombola. Tap to show its encoder, drag up or down to turn">
+      <span class="glyph"><svg id="shIcon" viewBox="0 0 40 40"><g id="shLines" stroke="var(--white)" stroke-width="2.2" stroke-linecap="round"></g></svg>
+      <span class="peek" id="shPeek" hidden></span></span>
+    </button>
+    <div id="modes">
+      <button id="openSynth" aria-label="Synth settings"><svg id="synthGlyph" viewBox="0 0 40 24"></svg><span id="synthGlyphName">fm</span></button>
+      <button id="openFx" aria-label="Spring reverb settings"><svg id="springGlyph" viewBox="0 0 46 24"></svg><span>spring</span></button>
+    </div>
+    <div id="encRing" hidden></div>
+    <div id="hint">tap to turn on sound · drag to spin</div>
+  </div>
+
+
+  <section id="synthMode" class="mode closed" aria-hidden="true">
+    <div class="mhead"><div class="title">synth <small id="engTitle">fm</small></div><button class="done" data-close>done</button></div>
+    <div class="picker" id="picker"></div>
+    <div class="viz"><canvas id="synthCv"></canvas></div>
+    <div class="grid4">
+      <div class="kcell" data-knob="s0"></div><div class="kcell" data-knob="s1"></div>
+      <div class="kcell" data-knob="s2"></div><div class="kcell" data-knob="s3"></div>
+    </div>
+    <div class="trow">
+      <button id="keyBtn"><span id="keyName">C</span><small>key</small></button>
+      <button id="scaleBtn"><span id="scaleName">major</span><small>scale</small></button>
+      <button id="tiltBtn"><span id="tiltName">off</span><small>tilt</small></button>
+      <button id="seedBtn"><span>lay 5</span><small>notes</small></button>
+      <button id="clearBtn"><span id="noteCount">3</span><small>clear</small></button>
+    </div>
+  </section>
+
+  <section id="fxMode" class="mode closed" aria-hidden="true">
+    <div class="mhead"><div class="title">fx <small>spring</small></div>
+      <div style="display:flex;gap:10px;align-items:center"><div class="fxtoggle"><button id="fxOn" class="on">on</button><button id="fxOff">off</button></div>
+      <button class="done" data-close>done</button></div></div>
+    <div class="viz"><canvas id="fxCv"></canvas></div>
+    <div class="grid4">
+      <div class="kcell" data-knob="taper"></div><div class="kcell" data-knob="turns"></div>
+      <div class="kcell" data-knob="damp"></div><div class="kcell" data-knob="width"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const capture = (el, e) => { try { el.setPointerCapture(e.pointerId); } catch (err) {} };
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const TAU = Math.PI * 2, SIXTH = Math.PI / 3, APO = Math.cos(Math.PI / 6);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const COL = {blue:css('--blue'), lav:css('--lav'), green:css('--green'), white:css('--white'), orange:css('--orange'), dim:css('--dim-b'), line:css('--line-b')};
+
+/* ---------- synth engines (four encoder params each, after the OP-1) ---------- */
+const ENGINES = {
+  digital:{labels:['shaper','octave','detune','digital'], def:[30,75,25,35]},
+  fm:     {labels:['ratio','amount','mod env','decay'], def:[55,40,40,50]},
+  string: {labels:['tone','sustain','pluck','body'], def:[60,60,25,40]},
+  pulse:  {labels:['width','cutoff','reso','decay'], def:[30,50,45,35]},
+  cluster:{labels:['spread','voices','filter','decay'], def:[40,60,50,55]},
+};
+const ENGINE_ORDER = ['digital','fm','string','pulse','cluster'];
+const FM_RATIOS = [0.5,1,1.5,2,2.5,3,3.5,4,5,7];
+
+/* ---------- parameters ---------- */
+const SPEC = {
+  speed:  {min:-100, max:100, v:34, col:'blue', label:'speed'},
+  gravity:{min:0, max:100, v:45, col:'green', label:'gravity'},
+  shape:  {min:0, max:100, v:0,  col:'white', label:'shape'},
+  mass:   {min:0, max:100, v:62, col:'orange', label:'mass'},
+  taper:  {min:0, max:100, v:35, col:'blue', label:'taper'},
+  turns:  {min:0, max:100, v:45, col:'green', label:'turns'},
+  damp:   {min:0, max:100, v:40, col:'white', label:'damp'},
+  width:  {min:0, max:100, v:55, col:'orange', label:'width'},
+  s0:{min:0, max:100, col:'blue'}, s1:{min:0, max:100, col:'green'}, s2:{min:0, max:100, col:'white'}, s3:{min:0, max:100, col:'orange'},
+};
+const P = {}; for (const k in SPEC) P[k] = SPEC[k].v;
+P.engine = 'fm'; P.fx = true; P.digiRing = false; P.key = 0; P.scale = 'major';
+P.syn = {}; for (const e of ENGINE_ORDER) P.syn[e] = ENGINES[e].def.slice();
+const loadEngineParams = () => P.syn[P.engine].forEach((v, i) => P['s' + i] = v);
+loadEngineParams();
+const sv = i => P.syn[P.engine][i] / 100;
+const KEYS = ['C','C♯','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
+const SCALES = {major:[0,2,4,7,9], minor:[0,3,5,7,10]};
+const labelOf = name => {
+  if (!(name[0] === 's' && name.length === 2)) return SPEC[name].label;
+  if (P.engine === 'digital' && name === 's2') return P.digiRing ? 'ring mod' : 'detune';
+  return ENGINES[P.engine].labels[+name[1]];
+};
+
+const knobViews = {};
+function setParam(name, v) {
+  const s = SPEC[name];
+  v = Math.round(clamp(v, s.min, s.max));
+  if (v === P[name]) return;
+  P[name] = v;
+  if (name[0] === 's' && name.length === 2) P.syn[P.engine][+name[1]] = v;
+  (knobViews[name] || []).forEach(f => f(true));
+  onParam(name);
+}
+
+/* ---------- knobs ---------- */
+function buildKnob(cell) {
+  const name = cell.dataset.knob, s = SPEC[name];
+  const bar = s.col === 'white' ? 'var(--bar-dark)' : '#f6f6f4';
+  cell.innerHTML = `<div class="knob" tabindex="0" role="slider" aria-valuemin="${s.min}" aria-valuemax="${s.max}">
+    <svg viewBox="0 0 64 64"><circle class="ring" cx="32" cy="32" r="30"/><circle cx="32" cy="32" r="19" fill="var(--${s.col})"/>
+    <g class="bar"><rect x="15" y="29" width="34" height="6" rx="3" fill="${bar}"/></g></svg></div>
+    <div class="klabel"></div>`;
+  const knob = cell.querySelector('.knob'), g = cell.querySelector('.bar'), lab = cell.querySelector('.klabel');
+  let showT = 0, peeking = false;
+  const render = (peek) => {
+    const n = (P[name] - s.min) / (s.max - s.min);
+    g.setAttribute('transform', `rotate(${-45 + n * 270} 32 32)`);
+    knob.setAttribute('aria-valuenow', P[name]);
+    knob.setAttribute('aria-label', labelOf(name));
+    if (peek) {
+      peeking = true; lab.textContent = P[name]; clearTimeout(showT);
+      showT = setTimeout(() => { peeking = false; lab.textContent = labelOf(name); }, 900);
+    } else if (!peeking) lab.textContent = labelOf(name);
+  };
+  (knobViews[name] ||= []).push(render);
+  render(false);
+  const range = s.max - s.min;
+  let drag = null;
+  knob.addEventListener('pointerdown', e => { firstGesture(); capture(knob, e); drag = {x:e.clientX, y:e.clientY, v:P[name]}; e.preventDefault(); });
+  knob.addEventListener('pointermove', e => {
+    if (!drag) return;
+    if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 4) drag.moved = true;
+    setParam(name, drag.v + ((drag.y - e.clientY) + (e.clientX - drag.x)) * range / 240);
+  });
+  knob.addEventListener('pointerup', () => {
+    // tapping the white encoder on digital toggles ring modulation, as pressing it does on the OP-1
+    if (drag && !drag.moved && name === 's2' && P.engine === 'digital') {
+      P.digiRing = !P.digiRing; digiCache.clear(); render(false); playNote(noteMidi(5), 0.55, 0);
+    }
+    drag = null;
+  });
+  knob.addEventListener('pointercancel', () => drag = null);
+  knob.addEventListener('wheel', e => { e.preventDefault(); setParam(name, P[name] - e.deltaY * range / 1200); }, {passive:false});
+  knob.addEventListener('keydown', e => {
+    const d = {ArrowUp:1, ArrowRight:1, ArrowDown:-1, ArrowLeft:-1}[e.key];
+    if (d) { e.preventDefault(); setParam(name, P[name] + d * range / 50); }
+  });
+}
+document.querySelectorAll('.kcell[data-knob]').forEach(buildKnob);
+
+/* ---------- corners ---------- */
+/* tapping a corner icon puts an encoder ring around it, like turning that OP-1 knob */
+const ringEl = $('#encRing');
+let ringName = null, ringBtn = null, ringKey = '', ringR = 0;
+function toggleRing(name, btn) {
+  if (ringName === name) { closeRing(); return; }
+  ringName = name; ringBtn = btn; ringKey = ''; ringEl.hidden = false; placeRing();
+}
+function closeRing() { ringName = null; ringEl.hidden = true; }
+function placeRing() {
+  if (!ringName) return;
+  const g = ringBtn.querySelector('.glyph').getBoundingClientRect(), dr = display.getBoundingClientRect();
+  ringR = Math.round(Math.max(g.width, g.height) / 2 + 13);
+  ringEl.style.left = (g.left + g.width / 2 - dr.left - ringR) + 'px';
+  ringEl.style.top = (g.top + g.height / 2 - dr.top - ringR) + 'px';
+  ringEl.style.width = ringEl.style.height = ringR * 2 + 'px';
+  const key = ringName + '|' + ringR + '|' + P[ringName];
+  if (key !== ringKey) { ringKey = key; renderRing(); }
+}
+function renderRing() {
+  const sp = SPEC[ringName], r = ringR, rr = r - 3, col = `var(--${sp.col === 'blue' ? 'lav' : sp.col})`;
+  const n = (P[ringName] - sp.min) / (sp.max - sp.min), a1 = -135 + n * 270, a0 = sp.min < 0 ? 0 : -135;
+  const pt = a => { const t = a * Math.PI / 180; return [(r + rr * Math.sin(t)).toFixed(1), (r - rr * Math.cos(t)).toFixed(1)]; };
+  const arc = (from, to) => { const [x0, y0] = pt(from), [x1, y1] = pt(to); return `M${x0} ${y0}A${rr} ${rr} 0 ${Math.abs(to - from) > 180 ? 1 : 0} ${to > from ? 1 : 0} ${x1} ${y1}`; };
+  const [dx, dy] = pt(a1);
+  ringEl.innerHTML = `<svg viewBox="0 0 ${r * 2} ${r * 2}"><g fill="none" stroke="${col}" stroke-linecap="round">
+    <path d="${arc(-135, 135)}" stroke-width="1.5" opacity=".3"/>
+    ${Math.abs(a1 - a0) > 0.5 ? `<path d="${arc(a0, a1)}" stroke-width="3"/>` : ''}</g>
+    <circle cx="${dx}" cy="${dy}" r="4.5" fill="${col}"/></svg>`;
+  ringEl.setAttribute('aria-label', SPEC[ringName].label + ' ' + P[ringName]);
+}
+(() => {
+  let d = null;
+  ringEl.addEventListener('pointerdown', e => { capture(ringEl, e); d = {y:e.clientY, x:e.clientX, v:P[ringName], moved:false}; });
+  ringEl.addEventListener('pointermove', e => {
+    if (!d || !ringName) return;
+    const dy = d.y - e.clientY, dx = e.clientX - d.x;
+    if (!d.moved && Math.hypot(dx, dy) > 6) d.moved = true;
+    if (d.moved) setParam(ringName, d.v + (dy + dx) * (SPEC[ringName].max - SPEC[ringName].min) / 260);
+  });
+  ringEl.addEventListener('pointerup', () => { if (d && !d.moved) closeRing(); d = null; });
+  ringEl.addEventListener('pointercancel', () => d = null);
+})();
+
+function cornerControl(btn, name) {
+  let d = null;
+  btn.addEventListener('pointerdown', e => { firstGesture(); capture(btn, e); d = {y:e.clientY, x:e.clientX, v:P[name], moved:false}; });
+  btn.addEventListener('pointermove', e => {
+    if (!d) return;
+    const dy = d.y - e.clientY, dx = e.clientX - d.x;
+    if (!d.moved && Math.hypot(dx, dy) > 7) d.moved = true;
+    if (d.moved) setParam(name, d.v + (dy + dx) * (SPEC[name].max - SPEC[name].min) / 260);
+  });
+  btn.addEventListener('pointerup', () => { if (d && !d.moved) toggleRing(name, btn); d = null; });
+  btn.addEventListener('pointercancel', () => d = null);
+  btn.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleRing(name, btn); }
+    const k = {ArrowUp:1, ArrowRight:1, ArrowDown:-1, ArrowLeft:-1}[e.key];
+    if (k) { e.preventDefault(); setParam(name, P[name] + k * (SPEC[name].max - SPEC[name].min) / 50); }
+  });
+}
+cornerControl($('#cSpeed'), 'speed');
+cornerControl($('#cGrav'), 'gravity');
+cornerControl($('#cMass'), 'mass');
+cornerControl($('#cShape'), 'shape');
+
+const peekT = {};
+function peek(id, iconId, v) {
+  const p = $(id), ic = $(iconId);
+  p.textContent = v; p.hidden = false; ic.style.display = 'none';
+  clearTimeout(peekT[id]);
+  peekT[id] = setTimeout(() => { p.hidden = true; ic.style.display = ''; }, 1100);
+}
+function hexLines(cx, cy, r, th, ph) {
+  const out = [], c = Math.cos(-ph), s = Math.sin(-ph);
+  for (let i = 0; i < 6; i++) {
+    const a0 = th + i * SIXTH, ax = Math.cos(a0), ay = Math.sin(a0);
+    let dx = Math.cos(a0 + SIXTH) - ax, dy = Math.sin(a0 + SIXTH) - ay;
+    if (ph > 0.0005) { const nx = dx * c - dy * s, ny = dx * s + dy * c; dx = nx; dy = ny; }
+    out.push([cx + ax * r, cy + ay * r, cx + (ax + dx) * r, cy + (ay + dy) * r]);
+  }
+  return out;
+}
+function renderCorners() {
+  $('#speedNum').textContent = P.speed;
+  $('#gDot').setAttribute('r', (1.5 + P.gravity / 100 * 8).toFixed(2));
+  const len = 4 + P.mass / 100 * 14;
+  $('#mStem').setAttribute('y2', 14 + len); $('#mBob').setAttribute('cy', 14 + len);
+  $('#mBob').setAttribute('r', (1.6 + P.mass / 100 * 2.6).toFixed(2));
+  $('#shLines').innerHTML = hexLines(20, 20, 14, 0, P.shape / 100 * 1.75)
+    .map(l => `<line x1="${l[0].toFixed(1)}" y1="${l[1].toFixed(1)}" x2="${l[2].toFixed(1)}" y2="${l[3].toFixed(1)}"/>`).join('');
+}
+renderCorners();
+
+function onParam(name) {
+  if (['speed','gravity','mass','shape'].includes(name)) renderCorners();
+  if (name === 'gravity') peek('#gPeek', '#gIcon', P.gravity);
+  if (name === 'mass') peek('#mPeek', '#mIcon', P.mass);
+  if (name === 'shape') peek('#shPeek', '#shIcon', P.shape);
+  if (['taper','turns','damp','width'].includes(name)) scheduleReverb();
+  if (name[0] === 's' && name.length === 2) { if (P.engine === 'string') ksCache.clear(); if (P.engine === 'digital') digiCache.clear(); }
+}
+
+/* ---------- glyphs ---------- */
+function wavePath(x0, x1, yc, fn, n = 60) {
+  let d = '';
+  for (let i = 0; i <= n; i++) { const u = i / n; d += (i ? 'L' : 'M') + (x0 + u * (x1 - x0)).toFixed(1) + ' ' + (yc - fn(u)).toFixed(1); }
+  return d;
+}
+const GLYPHS = {
+  digital: `<path d="M3 18H8V10H13V5H18V10H23V15H28V20H33V12H37" fill="none" stroke="currentColor" stroke-width="2"/>`,
+  fm: `<g fill="none" stroke="currentColor" stroke-width="2"><circle cx="14" cy="12" r="8"/><circle cx="30" cy="12" r="4.5"/><line x1="22" y1="12" x2="25.5" y2="12"/></g>`,
+  string: `<path d="${wavePath(3, 37, 12, u => Math.sin(u * TAU * 4) * 9 * Math.exp(-u * 2.4))}" fill="none" stroke="currentColor" stroke-width="2"/>`,
+  pulse: `<path d="M3 18H8V6H11V18H19V6H22V18H30V6H33V18H37" fill="none" stroke="currentColor" stroke-width="2"/>`,
+  cluster: `<g fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 19L13 5V19L23 5V19L33 5V19"/><path d="M6 19L16 8V19L26 8V19L36 8V19" opacity=".5"/></g>`,
+};
+(function springGlyph() {
+  let d = '';
+  for (let i = 0; i <= 140; i++) {
+    const u = i / 140, a = u * 7 * TAU, r = 8 * (1 - u * 0.35);
+    d += (i ? 'L' : 'M') + (6 + u * 32 + Math.cos(a) * 2.6).toFixed(1) + ' ' + (12 + Math.sin(a) * r).toFixed(1);
+  }
+  $('#springGlyph').innerHTML = `<g fill="none" stroke="currentColor" stroke-width="1.6"><line x1="3" y1="3" x2="3" y2="21"/><path d="${d}"/><line x1="42" y1="12" x2="45" y2="12"/></g>`;
+})();
+$('#picker').innerHTML = ENGINE_ORDER.map(e => `<button data-engine="${e}"><svg viewBox="0 0 40 24">${GLYPHS[e]}</svg><span>${e}</span></button>`).join('');
+
+/* ---------- modes ---------- */
+let modeOpen = null;
+function openMode(which) {
+  closeRing(); modeOpen = which;
+  for (const [id, m] of [['synth', '#synthMode'], ['fx', '#fxMode']]) {
+    const el = $(m); el.classList.toggle('closed', id !== which); el.setAttribute('aria-hidden', String(id !== which));
+  }
+  vizSize = null;
+}
+$('#openSynth').onclick = () => { firstGesture(); openMode('synth'); };
+$('#openFx').onclick = () => { firstGesture(); openMode('fx'); };
+document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => openMode(null));
+
+function renderStatus() {
+  document.querySelectorAll('#picker button').forEach(b => b.classList.toggle('on', b.dataset.engine === P.engine));
+  $('#engTitle').textContent = P.engine;
+  $('#synthGlyph').innerHTML = GLYPHS[P.engine]; $('#synthGlyphName').textContent = P.engine;
+  $('#status').textContent = P.engine + (P.fx ? ' · spring' : '');
+  $('#fxOn').classList.toggle('on', P.fx); $('#fxOff').classList.toggle('on', !P.fx);
+  $('#keyName').textContent = KEYS[P.key]; $('#scaleName').textContent = P.scale;
+}
+document.querySelectorAll('#picker button').forEach(b => b.onclick = () => {
+  P.engine = b.dataset.engine; loadEngineParams();
+  ['s0','s1','s2','s3'].forEach(n => knobViews[n].forEach(f => f(false)));
+  renderStatus(); ensureAudio(); playNote(noteMidi(5), 0.55, 0);
+});
+$('#fxOn').onclick = () => { P.fx = true; renderStatus(); if (wetGain) wetGain.gain.setTargetAtTime(0.55, AC.currentTime, 0.05); };
+$('#fxOff').onclick = () => { P.fx = false; renderStatus(); if (wetGain) wetGain.gain.setTargetAtTime(0, AC.currentTime, 0.05); };
+$('#keyBtn').onclick = () => { P.key = (P.key + 7) % 12; renderStatus(); };
+$('#scaleBtn').onclick = () => { P.scale = P.scale === 'major' ? 'minor' : 'major'; renderStatus(); };
+$('#clearBtn').onclick = () => { dots.length = 0; };
+$('#seedBtn').onclick = () => { firstGesture(); layRun(); };
+renderStatus();
+
+/* ---------- audio ---------- */
+let AC = null, master, voiceBus, wetGain, analyser, conv = null, convGain = null, voices = 0, excite = 0;
+function ensureAudio() {
+  if (AC) { if (AC.state !== 'running') AC.resume(); return; }
+  const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+  AC = new C();
+  const comp = AC.createDynamicsCompressor();
+  comp.threshold.value = -16; comp.knee.value = 12; comp.ratio.value = 4; comp.attack.value = 0.003; comp.release.value = 0.2;
+  master = AC.createGain(); master.gain.value = 0.85;
+  master.connect(comp); comp.connect(AC.destination);
+  voiceBus = AC.createGain();
+  const dry = AC.createGain(); dry.gain.value = 0.9;
+  voiceBus.connect(dry); dry.connect(master);
+  wetGain = AC.createGain(); wetGain.gain.value = P.fx ? 0.55 : 0;
+  analyser = AC.createAnalyser(); analyser.fftSize = 1024;
+  wetGain.connect(analyser); analyser.connect(master);
+  rebuildReverb();
+  const b = AC.createBuffer(1, 1, 22050), src = AC.createBufferSource();
+  src.buffer = b; src.connect(AC.destination); src.start(0);
+  AC.resume();
+}
+/* iOS only unlocks audio on touchend/click (not touchstart/pointerdown), and Web Audio is muted by the
+   silent switch unless a media element is playing — so unlock on those events and keep a silent clip looping. */
+let silentEl = null;
+function silentWavURL() {
+  const n = 4000, b = new Uint8Array(44 + n), v = new DataView(b.buffer);
+  const w = (o, str) => { for (let i = 0; i < str.length; i++) b[o + i] = str.charCodeAt(i); };
+  w(0, 'RIFF'); v.setUint32(4, 36 + n, true); w(8, 'WAVE'); w(12, 'fmt ');
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true);
+  w(36, 'data'); v.setUint32(40, n, true); b.fill(128, 44);
+  return URL.createObjectURL(new Blob([b], {type: 'audio/wav'}));
+}
+function unlockAudio() {
+  ensureAudio(); if (!AC) return;
+  if (AC.state !== 'running') AC.resume().catch(() => {});
+  const s = AC.createBufferSource(); s.buffer = AC.createBuffer(1, 1, 22050); s.connect(AC.destination); s.start(0);
+  try {
+    if (!silentEl) { silentEl = new Audio(silentWavURL()); silentEl.loop = true; silentEl.setAttribute('playsinline', ''); }
+    if (silentEl.paused) silentEl.play().catch(() => {});
+  } catch (e) {}
+}
+['touchend', 'click', 'pointerup', 'keydown'].forEach(t => document.addEventListener(t, unlockAudio, {capture: true, passive: true}));
+document.addEventListener('visibilitychange', () => { if (!document.hidden && AC && AC.state !== 'running') AC.resume().catch(() => {}); });
+
+const midiHz = m => 440 * Math.pow(2, (m - 69) / 12);
+function noteMidi(idx) {
+  const sc = SCALES[P.scale], base = 60 + (P.key > 6 ? P.key - 12 : P.key);
+  return base + Math.floor(idx / 5) * 12 + sc[idx % 5];
+}
+
+/* digital: two raw oscillators (B an octave set away and detuned, or ring-modulated with A),
+   a sine wavefolder, then "digitalness" = sample-rate reduction + bit crushing. Rendered per pitch. */
+function digiGen(f, sr, vals, ring) {
+  const [sh, oc, dt, dg] = vals.map(v => v / 100);
+  const oct = Math.round(oc * 4) - 2;
+  const fB = f * Math.pow(2, oct) * Math.pow(2, (ring ? dt * 700 : dt * 45) / 1200);
+  const fold = 1 + sh * 7, hold = 1 + Math.floor(dg * dg * 40), levels = Math.pow(2, Math.round(12 - dg * 10));
+  let pa = 0, pb = 0, held = 0, i = 0;
+  return () => {
+    pa = (pa + f / sr) % 1; pb = (pb + fB / sr) % 1;
+    const a = Math.sin(TAU * pa), b = Math.sin(TAU * pb);
+    const x = Math.sin((ring ? a * b : (a + b) * 0.5) * fold * Math.PI / 2);
+    if (i++ % hold === 0) held = Math.round(x * levels / 2) / (levels / 2);
+    return held;
+  };
+}
+const digiCache = new Map();
+function digiBuffer(midi) {
+  if (digiCache.has(midi)) return digiCache.get(midi);
+  const sr = AC.sampleRate, len = Math.floor(sr * 1.4), buf = AC.createBuffer(1, len, sr), d = buf.getChannelData(0);
+  const gen = digiGen(midiHz(midi), sr, P.syn.digital, P.digiRing), att = sr * 0.002, rel = sr * 0.05;
+  for (let i = 0; i < len; i++) {
+    const env = Math.min(1, i / att) * Math.exp(-i / sr / 0.42) * Math.min(1, (len - i) / rel);
+    d[i] = gen() * env * 0.7;
+  }
+  digiCache.set(midi, buf); return buf;
+}
+/* string: Karplus-Strong, cached per pitch */
+const ksCache = new Map();
+function ksBuffer(f) {
+  const key = Math.round(f * 10);
+  if (ksCache.has(key)) return ksCache.get(key);
+  const [tone, sus, pluck] = P.syn.string.map(v => v / 100);
+  const sr = AC.sampleRate, n = Math.floor(sr * 2.6), N = Math.max(2, Math.round(sr / f));
+  const buf = AC.createBuffer(1, n, sr), d = buf.getChannelData(0), ring = new Float32Array(N), raw = new Float32Array(N);
+  let lp = 0; const a = 0.12 + tone * 0.83;
+  for (let i = 0; i < N; i++) { lp += a * ((Math.random() * 2 - 1) - lp); raw[i] = lp; }
+  const off = Math.max(1, Math.round(N * (0.04 + pluck * 0.46)));
+  for (let i = 0; i < N; i++) ring[i] = raw[i] - raw[(i + off) % N] * 0.9;
+  let i0 = 0; const dec = 0.985 + sus * 0.0148;
+  for (let i = 0; i < n; i++) { const x = ring[i0], y = ring[(i0 + 1) % N]; d[i] = x; ring[i0] = (x + y) * 0.5 * dec; i0 = (i0 + 1) % N; }
+  ksCache.set(key, buf); return buf;
+}
+/* pulse: band-limited pulse of any width via PeriodicWave */
+const pwCache = new Map();
+function pulseWave(w) {
+  const key = Math.round(w * 100);
+  if (pwCache.has(key)) return pwCache.get(key);
+  const n = 64, re = new Float32Array(n), im = new Float32Array(n);
+  for (let k = 1; k < n; k++) re[k] = 2 / (k * Math.PI) * Math.sin(k * Math.PI * key / 100);
+  const pw = AC.createPeriodicWave(re, im); pwCache.set(key, pw); return pw;
+}
+function ampEnv(g, t, peak, dec) {
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak, t + 0.003);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dec);
+}
+function playNote(midi, vel, pan) {
+  if (!AC || AC.state !== 'running' || voices > 24) return;
+  const t = AC.currentTime, f = midiHz(midi);
+  const out = AC.createGain(); out.gain.value = 0;
+  let tail = out;
+  if (AC.createStereoPanner) { const p = AC.createStereoPanner(); p.pan.value = clamp(pan, -1, 1); out.connect(p); tail = p; }
+  tail.connect(voiceBus);
+  const peak = 0.04 + 0.34 * Math.pow(vel, 0.8);
+  const dec = 0.12 + Math.pow(sv(3), 2) * 3.2;
+  const srcs = [];
+  let len = dec;
+  switch (P.engine) {
+    case 'digital': {
+      const s = AC.createBufferSource(); s.buffer = digiBuffer(midi); s.connect(out);
+      len = s.buffer.duration; out.gain.setValueAtTime(peak * 0.8, t); srcs.push(s); break;
+    }
+    case 'fm': {
+      const ratio = FM_RATIOS[Math.round(sv(0) * (FM_RATIOS.length - 1))];
+      const car = AC.createOscillator(), mod = AC.createOscillator(), mg = AC.createGain();
+      car.frequency.value = f; mod.frequency.value = f * ratio;
+      const depth = f * ratio * sv(1) * 9 * (0.35 + 0.65 * vel), modT = 0.04 + Math.pow(sv(2), 2) * 2.5;
+      mg.gain.setValueAtTime(depth + 0.01, t); mg.gain.exponentialRampToValueAtTime(depth * 0.01 + 0.01, t + modT);
+      mod.connect(mg); mg.connect(car.frequency); car.connect(out);
+      ampEnv(out, t, peak, dec); srcs.push(car, mod); break;
+    }
+    case 'string': {
+      const s = AC.createBufferSource(); s.buffer = ksBuffer(f);
+      const body = AC.createBiquadFilter(); body.type = 'peaking'; body.frequency.value = 210; body.Q.value = 1.3; body.gain.value = sv(3) * 13;
+      s.connect(body); body.connect(out);
+      len = s.buffer.duration; out.gain.setValueAtTime(peak * 1.4, t); out.gain.setTargetAtTime(0, t + len - 0.3, 0.08);
+      srcs.push(s); break;
+    }
+    case 'pulse': {
+      const o = AC.createOscillator(), lpf = AC.createBiquadFilter();
+      o.setPeriodicWave(pulseWave(0.04 + sv(0) * 0.46)); o.frequency.value = f;
+      const fc = 180 * Math.pow(2, sv(1) * 6.2);
+      lpf.type = 'lowpass'; lpf.Q.value = 0.5 + sv(2) * 16;
+      lpf.frequency.setValueAtTime(Math.min(18000, fc * (1.5 + vel * 3)), t); lpf.frequency.exponentialRampToValueAtTime(fc, t + 0.25);
+      o.connect(lpf); lpf.connect(out); ampEnv(out, t, peak * 0.6, dec); srcs.push(o); break;
+    }
+    case 'cluster': {
+      const n = 2 + Math.round(sv(1) * 5), lpf = AC.createBiquadFilter();
+      lpf.type = 'lowpass'; lpf.Q.value = 0.8; lpf.frequency.value = 300 * Math.pow(2, sv(2) * 5.5);
+      lpf.connect(out);
+      for (let i = 0; i < n; i++) {
+        const o = AC.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f;
+        o.detune.value = n === 1 ? 0 : (i / (n - 1) - 0.5) * 2 * sv(0) * 38;
+        o.connect(lpf); srcs.push(o);
+      }
+      out.gain.setValueAtTime(0, t); out.gain.linearRampToValueAtTime(peak * 0.7 / Math.sqrt(n), t + 0.012);
+      out.gain.exponentialRampToValueAtTime(0.0001, t + dec); break;
+    }
+  }
+  srcs.forEach(n => { n.start(t); n.stop(t + len + 0.05); });
+  voices++; excite = Math.min(1, excite + 0.4 + vel * 0.6);
+  srcs[0].onended = () => { voices--; try { tail.disconnect(); out.disconnect(); } catch (e) {} };
+}
+
+/* spring reverb: a procedurally generated impulse of dispersive chirps — the "boing" of a real tank */
+function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function springIR() {
+  const sr = AC.sampleRate, len = Math.floor(sr * 3.2);
+  const t = P.turns / 100, w = P.width / 100, d = P.damp / 100, p = P.taper / 100;
+  const buf = AC.createBuffer(2, len, sr);
+  const T = 0.022 + t * 0.075, g = 0.93 - d * 0.3, Lc = 0.012 + t * 0.03;
+  const fHi = 5200 - p * 2600, fLo = 130 + p * 140, ratio = fLo / fHi, noiseAmt = 0.06 + p * 0.5;
+  for (let ch = 0; ch < 2; ch++) {
+    const data = buf.getChannelData(ch), r = rng(ch * 977 + 13);
+    const off = ch ? w * T * 0.45 : 0;
+    for (let k = 0; ; k++) {
+      const amp = Math.pow(g, k) * (k === 0 ? 0.7 : 1);
+      if (amp < 0.002) break;
+      const dur = Lc * (1 + Math.min(k, 10) * 0.3);
+      const s0 = Math.floor((k * T + off + (r() - 0.5) * w * 0.006) * sr), n = Math.floor(dur * sr);
+      if (s0 < 0) continue;
+      if (s0 + n >= len) break;
+      const sign = k % 2 ? -1 : 1;
+      let ph = r() * TAU;
+      for (let i = 0; i < n; i++) {
+        const u = i / n, f = fHi * Math.pow(ratio, u), env = Math.sin(Math.PI * u);
+        ph += TAU * f / sr;
+        data[s0 + i] += sign * amp * env * env * ((1 - noiseAmt) * Math.sin(ph) + noiseAmt * (r() * 2 - 1));
+      }
+    }
+    const tau = 0.35 + (1 - d) * 1.3;
+    for (let i = 0; i < len; i++) data[i] += w * 0.06 * (r() * 2 - 1) * Math.exp(-i / sr / tau);
+    const a = 0.07 + (1 - d) * 0.7; let y = 0;
+    for (let i = 0; i < len; i++) { y += a * (data[i] - y); data[i] = y; }
+    const fade = Math.floor(sr * 0.2);
+    for (let i = 0; i < fade; i++) data[len - 1 - i] *= i / fade;
+  }
+  return buf;
+}
+function rebuildReverb() {
+  if (!AC) return;
+  const c = AC.createConvolver(), cg = AC.createGain();
+  c.normalize = true; c.buffer = springIR();
+  cg.gain.value = 0; voiceBus.connect(c); c.connect(cg); cg.connect(wetGain);
+  cg.gain.setTargetAtTime(1, AC.currentTime, 0.05);
+  if (conv) {
+    const oc = conv, og = convGain;
+    og.gain.setTargetAtTime(0, AC.currentTime, 0.05);
+    setTimeout(() => { try { voiceBus.disconnect(oc); oc.disconnect(); og.disconnect(); } catch (e) {} }, 400);
+  }
+  conv = c; convGain = cg;
+}
+let revT = 0;
+function scheduleReverb() { clearTimeout(revT); revT = setTimeout(rebuildReverb, 140); }
+
+/* ---------- tilt ---------- */
+let tiltState = 'off', tiltAsked = false, gdir = {x:0, y:1}, tiltOpen = 0, tiltHandler = null;
+function renderTilt() { $('#tiltName').textContent = tiltState; $('#tiltBtn').classList.toggle('on', tiltState === 'on'); }
+async function enableTilt() {
+  try {
+    if (typeof DeviceOrientationEvent === 'undefined') throw 'none';
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+      const r = await DeviceOrientationEvent.requestPermission();
+      if (r !== 'granted') throw 'blocked';
+    }
+    let got = false;
+    tiltHandler = e => {
+      if (e.beta == null || e.gamma == null) return;
+      got = true;
+      const b = e.beta * Math.PI / 180, gm = e.gamma * Math.PI / 180;
+      const x = Math.sin(gm) * Math.cos(b), y = Math.sin(b);
+      const ang = ((screen.orientation && screen.orientation.angle) || window.orientation || 0) * Math.PI / 180;
+      const rx = x * Math.cos(ang) + y * Math.sin(ang), ry = -x * Math.sin(ang) + y * Math.cos(ang);
+      gdir = {x: rx, y: ry};
+      const side = Math.abs(rx), flip = clamp(-ry * 2, 0, 1);
+      tiltOpen = Math.max(clamp((side - 0.3) / 0.45, 0, 1), flip) * 1.75;
+    };
+    window.addEventListener('deviceorientation', tiltHandler);
+    tiltState = 'on'; renderTilt();
+    setTimeout(() => { if (!got && tiltState === 'on') { disableTilt(); tiltState = 'no sensor'; renderTilt(); } }, 1500);
+  } catch (err) { tiltState = err === 'none' ? 'no sensor' : 'blocked'; renderTilt(); }
+}
+function disableTilt() {
+  if (tiltHandler) window.removeEventListener('deviceorientation', tiltHandler);
+  tiltHandler = null; gdir = {x:0, y:1}; tiltOpen = 0; tiltState = 'off'; renderTilt();
+}
+$('#tiltBtn').onclick = () => { if (tiltState === 'on') disableTilt(); else enableTilt(); };
+renderTilt();
+
+let audioWoke = false, hintT = 0;
+function firstGesture() {
+  ensureAudio();
+  if (!audioWoke) { audioWoke = true; hintT = performance.now(); }
+  if (!tiltAsked) { tiltAsked = true; if ('ontouchstart' in window) enableTilt(); }
+}
+
+/* ---------- tombola physics ---------- */
+const cv = $('#screen'), cx = cv.getContext('2d'), display = $('#display');
+let W = 0, H = 0, DPR = 1, CX = 0, CY = 0, R = 100, needSize = true;
+new ResizeObserver(() => needSize = true).observe(display);
+
+const DOT_R = 0.052, MAX_DOTS = 28;
+/* five note patterns, by scale degree: blank, filled, stripes, dots, grid */
+const sprites = []; let SPR = 2, sprCss = 0;
+function buildSprites() {
+  const r = DOT_R * R, pad = 3; SPR = DPR * 1.6; sprCss = (r + pad) * 2;
+  const px = Math.ceil(sprCss * SPR);
+  for (let p = 0; p < 5; p++) {
+    const c = sprites[p] || (sprites[p] = document.createElement('canvas'));
+    c.width = c.height = px;
+    const g = c.getContext('2d');
+    g.setTransform(SPR, 0, 0, SPR, sprCss / 2 * SPR, sprCss / 2 * SPR);
+    g.clearRect(-sprCss, -sprCss, sprCss * 2, sprCss * 2);
+    const ri = r - 0.8;
+    g.save(); g.beginPath(); g.arc(0, 0, ri, 0, TAU); g.clip();
+    g.fillStyle = g.strokeStyle = '#f2f2f0'; g.lineWidth = 1.1;
+    const sp = Math.max(2.6, r * 0.5);
+    if (p === 1) g.fillRect(-r, -r, r * 2, r * 2);
+    if (p === 2) { g.beginPath(); for (let y = -r; y <= r; y += sp) { g.moveTo(-r, y + sp / 2); g.lineTo(r, y + sp / 2); } g.stroke(); }
+    if (p === 3) { for (let y = -r; y <= r; y += sp) for (let x = -r; x <= r; x += sp) { g.beginPath(); g.arc(x + sp / 2, y + sp / 2, Math.max(0.7, r * 0.1), 0, TAU); g.fill(); } }
+    if (p === 4) { g.beginPath(); for (let v = -r; v <= r; v += sp) { g.moveTo(-r, v + sp / 2); g.lineTo(r, v + sp / 2); g.moveTo(v + sp / 2, -r); g.lineTo(v + sp / 2, r); } g.stroke(); }
+    g.restore();
+    g.strokeStyle = '#f2f2f0'; g.lineWidth = 1.6;
+    g.beginPath(); g.arc(0, 0, ri, 0, TAU); g.stroke();
+  }
+}
+function size() {
+  const r = display.getBoundingClientRect();
+  DPR = Math.min(window.devicePixelRatio || 1, 3);
+  W = r.width; H = r.height; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+  CX = W / 2; CY = H / 2; R = Math.min(W * 0.40, H * 0.34); needSize = false;
+  buildSprites();
+}
+
+const dots = [];
+let theta = 0.18, omega = 0, phi = 0, dragging = false, pendingD = 0;
+const segs = Array.from({length:6}, () => ({ax:0, ay:0, bx:0, by:0}));
+const sideFlash = new Float32Array(6);
+
+function addDot(x, y, idx, vx = 0, vy = 0) {
+  dots.push({x, y, vx, vy, idx, pat: idx % 5, cool: 0, flash: 0.8, inside: true, out: false, fade: 1});
+  if (dots.length > MAX_DOTS) dots.shift();
+}
+addDot(-0.16, 0.45, 0, 0.3, 0); addDot(0.06, 0.6, 1, -0.2, 0); addDot(0.24, 0.5, 7, 0.1, 0);
+function layRun() {
+  for (let i = 0; i < 5; i++) {
+    const idx = 1 + i * 2, y = 0.6 - (idx / 10) * 1.2, x = -0.44 + i * 0.22;
+    addDot(x, y, idx, 0, 0);
+    setTimeout(() => playNote(noteMidi(idx), 0.35, x), i * 110);
+  }
+}
+function insideHex(x, y, th, margin) {
+  for (let i = 0; i < 6; i++) {
+    const na = th + i * SIXTH + SIXTH / 2;
+    if (x * Math.cos(na) + y * Math.sin(na) > APO - margin) return false;
+  }
+  return true;
+}
+function computeSegs(th, ph) {
+  const c = Math.cos(-ph), s = Math.sin(-ph);
+  for (let i = 0; i < 6; i++) {
+    const a0 = th + i * SIXTH, ax = Math.cos(a0), ay = Math.sin(a0);
+    let dx = Math.cos(a0 + SIXTH) - ax, dy = Math.sin(a0 + SIXTH) - ay;
+    if (ph > 0.0005) { const nx = dx * c - dy * s, ny = dx * s + dy * c; dx = nx; dy = ny; }
+    const g = segs[i]; g.ax = ax; g.ay = ay; g.bx = ax + dx; g.by = ay + dy;
+  }
+}
+// a note is only in play while any part of it is inside the visible display
+function onScreen(d, pad) {
+  const sx = CX + d.x * R, sy = CY + d.y * R, m = pad * R;
+  return sx > -m && sx < W + m && sy > -m && sy < H + m;
+}
+function hit(d, vn, si) {
+  if (vn < 0.14 || d.cool > 0 || d.out || !onScreen(d, 0)) return;
+  d.cool = 0.06;
+  const vel = clamp((vn - 0.1) / 2.4, 0.04, 1);
+  d.flash = 1; sideFlash[si] = Math.max(sideFlash[si], 0.35 + vel);
+  playNote(noteMidi(d.idx), vel, d.x * 0.8);
+}
+const nCos = new Float32Array(6), nSin = new Float32Array(6);
+function step(dt) {
+  const th0 = theta;
+  let th1;
+  if (dragging) { th1 = theta + pendingD; pendingD = 0; }
+  else {
+    const tgt = P.speed / 100 * 2.6;
+    omega += (tgt - omega) * (1 - Math.exp(-dt / 1.1));
+    th1 = theta + omega * dt;
+  }
+  const w = (th1 - th0) / dt;
+  if (dragging) omega = clamp(w, -30, 30);
+  phi += (Math.max(P.shape / 100 * 1.75, tiltOpen) - phi) * Math.min(1, dt * 6);
+  const G = P.gravity / 100 * 4.2, gx = G * gdir.x, gy = G * gdir.y;
+  const e = 0.22 + P.mass / 100 * 0.84;
+  const N = 8, h = dt / N, closed = phi < 0.02;
+  for (let k = 1; k <= N; k++) {
+    const th = th0 + (th1 - th0) * k / N;
+    computeSegs(th, phi);
+    for (let i = 0; i < 6; i++) { const na = th + i * SIXTH + SIXTH / 2; nCos[i] = Math.cos(na); nSin[i] = Math.sin(na); }
+    for (const d of dots) {
+      d.vx += gx * h; d.vy += gy * h;
+      d.vx *= 1 - 0.04 * h; d.vy *= 1 - 0.04 * h;
+      const sp = Math.hypot(d.vx, d.vy); if (sp > 9) { d.vx *= 9 / sp; d.vy *= 9 / sp; }
+      d.x += d.vx * h; d.y += d.vy * h;
+      if (d.out) continue;
+      for (let i = 0; i < 6; i++) {
+        const s = segs[i], ex = s.bx - s.ax, ey = s.by - s.ay;
+        const t = clamp(((d.x - s.ax) * ex + (d.y - s.ay) * ey) / (ex * ex + ey * ey), 0, 1);
+        const px = s.ax + ex * t, py = s.ay + ey * t;
+        let nx = d.x - px, ny = d.y - py; const dist = Math.hypot(nx, ny);
+        if (dist >= DOT_R || dist < 1e-7) continue;
+        nx /= dist; ny /= dist;
+        const wvx = -w * py, wvy = w * px, rvx = d.vx - wvx, rvy = d.vy - wvy, vn = rvx * nx + rvy * ny;
+        d.x = px + nx * DOT_R; d.y = py + ny * DOT_R;
+        if (vn < 0) {
+          const tx = -ny, ty = nx, vt = (rvx * tx + rvy * ty) * 0.94;
+          d.vx = wvx - e * vn * nx + vt * tx; d.vy = wvy - e * vn * ny + vt * ty;
+          hit(d, -vn, i);
+        }
+      }
+      // safety net against tunnelling while the walls are closed
+      let worst = -1, over = 0;
+      for (let i = 0; i < 6; i++) { const pr = d.x * nCos[i] + d.y * nSin[i] - (APO - DOT_R * 0.5); if (pr > over) { over = pr; worst = i; } }
+      if (closed && d.inside && worst >= 0) {
+        const nx = -nCos[worst], ny = -nSin[worst];
+        d.x += nx * (over + DOT_R * 0.5); d.y += ny * (over + DOT_R * 0.5);
+        const wvx = -w * d.y, wvy = w * d.x, vn = (d.vx - wvx) * nx + (d.vy - wvy) * ny;
+        if (vn < 0) { d.vx -= (1 + e) * vn * nx; d.vy -= (1 + e) * vn * ny; hit(d, -vn, worst); }
+      } else d.inside = worst < 0;
+      d.cool -= h;
+    }
+  }
+  theta = th1 % TAU;
+  // a note that has fully left the tombola is out of play: silent, passes through walls, fades away
+  for (let i = dots.length - 1; i >= 0; i--) {
+    const d = dots[i];
+    if (!d.out && Math.hypot(d.x, d.y) > 1 + DOT_R * 1.5) d.out = true;
+    if (d.out) d.fade -= dt / 0.6;
+    if (d.fade <= 0 || !onScreen(d, DOT_R)) dots.splice(i, 1);
+  }
+}
+
+/* ---------- touch on the screen ---------- */
+const ptrs = new Map(); let spinPtr = null;
+const local = e => { const r = cv.getBoundingClientRect(); return {x: e.clientX - r.left, y: e.clientY - r.top}; };
+cv.addEventListener('pointerdown', e => {
+  firstGesture();
+  if (ringName) { closeRing(); return; }   // a tap on the screen just puts the encoder away
+  capture(cv, e);
+  const p = local(e);
+  ptrs.set(e.pointerId, {x0:p.x, y0:p.y, t0:performance.now(), moved:false, a:Math.atan2(p.y - CY, p.x - CX), hist:[]});
+});
+cv.addEventListener('pointermove', e => {
+  const s = ptrs.get(e.pointerId); if (!s) return;
+  const p = local(e), now = performance.now();
+  if (!s.moved && Math.hypot(p.x - s.x0, p.y - s.y0) > 9) {
+    s.moved = true;
+    if (spinPtr === null) { spinPtr = e.pointerId; dragging = true; s.a = Math.atan2(p.y - CY, p.x - CX); }
+  }
+  if (s.moved && spinPtr === e.pointerId) {
+    const a = Math.atan2(p.y - CY, p.x - CX);
+    let da = a - s.a; if (da > Math.PI) da -= TAU; if (da < -Math.PI) da += TAU;
+    s.a = a; pendingD += da; s.hist.push({t:now, da});
+    while (s.hist.length && now - s.hist[0].t > 120) s.hist.shift();
+  }
+});
+function release(e, cancelled) {
+  const s = ptrs.get(e.pointerId); if (!s) return;
+  ptrs.delete(e.pointerId);
+  const now = performance.now();
+  if (!cancelled && !s.moved && now - s.t0 < 450) tapAt(local(e));
+  if (spinPtr === e.pointerId) {
+    const recent = s.hist.filter(h => now - h.t < 100);
+    const span = recent.length ? Math.max(0.016, (now - recent[0].t) / 1000 + 0.016) : 1;
+    omega = clamp(recent.reduce((a, h) => a + h.da, 0) / span, -14, 14);
+    dragging = false; spinPtr = null;
+  }
+}
+cv.addEventListener('pointerup', e => release(e, false));
+cv.addEventListener('pointercancel', e => release(e, true));
+function tapAt(p) {
+  const x = (p.x - CX) / R, y = (p.y - CY) / R;
+  if (!insideHex(x, y, theta, DOT_R * 1.5)) return;
+  const u = clamp((APO - y) / (2 * APO), 0, 0.999);
+  const idx = Math.floor(u * 11);
+  addDot(x, y, idx, (Math.random() - 0.5) * 0.3, 0);
+  playNote(noteMidi(idx), 0.32, x * 0.8);
+}
+
+/* ---------- render: tombola ---------- */
+const hint = $('#hint');
+function render(dt) {
+  const c = cx;
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  c.fillStyle = '#08080a'; c.fillRect(0, 0, W, H);
+  c.save(); c.translate(CX, CY);
+  const lw = Math.max(1.6, R * 0.012);
+  c.lineCap = 'round';
+  for (let i = 0; i < 6; i++) {
+    const s = segs[i], f = Math.min(1, sideFlash[i]);
+    c.strokeStyle = '#efefed'; c.lineWidth = lw + f * 2.6;
+    if (f > 0.05) { c.shadowColor = 'rgba(255,255,255,.8)'; c.shadowBlur = 10 * f; }
+    c.beginPath(); c.moveTo(s.ax * R, s.ay * R); c.lineTo(s.bx * R, s.by * R); c.stroke();
+    c.shadowBlur = 0;
+    sideFlash[i] *= Math.exp(-dt * 7);
+  }
+  for (const d of dots) {
+    const sz = sprCss * (1 + d.flash * 0.4);
+    c.globalAlpha = Math.max(0, d.fade);
+    c.drawImage(sprites[d.pat], d.x * R - sz / 2, d.y * R - sz / 2, sz, sz);
+    c.globalAlpha = 1;
+    d.flash *= Math.exp(-dt * 9);
+  }
+  c.restore();
+  let msg = '', show = true;
+  if (!AC || AC.state !== 'running') msg = 'tap to turn on sound · drag to spin';
+  else if (!dots.length) msg = 'tap inside the tombola to add notes';
+  else { msg = 'tap inside to add notes · flick to spin'; show = performance.now() - hintT < 4500; }
+  if (hint.textContent !== msg) hint.textContent = msg;
+  hint.style.opacity = show ? 1 : 0;
+}
+
+/* ---------- render: synth + fx screens ---------- */
+const scv = $('#synthCv'), fcv = $('#fxCv');
+let vizSize = null, VW = 0, VH = 0;
+const wave = new Float32Array(512); let lvl = 0;
+function vizCtx(canvas) {
+  const r = canvas.getBoundingClientRect();
+  if (vizSize !== canvas || canvas.width !== Math.round(r.width * DPR)) {
+    canvas.width = Math.round(r.width * DPR); canvas.height = Math.round(r.height * DPR); vizSize = canvas;
+  }
+  VW = r.width; VH = r.height;
+  const c = canvas.getContext('2d'); c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  c.fillStyle = '#08080a'; c.fillRect(0, 0, VW, VH);
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  return c;
+}
+function drawEnv(c, dec) {   // orange: amplitude decay, drawn along the floor
+  const x0 = VW * 0.08, x1 = VW * 0.92, y0 = VH * 0.9, h = VH * 0.14, span = 3.3;
+  c.strokeStyle = COL.line; c.lineWidth = 1; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y0); c.stroke();
+  c.strokeStyle = COL.orange; c.lineWidth = 2; c.beginPath();
+  for (let i = 0; i <= 80; i++) { const u = i / 80, tt = u * span; c[i ? 'lineTo' : 'moveTo'](x0 + u * (x1 - x0), y0 - h * Math.exp(-tt * 5 / dec)); }
+  c.stroke();
+}
+function polyline(c, n, fx, fy) { c.beginPath(); for (let i = 0; i <= n; i++) c[i ? 'lineTo' : 'moveTo'](fx(i / n), fy(i / n)); c.stroke(); }
+function drawSynth(t) {
+  const c = vizCtx(scv), v = P.syn[P.engine].map(x => x / 100), ex = excite;
+  const x0 = VW * 0.08, x1 = VW * 0.92, xs = u => x0 + u * (x1 - x0);
+  const dec = 0.12 + v[3] * v[3] * 3.2;
+  if (P.engine === 'digital') {
+    // faint scope grid
+    c.strokeStyle = COL.line; c.lineWidth = 1;
+    for (let i = 1; i < 8; i++) { const x = xs(i / 8); c.beginPath(); c.moveTo(x, VH * 0.12); c.lineTo(x, VH * 0.82); c.stroke(); }
+    for (let i = 1; i < 4; i++) { const y = VH * 0.12 + i / 4 * VH * 0.7; c.beginPath(); c.moveTo(x0, y); c.lineTo(x1, y); c.stroke(); }
+    const yc = VH * 0.47, A = VH * 0.3 * (0.85 + ex * 0.15), per = 240, n = 360, shift = Math.floor(t * 60) % per;
+    // green: oscillator B on its own (octave + detune drift), drawn behind
+    const oct = Math.round(v[1] * 4) - 2, rB = Math.pow(2, oct) * (1 + (P.digiRing ? v[2] * 0.5 : v[2] * 0.03));
+    c.strokeStyle = COL.green; c.globalAlpha = 0.55; c.lineWidth = 1.2;
+    polyline(c, 300, xs, u => yc - A * 0.55 * Math.sin(TAU * (u * 1.5 * rB + t * 0.3 * v[2])));
+    c.globalAlpha = 1;
+    // blue: the folded, crushed output
+    const gen = digiGen(1, per, P.syn.digital, P.digiRing), smp = [];
+    for (let i = 0; i < n + shift; i++) smp.push(gen());
+    const pts = smp.slice(shift);
+    c.strokeStyle = COL.blue; c.lineWidth = 2; c.beginPath();
+    pts.forEach((y, i) => { const x = xs(i / (n - 1)), yy = yc - y * A; i ? (c.lineTo(x, c._py), c.lineTo(x, yy)) : c.moveTo(x, yy); c._py = yy; });
+    c.stroke();
+    // orange: where digitalness samples the signal
+    const hold = 1 + Math.floor(v[3] * v[3] * 40);
+    if (hold > 2) {
+      c.fillStyle = COL.orange;
+      for (let i = (hold - shift % hold) % hold; i < n; i += hold) { c.beginPath(); c.arc(xs(i / (n - 1)), yc - pts[i] * A, 2.2, 0, TAU); c.fill(); }
+    }
+    // white: ring mod state
+    c.font = '400 13px Jost, Futura, system-ui, sans-serif'; c.textAlign = 'right'; c.textBaseline = 'middle';
+    c.fillStyle = P.digiRing ? COL.white : COL.dim;
+    c.fillText(P.digiRing ? 'RING' : 'MIX', x1, VH * 0.07);
+    c.textAlign = 'left'; c.fillStyle = COL.green; c.fillText((oct > 0 ? '+' : '') + oct + ' OCT', x0, VH * 0.07);
+    c.fillStyle = COL.orange; c.fillText(Math.round(v[3] * 100) ? 'DIGITAL ' + Math.round(v[3] * 100) : 'CLEAN', x0, VH * 0.92);
+  } else if (P.engine === 'fm') {
+    const ri = Math.round(v[0] * (FM_RATIOS.length - 1)), ratio = FM_RATIOS[ri];
+    const my = VH * 0.24, mr = 7 + ri * 1.8, cr = 20;
+    const mxp = VW * 0.34, cxp = VW * 0.6;
+    c.lineWidth = 2; c.strokeStyle = COL.blue; c.beginPath(); c.arc(mxp, my, mr, 0, TAU); c.stroke();
+    c.fillStyle = COL.blue; c.font = `400 13px Jost, Futura, system-ui, sans-serif`; c.textAlign = 'center';
+    c.fillText('×' + ratio, mxp, my + mr + 18);
+    c.strokeStyle = COL.white; c.beginPath(); c.arc(cxp, my, cr, 0, TAU); c.stroke();
+    c.strokeStyle = COL.green; c.lineWidth = 1 + v[1] * 7; c.beginPath(); c.moveTo(mxp + mr + 3, my); c.lineTo(cxp - cr - 3, my); c.stroke();
+    const I = v[1] * 9 * (0.25 + 0.75 * ex), yc = VH * 0.58, A = VH * 0.14;
+    c.strokeStyle = COL.white; c.lineWidth = 1.6;
+    polyline(c, 500, xs, u => yc - A * Math.sin(TAU * 3 * u + I * Math.sin(TAU * 3 * ratio * u + t)));
+    const modT = 0.04 + v[2] * v[2] * 2.5;
+    c.strokeStyle = COL.white; c.globalAlpha = 0.5; c.setLineDash([3, 4]); c.lineWidth = 1;
+    polyline(c, 60, u => xs(u * 0.5), u => VH * 0.78 - VH * 0.08 * Math.exp(-u * 3.3 * 5 / modT));
+    c.setLineDash([]); c.globalAlpha = 1;
+  } else if (P.engine === 'string') {
+    const yc = VH * 0.38, pl = 0.04 + v[2] * 0.46, K = 2 + Math.round(v[0] * 9);
+    c.fillStyle = COL.white;
+    c.fillRect(x0 - 3, yc - 14, 3, 28); c.fillRect(x1, yc - 14, 3, 28);
+    c.strokeStyle = COL.white; c.lineWidth = 1.6;
+    const A = VH * 0.22 * ex;
+    polyline(c, 200, xs, u => {
+      let y = 0;
+      for (let n = 1; n <= K; n++) y += Math.sin(n * Math.PI * pl) / (n * n) * Math.sin(n * Math.PI * u) * Math.cos(n * t * 22);
+      return yc - y * A;
+    });
+    c.beginPath(); c.arc(xs(pl), yc + 22, 3.5, 0, TAU); c.fill();
+    c.strokeStyle = COL.blue; c.lineWidth = 2;
+    for (let n = 1; n <= 11; n++) { const on = n <= K; c.globalAlpha = on ? 1 : 0.2; const x = VW * 0.12 + n * 9, hh = 26 / n + 4; c.beginPath(); c.moveTo(x, VH * 0.74); c.lineTo(x, VH * 0.74 - hh); c.stroke(); }
+    c.globalAlpha = 1;
+    c.strokeStyle = COL.orange; c.beginPath(); c.arc(VW * 0.62, VH * 0.66, 8 + v[3] * 22, 0, TAU); c.stroke();
+    c.strokeStyle = COL.green; c.lineWidth = 2;
+    const sus = 0.985 + v[1] * 0.0148, life = Math.min(1, Math.log(0.001) / Math.log(sus) / 3000);
+    c.beginPath(); c.moveTo(VW * 0.82, VH * 0.76); c.lineTo(VW * 0.82, VH * 0.76 - VH * 0.2 * life); c.stroke();
+  } else if (P.engine === 'pulse') {
+    const pw = 0.04 + v[0] * 0.46, yc = VH * 0.3, A = VH * 0.13;
+    c.strokeStyle = COL.blue; c.lineWidth = 2;
+    c.beginPath();
+    for (let k = 0; k < 4; k++) {
+      const a = xs(k / 4), b = xs((k + pw) / 4), e = xs((k + 1) / 4);
+      if (!k) c.moveTo(a, yc + A);
+      c.lineTo(a, yc - A); c.lineTo(b, yc - A); c.lineTo(b, yc + A); c.lineTo(e, yc + A);
+    }
+    c.stroke();
+    const fc = v[1], Q = 0.5 + v[2] * 16, yb = VH * 0.74;
+    c.strokeStyle = COL.green; c.lineWidth = 2;
+    let peakX = 0, peakY = 1e9;
+    polyline(c, 200, xs, u => {
+      const r = Math.pow(2, (u - fc) * 6.2), m = 1 / Math.sqrt(Math.pow(1 - r * r, 2) + Math.pow(r / Q, 2));
+      const y = yb - clamp(20 * Math.log10(m) + 24, 0, 60) / 60 * VH * 0.3;
+      if (y < peakY) { peakY = y; peakX = xs(u); }
+      return y;
+    });
+    c.fillStyle = COL.white; c.beginPath(); c.arc(peakX, peakY, 3 + v[2] * 3, 0, TAU); c.fill();
+  } else {
+    const n = 2 + Math.round(v[1] * 5), yc = VH * 0.45, A = VH * 0.12;
+    const fcut = v[2];
+    for (let i = 0; i < n; i++) {
+      const o = n === 1 ? 0 : (i / (n - 1) - 0.5) * 2, det = 1 + o * v[0] * 0.15;
+      c.strokeStyle = i % 2 ? COL.lav : COL.white; c.globalAlpha = 0.35 + 0.65 * (1 - Math.abs(o)); c.lineWidth = 1.4;
+      polyline(c, 300, xs, u => {
+        const ph = (u * 3 * det + t * 0.2 * o) % 1;
+        const saw = 2 * ph - 1, smooth = Math.sin(TAU * ph - Math.PI) * 0.8;
+        return yc + o * v[0] * VH * 0.12 - A * (saw * fcut + smooth * (1 - fcut));
+      });
+    }
+    c.globalAlpha = 1;
+  }
+  if (P.engine !== 'digital') drawEnv(c, dec);
+}
+function drawSpring(time) {
+  const c = vizCtx(fcv), SW = VW, SH = VH;
+  if (analyser) analyser.getFloatTimeDomainData(wave); else wave.fill(0);
+  let rms = 0; for (let i = 0; i < wave.length; i++) rms += wave[i] * wave[i];
+  lvl += (Math.sqrt(rms / wave.length) - lvl) * 0.3;
+  const fs = clamp(SH * 0.07, 14, 20), font = s => `400 ${s}px Jost, Futura, system-ui, sans-serif`;
+  c.font = font(fs); c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillStyle = COL.green; c.fillText('TURNS', SW * 0.5, SH * 0.1);
+  c.fillStyle = COL.white; c.fillText('DAMP', SW * 0.5, SH * 0.9);
+  c.fillStyle = COL.lav; c.font = font(fs * 1.8); c.fillText('T', SW * 0.07, SH * 0.5);
+  const x0 = SW * 0.16, x1 = SW * 0.8, cy = SH * 0.5;
+  const turns = 5 + Math.round(P.turns / 100 * 22);
+  const baseR = SH * (0.06 + P.width / 100 * 0.16), taper = P.taper / 100, damp = P.damp / 100;
+  c.strokeStyle = COL.lav; c.lineWidth = 1.5;
+  const ah = baseR * 1.3 + taper * SH * 0.06;
+  c.beginPath(); c.moveTo(x0 - 6, cy - ah); c.lineTo(x0 - 6, cy + ah); c.stroke();
+  const n = turns * 28, amp = SH * 0.7 * (1 - damp * 0.6);
+  c.strokeStyle = '#efefed'; c.lineWidth = 1.4; c.globalAlpha = 1 - damp * 0.35;
+  c.beginPath();
+  for (let i = 0; i <= n; i++) {
+    const u = i / n, ang = u * turns * TAU + time * 0.4;
+    const r = baseR * (1 - taper * 0.72 * u);
+    const wob = wave[Math.floor(u * (wave.length - 1))] * amp * Math.sin(u * Math.PI);
+    const x = x0 + u * (x1 - x0) + r * 0.35 * Math.cos(ang), y = cy + r * Math.sin(ang) + wob;
+    i ? c.lineTo(x, y) : c.moveTo(x, y);
+  }
+  c.stroke(); c.globalAlpha = 1;
+  const rx = SW * 0.9, top = SH * 0.24, bot = SH * 0.76;
+  c.strokeStyle = COL.orange; c.setLineDash([2, 4]); c.beginPath(); c.moveTo(rx, top); c.lineTo(rx, bot); c.stroke(); c.setLineDash([]);
+  c.beginPath(); c.moveTo(x1, cy); c.lineTo(rx, cy); c.globalAlpha = 0.35 + clamp(lvl * 8, 0, 0.65); c.stroke(); c.globalAlpha = 1;
+  c.fillStyle = COL.orange;
+  c.beginPath(); c.arc(rx, bot - (P.width / 100) * (bot - top), 4.5, 0, TAU); c.fill();
+}
+
+/* ---------- loop: the tombola keeps playing while you tweak sounds ---------- */
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000) || 0.016; last = now;
+  if (needSize) size();
+  if (ringName && !modeOpen) placeRing();
+  step(dt);
+  excite *= Math.exp(-dt * 2.2);
+  if (modeOpen === 'synth') drawSynth(now / 1000);
+  else if (modeOpen === 'fx') drawSpring(now / 1000);
+  else render(dt);
+  const nc = String(dots.length); if ($('#noteCount').textContent !== nc) $('#noteCount').textContent = nc;
+  requestAnimationFrame(frame);
+}
+size(); computeSegs(theta, 0);
+requestAnimationFrame(frame);
+})();
+</script>
