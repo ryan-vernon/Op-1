@@ -67,7 +67,7 @@ Then open http://localhost:8765/public/index.html.
 
 ## Hosting and deploying
 
-The site is hosted with Firebase Hosting in the `tombola-ryanvernon` project. `build.sh` wraps `tombola.html` into `public/index.html` and copies `src/`.
+The app deploys to its own Firebase project, `op-1-33ba3` (set in `.firebaserc`), separate from the original Tombola site in `tombola-ryanvernon`. `build.sh` wraps `tombola.html` into `public/index.html` and copies `src/`.
 
 Turning on cloud saving in production takes four steps:
 
