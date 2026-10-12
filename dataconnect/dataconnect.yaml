@@ -1,0 +1,11 @@
+specVersion: "v1"
+serviceId: "tombola"
+location: "us-central1"
+schema:
+  source: "./schema"
+  datasource:
+    postgresql:
+      database: "tombola"
+      cloudSql:
+        instanceId: "tombola-fdc"
+connectorDirs: ["./connector"]

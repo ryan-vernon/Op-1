@@ -1,0 +1,44 @@
+# Tombola's data model. Everything is small JSON or MIDI-style note lists, so there is no audio
+# and nothing that needs Cloud Storage.
+
+# One row per signed-in person, keyed by their Firebase Auth uid.
+type User @table(key: "uid") {
+  uid: String! @default(expr: "auth.uid")
+  displayName: String
+  createdAt: Timestamp! @default(expr: "request.time")
+}
+
+# A song holds the instrument settings: synth engines, envelope, effect, LFO, drum kit,
+# mixer levels, key and scale.
+type Song @table {
+  id: UUID! @default(expr: "uuidV4()")
+  owner: User!
+  title: String!
+  tempo: Int!
+  settings: Any!
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp! @default(expr: "request.time")
+}
+
+# A sequencer pattern for a song, one per sequencer kind ("tombola", "finger", ...).
+# Deleting the song deletes its patterns.
+type Pattern @table(key: ["song", "kind"]) {
+  song: Song!
+  owner: User!
+  kind: String!
+  data: Any!
+  updatedAt: Timestamp! @default(expr: "request.time")
+}
+
+# A tape track recorded as MIDI notes: events are [tick, note, velocity, durationTicks] rows at
+# `ppq` ticks per quarter note, plus the instrument that played them.
+type Recording @table(key: ["song", "track"]) {
+  song: Song!
+  owner: User!
+  track: Int!
+  instrument: Any!
+  ppq: Int!
+  lengthTicks: Int!
+  events: Any!
+  updatedAt: Timestamp! @default(expr: "request.time")
+}

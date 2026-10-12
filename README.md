@@ -1,36 +1,81 @@
-# Tombola
+# OP-1 Tombola
 
-A web version of the Tombola spinning sequencer from the teenage engineering OP-1, built for a portrait phone screen. Notes bounce around inside a spinning hexagon and play a sound each time they hit a wall.
+A web instrument after the teenage engineering OP-1, built around its Tombola sequencer. It runs in the browser on phones and iPads, and plays from a MIDI keyboard.
 
-Everything lives in one self-contained file, `tombola.html`. Open it in a browser and tap once to turn on the sound.
+The page itself is one file, `tombola.html`. Cloud saving lives in `src/cloud.js`, and the database is defined in `dataconnect/`.
 
-## Controls
+## Layout
 
-- **Tap inside the hexagon** to drop a note. Higher taps play higher notes on a two-octave pentatonic scale. Each note's pattern (blank, filled, stripes, dots, grid) shows its scale degree.
-- **Drag or flick** the screen to spin the hexagon. It slows back down to the set speed.
-- **Corner icons** are the four OP-1 encoders. Tap one to show its encoder ring, then drag the ring or the icon up and down to turn it.
-  - **S** (blue): speed and direction of rotation
-  - **G** (green): gravity
-  - **M** (orange): mass, or bounciness. Harder hits play louder.
-  - **Hexagon** (white): shape. Opens the sides and lets the notes out.
-- **Synth icon** (below the tombola) opens the synth screen. It has five engines (digital, fm, string, pulse, cluster), each with four color-coded parameters, plus key, scale, tilt, "lay 5" and clear.
-- **Spring icon** opens the spring reverb: taper, turns, damp and width.
-- **Tilt** (on phones): gravity follows the device, and rolling it sideways opens the hexagon. Motion sensors need the page served over HTTPS from its own address. They're blocked inside embedded viewers.
+Everything sits on a grid of white tiles. One unit is the width of a white key.
+
+- **Phone (portrait):** the screen, then T1–T4, then the transport row (record, play, stop, sequencer, octave down and up, shift), then one octave of keys, then the four mode keys.
+- **iPad (landscape, 900px and wider):** an 18 × 12 grid.
+  - A 2:1 display sits on top, flanked by the OP-1's keys and four encoders.
+  - A full-width keyboard runs 2½ octaves, C3 to F5.
+
+## Modes
+
+- **Synth:**
+  - **T1 engine:** five engines: digital, fm, string, pulse, cluster. Press T1 again for the next engine.
+  - **T2 envelope:** attack, decay, sustain, release.
+  - **T3 spring reverb:** press T3 again to turn it on or off.
+  - **T4 LFO:** speed, pitch, volume and wave.
+- **Sequencer (SEQ):** the spinning Tombola. Tap inside to drop notes and drag to spin. Its corners set speed, gravity, shape and mass. With SHIFT, T1–T4 lay five notes, clear, change key and change scale.
+- **Drum:** a synthesized kit with one sound per semitone. T1 sets pitch, decay, tone and level.
+- **Tape:**
+  - Four tracks. T1–T4 pick the track; SHIFT plus a T key clears it.
+  - REC records notes from the keys, MIDI and the Tombola onto the selected track. The tape loops over the bars you set.
+  - The tape records MIDI notes, not audio.
+- **Mixer:** T1 sets the four track levels. T2 sets master, live, effect send and the metronome click.
+
+Each page shows its four parameters in the screen's corners, in the encoder colors: blue, green, white and orange.
+- To change a value, drag a corner up or down.
+- On iPad, you can turn the encoders instead.
+- With a MIDI controller, the first four knobs you move become the four encoders.
+
+You can also play from a computer keyboard: `a w s e d f t g y h u j k` play C to C, and `z` / `x` change the octave.
+
+## Saving songs (Firebase)
+
+Tap the song name at the top of the screen (or the album key on iPad) to open the song sheet.
+
+- You sign in with Google through **Firebase Auth**.
+- Songs are stored in **Firebase SQL Connect**, a managed Postgres database.
+- `dataconnect/schema/schema.gql` defines four tables:
+  - users
+  - songs: title, tempo, and every sound setting as JSON
+  - patterns: the Tombola's notes
+  - recordings: one row per tape track, as `[tick, note, velocity, durationTicks]` events
+- Recordings are small JSON, so nothing goes to Cloud Storage.
+- Every query and mutation in `dataconnect/connector/` is limited to the signed-in user's own rows.
 
 ## Running locally
 
-```bash
-python3 -m http.server 8765
-```
-
-Then open http://localhost:8765/tombola.html.
-
-## Hosting
-
-The app is hosted with Firebase Hosting in the `tombola-ryanvernon` project at https://tombola-ryanvernon.web.app.
-
-`tombola.html` holds only the page content (the claude.ai artifact viewer adds the page header itself). `build.sh` wraps it into a complete page at `public/index.html`, and `firebase deploy` runs that step automatically:
+Start the Auth and SQL Connect emulators. The page talks to them whenever it's served from `localhost`.
 
 ```bash
-firebase deploy --only hosting
+firebase emulators:start --only auth,dataconnect --project demo-tombola
 ```
+
+Build the page and serve it:
+
+```bash
+bash build.sh && python3 -m http.server 8765
+```
+
+Then open http://localhost:8765/public/index.html.
+
+## Hosting and deploying
+
+The site is hosted with Firebase Hosting in the `tombola-ryanvernon` project. `build.sh` wraps `tombola.html` into `public/index.html` and copies `src/`.
+
+Turning on cloud saving in production takes four steps:
+
+1. Register a web app in the project (`firebase apps:create web`). Hosting then serves its config at `/__/firebase/init.json`.
+2. Enable Google sign-in under Authentication.
+3. Deploy SQL Connect, which creates a Cloud SQL instance and needs the Blaze plan: `firebase deploy --only dataconnect`.
+4. Deploy hosting: `firebase deploy --only hosting`.
+
+## Agent skills
+
+The Firebase agent skills (github.com/firebase/agent-skills) are installed in `.claude/skills/` for Claude Code.

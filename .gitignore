@@ -1,4 +1,7 @@
-.claude/
+.claude/*
+!.claude/skills/
 .DS_Store
 public/
 .firebase/
+*-debug.log
+dataconnect/.dataconnect/

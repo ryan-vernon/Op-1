@@ -6,5 +6,15 @@
     "headers": [
       { "source": "**", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] }
     ]
+  },
+  "dataconnect": {
+    "source": "dataconnect"
+  },
+  "emulators": {
+    "auth": { "port": 9099 },
+    "dataconnect": { "port": 9399 },
+    "hosting": { "port": 5002 },
+    "ui": { "enabled": true, "port": 4000 },
+    "singleProjectMode": true
   }
 }

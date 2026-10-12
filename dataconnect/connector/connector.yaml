@@ -1,0 +1,3 @@
+connectorId: tombola
+# The page loads the Firebase JS SDK from the CDN and calls these operations by name
+# (see src/cloud.js), so no generated SDK is needed.

@@ -1,0 +1,81 @@
+# Every write is scoped to auth.uid; patterns and recordings first check that the song is yours.
+
+mutation UpsertMe($displayName: String) @auth(level: USER) {
+  user_upsert(data: { uid_expr: "auth.uid", displayName: $displayName })
+}
+
+mutation CreateSong($title: String!, $tempo: Int!, $settings: Any!) @auth(level: USER) {
+  song_insert(
+    data: { owner: { uid_expr: "auth.uid" }, title: $title, tempo: $tempo, settings: $settings }
+  )
+}
+
+mutation UpdateSong($id: UUID!, $title: String!, $tempo: Int!, $settings: Any!) @auth(level: USER) {
+  song_update(
+    first: { where: { id: { eq: $id }, owner: { uid: { eq_expr: "auth.uid" } } } }
+    data: { title: $title, tempo: $tempo, settings: $settings, updatedAt_expr: "request.time" }
+  )
+}
+
+# Patterns and recordings go with the song (required references cascade on delete).
+mutation DeleteSong($id: UUID!) @auth(level: USER) {
+  song_delete(first: { where: { id: { eq: $id }, owner: { uid: { eq_expr: "auth.uid" } } } })
+}
+
+mutation SavePattern($songId: UUID!, $kind: String!, $data: Any!) @auth(level: USER) @transaction {
+  query @redact {
+    song(first: { where: { id: { eq: $songId }, owner: { uid: { eq_expr: "auth.uid" } } } })
+      @check(expr: "this != null", message: "Song not found") {
+      id
+    }
+  }
+  pattern_upsert(
+    data: {
+      song: { id: $songId }
+      owner: { uid_expr: "auth.uid" }
+      kind: $kind
+      data: $data
+      updatedAt_expr: "request.time"
+    }
+  )
+}
+
+mutation SaveRecording(
+  $songId: UUID!
+  $track: Int!
+  $instrument: Any!
+  $ppq: Int!
+  $lengthTicks: Int!
+  $events: Any!
+) @auth(level: USER) @transaction {
+  query @redact {
+    song(first: { where: { id: { eq: $songId }, owner: { uid: { eq_expr: "auth.uid" } } } })
+      @check(expr: "this != null", message: "Song not found") {
+      id
+    }
+  }
+  recording_upsert(
+    data: {
+      song: { id: $songId }
+      owner: { uid_expr: "auth.uid" }
+      track: $track
+      instrument: $instrument
+      ppq: $ppq
+      lengthTicks: $lengthTicks
+      events: $events
+      updatedAt_expr: "request.time"
+    }
+  )
+}
+
+mutation DeleteRecording($songId: UUID!, $track: Int!) @auth(level: USER) {
+  recording_delete(
+    first: {
+      where: {
+        song: { id: { eq: $songId } }
+        track: { eq: $track }
+        owner: { uid: { eq_expr: "auth.uid" } }
+      }
+    }
+  )
+}

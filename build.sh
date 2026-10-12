@@ -15,3 +15,4 @@ mkdir -p public
   cat tombola.html
   printf '%s\n' '</body>' '</html>'
 } > public/index.html
+rm -rf public/src && cp -R src public/src
