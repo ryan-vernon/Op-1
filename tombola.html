@@ -24,7 +24,7 @@ button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 
 #device{display:grid;gap:var(--gap);padding:6px;width:100%;height:100%;
   grid-template-columns:repeat(8,minmax(0,1fr));
-  grid-template-rows:minmax(140px,1fr) var(--u) var(--u) var(--u) calc(var(--u) * 5 + var(--gap) * 4) var(--u)}
+  grid-template-rows:minmax(140px,1fr) var(--u) var(--u) var(--u) var(--u) calc(var(--u) * 5 + var(--gap) * 4)}
 #display{grid-column:1/-1}
 .tk,#shift,.mk,.enc{grid-column:span 2}
 .enc{touch-action:none;cursor:ns-resize}
@@ -169,6 +169,11 @@ body.pad #keys{grid-area:7/1/13/19;grid-template-rows:calc(var(--u) * 2 + var(--
   <div class="tile enc" id="k1" data-k="1"><span class="knob"><span class="cap" style="background:var(--green)"><i></i></span></span></div>
   <div class="tile enc" id="k2" data-k="2"><span class="knob"><span class="cap" style="background:#F4F4F2"><i></i></span></span></div>
   <div class="tile enc" id="k3" data-k="3"><span class="knob"><span class="cap" style="background:var(--orange)"><i></i></span></span></div>
+  <button class="tile mk" id="m_synth" data-mode="synth" aria-label="Synth"><span class="disc"><svg viewBox="0 0 20 14" fill="none" stroke="#5B7CFA" stroke-width="1.8"><path d="M2 12V4a2 2 0 0 1 4 0v6a2 2 0 0 0 4 0V4a2 2 0 0 1 4 0v6a2 2 0 0 0 4 0V2"/></svg></span><span class="led"></span></button>
+  <button class="tile mk" id="m_drum" data-mode="drum" aria-label="Drum"><span class="disc"><svg viewBox="0 0 16 16" fill="none" stroke="#1ED68F" stroke-width="1.8"><circle cx="8" cy="6.5" r="4.5"/><path d="M8 11v4"/></svg></span><span class="led"></span></button>
+  <button class="tile mk" id="m_tape" data-mode="tape" aria-label="Tape"><span class="disc"><svg viewBox="0 0 20 12" fill="none" stroke="#FF4D3D" stroke-width="1.8"><circle cx="5" cy="6" r="3.5"/><circle cx="15" cy="6" r="3.5"/><path d="M5 9.5h10"/></svg></span><span class="led"></span></button>
+  <button class="tile mk" id="m_mixer" data-mode="mixer" aria-label="Mixer"><span class="disc"><svg viewBox="0 0 16 14" fill="none" stroke="#8A8A8A" stroke-width="1.8"><path d="M3 13V8M8 13V2M13 13V6"/></svg></span><span class="led"></span></button>
+
   <button class="tile tk" id="t0" data-t="0" aria-label="T1"><span class="disc">1</span><span class="led"></span></button>
   <button class="tile tk" id="t1" data-t="1" aria-label="T2"><span class="disc">2</span><span class="led"></span></button>
   <button class="tile tk" id="t2" data-t="2" aria-label="T3"><span class="disc">3</span><span class="led"></span></button>
@@ -184,10 +189,6 @@ body.pad #keys{grid-area:7/1/13/19;grid-template-rows:calc(var(--u) * 2 + var(--
 
   <div id="keys" role="group" aria-label="Keyboard"></div>
 
-  <button class="tile mk" id="m_synth" data-mode="synth" aria-label="Synth"><span class="disc"><svg viewBox="0 0 20 14" fill="none" stroke="#5B7CFA" stroke-width="1.8"><path d="M2 12V4a2 2 0 0 1 4 0v6a2 2 0 0 0 4 0V4a2 2 0 0 1 4 0v6a2 2 0 0 0 4 0V2"/></svg></span><span class="led"></span></button>
-  <button class="tile mk" id="m_drum" data-mode="drum" aria-label="Drum"><span class="disc"><svg viewBox="0 0 16 16" fill="none" stroke="#1ED68F" stroke-width="1.8"><circle cx="8" cy="6.5" r="4.5"/><path d="M8 11v4"/></svg></span><span class="led"></span></button>
-  <button class="tile mk" id="m_tape" data-mode="tape" aria-label="Tape"><span class="disc"><svg viewBox="0 0 20 12" fill="none" stroke="#FF4D3D" stroke-width="1.8"><circle cx="5" cy="6" r="3.5"/><circle cx="15" cy="6" r="3.5"/><path d="M5 9.5h10"/></svg></span><span class="led"></span></button>
-  <button class="tile mk" id="m_mixer" data-mode="mixer" aria-label="Mixer"><span class="disc"><svg viewBox="0 0 16 14" fill="none" stroke="#8A8A8A" stroke-width="1.8"><path d="M3 13V8M8 13V2M13 13V6"/></svg></span><span class="led"></span></button>
 
   <!-- iPad only -->
   <div class="tile padonly" id="speaker" aria-hidden="true"><span class="grill"></span></div>
