@@ -67,14 +67,39 @@ Then open http://localhost:8765/public/index.html.
 
 ## Hosting and deploying
 
-The app deploys to its own Firebase project, `op-1-57510` (set in `.firebaserc`), separate from the original Tombola site in `tombola-ryanvernon`. `build.sh` wraps `tombola.html` into `public/index.html` and copies `src/`.
+The app runs on **Firebase App Hosting** in its own project, `op-1-57510` (set in `.firebaserc`), separate from the original Tombola site:
 
-Turning on cloud saving in production takes four steps:
+- **Live at:** https://op-1--op-1-57510.us-central1.hosted.app
+- **Backend:** `op-1`, in us-central1.
+- **How it runs:** App Hosting runs `npm run build` (which calls `build.sh`) and then `npm start`. `server.js` is a tiny dependency-free static server for `public/`.
+- **Scaling:** `apphosting.yaml` lets it scale to zero, up to 2 instances.
+- **Deploy:**
+  ```bash
+  firebase deploy --only apphosting
+  ```
+  The upload skips anything in `.gitignore`.
+- **Web app config:** `src/webapp-config.json` holds the Firebase web app config, which is public by design. App Hosting reserves `/__/` paths, so `/__/firebase/init.json` isn't available there.
+- **SQL Connect:** service `tombola` on the Cloud SQL instance `tombola-fdc`, under the SQL Connect no-cost trial. Deploy it with:
+  ```bash
+  firebase deploy --only dataconnect
+  ```
 
-1. Register a web app in the project (`firebase apps:create web`). Hosting then serves its config at `/__/firebase/init.json`.
-2. Enable Google sign-in under Authentication.
-3. Deploy SQL Connect, which creates a Cloud SQL instance and needs the Blaze plan: `firebase deploy --only dataconnect`.
-4. Deploy hosting: `firebase deploy --only hosting`.
+To move to plain Firebase Hosting later and save money, run:
+
+```bash
+firebase deploy --only hosting
+```
+
+The `hosting` block in `firebase.json` is ready, and the page works on either host. Then delete the App Hosting backend:
+
+```bash
+firebase apphosting:backends:delete op-1
+```
+
+Google sign-in needs two console settings:
+
+1. Enable the Google provider under Authentication → Sign-in method.
+2. Add `op-1--op-1-57510.us-central1.hosted.app` under Authentication → Settings → Authorized domains.
 
 ## Agent skills
 
