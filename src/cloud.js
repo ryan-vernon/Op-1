@@ -17,9 +17,9 @@ const say = msg => { state.textContent = msg; };
 
 async function config() {
   if (LOCAL) return {apiKey: 'demo-key', authDomain: 'demo-tombola.firebaseapp.com', projectId: 'demo-tombola', appId: 'demo-app'};
-  // The web app config (public by design) is in src/firebase-config.json; Firebase Hosting also serves it
+  // The web app config (public by design) is in src/webapp-config.json; Firebase Hosting also serves it
   // at /__/firebase/init.json, but App Hosting reserves /__/ paths.
-  for (const url of ['src/firebase-config.json', '/__/firebase/init.json']) {
+  for (const url of ['src/webapp-config.json', '/__/firebase/init.json']) {
     try { const r = await fetch(url); if (r.ok) return await r.json(); } catch (e) {}
   }
   throw new Error('This site has no Firebase web app config.');

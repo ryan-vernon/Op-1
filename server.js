@@ -1,5 +1,5 @@
 // Minimal static server for Firebase App Hosting (Cloud Run): serves the built page in public/.
-// The Firebase web app config ships as public/src/firebase-config.json.
+// The Firebase web app config ships as public/src/webapp-config.json.
 const http = require('http'), fs = require('fs'), path = require('path');
 const ROOT = path.join(__dirname, 'public');
 const TYPES = {'.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json',
