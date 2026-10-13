@@ -24,9 +24,10 @@ button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 
 #device{display:grid;gap:var(--gap);padding:6px;width:100%;height:100%;
   grid-template-columns:repeat(8,minmax(0,1fr));
-  grid-template-rows:minmax(140px,1fr) var(--u) var(--u) calc(var(--u) * 6 + var(--gap) * 5) var(--u)}
+  grid-template-rows:minmax(140px,1fr) var(--u) var(--u) var(--u) calc(var(--u) * 5 + var(--gap) * 4) var(--u)}
 #display{grid-column:1/-1}
-.tk,#shift,.mk{grid-column:span 2}
+.tk,#shift,.mk,.enc{grid-column:span 2}
+.enc{touch-action:none;cursor:ns-resize}
 #keys{grid-column:1/-1}
 #device .padonly{display:none}
 
@@ -97,12 +98,13 @@ body.pad #lift{grid-area:5/1} body.pad #drop{grid-area:5/2} body.pad #split{grid
 body.pad #rec{grid-area:6/1} body.pad #play{grid-area:6/2} body.pad #stop{grid-area:6/3} body.pad #octUp{grid-area:6/4}
 body.pad #shift{grid-area:6/5/7/7}
 body.pad #t0{grid-area:6/7/7/9} body.pad #t1{grid-area:6/9/7/11} body.pad #t2{grid-area:6/11/7/13} body.pad #t3{grid-area:6/13/7/15}
+body.pad .knob{width:calc(var(--u) * 1.5);height:calc(var(--u) * 1.5)}
 body.pad #k0{grid-area:1/15/3/17} body.pad #k1{grid-area:1/17/3/19} body.pad #k2{grid-area:3/15/5/17} body.pad #k3{grid-area:3/17/5/19}
 body.pad .snd{grid-row:5}body.pad #snd4,body.pad #snd5,body.pad #snd6,body.pad #snd7{grid-row:6}
 body.pad #keys{grid-area:7/1/13/19;grid-template-rows:calc(var(--u) * 2 + var(--gap)) minmax(0,1fr)}
 #speaker .grill{display:grid;grid-template-columns:repeat(8,5px);gap:6px 5px}
 #speaker .grill i{width:5px;height:5px;border-radius:50%;background:#2A2A2A}
-.knob{width:calc(var(--u) * 1.5);height:calc(var(--u) * 1.5);border-radius:50%;background:radial-gradient(circle at 40% 32%,#fff,#E4E1DC 70%);
+.knob{width:calc(var(--u) * .86);height:calc(var(--u) * .86);border-radius:50%;background:radial-gradient(circle at 40% 32%,#fff,#E4E1DC 70%);
   box-shadow:0 6px 12px rgba(0,0,0,.22),0 1px 2px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;touch-action:none;cursor:ns-resize}
 .cap{width:62%;height:62%;border-radius:50%;display:flex;justify-content:center;box-shadow:inset 0 -3px 5px rgba(0,0,0,.2)}
 .cap i{display:block;width:10%;height:40%;margin-top:9%;border-radius:3px;background:rgba(255,255,255,.85)}
@@ -161,6 +163,12 @@ body.pad #keys{grid-area:7/1/13/19;grid-template-rows:calc(var(--u) * 2 + var(--
     <div id="hint">tap to turn on sound · drag to spin</div>
   </div>
 
+
+  <!-- encoders: blue, green, white, orange; they turn the four values in the screen's corners -->
+  <div class="tile enc" id="k0" data-k="0"><span class="knob"><span class="cap" style="background:var(--blue)"><i></i></span></span></div>
+  <div class="tile enc" id="k1" data-k="1"><span class="knob"><span class="cap" style="background:var(--green)"><i></i></span></span></div>
+  <div class="tile enc" id="k2" data-k="2"><span class="knob"><span class="cap" style="background:#F4F4F2"><i></i></span></span></div>
+  <div class="tile enc" id="k3" data-k="3"><span class="knob"><span class="cap" style="background:var(--orange)"><i></i></span></span></div>
   <button class="tile tk" id="t0" data-t="0" aria-label="T1"><span class="disc">1</span><span class="led"></span></button>
   <button class="tile tk" id="t1" data-t="1" aria-label="T2"><span class="disc">2</span><span class="led"></span></button>
   <button class="tile tk" id="t2" data-t="2" aria-label="T3"><span class="disc">3</span><span class="led"></span></button>
@@ -199,10 +207,6 @@ body.pad #keys{grid-area:7/1/13/19;grid-template-rows:calc(var(--u) * 2 + var(--
   <button class="tile padonly snd" id="snd5" data-snd="5" style="grid-column:16" aria-label="Sound 6. Shift plus key stores the current sound"><span class="disc">6</span></button>
   <button class="tile padonly snd" id="snd6" data-snd="6" style="grid-column:17" aria-label="Sound 7. Shift plus key stores the current sound"><span class="disc">7</span></button>
   <button class="tile padonly snd" id="snd7" data-snd="7" style="grid-column:18" aria-label="Sound 8. Shift plus key stores the current sound"><span class="disc">8</span></button>
-  <div class="tile padonly" id="k0" data-k="0"><span class="knob"><span class="cap" style="background:var(--blue)"><i></i></span></span></div>
-  <div class="tile padonly" id="k1" data-k="1"><span class="knob"><span class="cap" style="background:var(--green)"><i></i></span></span></div>
-  <div class="tile padonly" id="k2" data-k="2"><span class="knob"><span class="cap" style="background:#F4F4F2"><i></i></span></span></div>
-  <div class="tile padonly" id="k3" data-k="3"><span class="knob"><span class="cap" style="background:var(--orange)"><i></i></span></span></div>
 </div>
 
 <section id="sheet" hidden aria-label="Songs">
@@ -478,13 +482,15 @@ pcs.forEach((btn, slot) => {
     e.preventDefault(); const n = pageParams()[slot], s = SPEC[n]; setParam(n, P[n] + k * Math.max(1, (s.max - s.min) / 50));
   });
 });
-/* iPad encoders turn the same four parameters */
+/* the encoders (a row under the screen on phones, beside it on iPad) turn the same four values;
+   the whole tile is the touch target, and turning one shows its name and value */
+const turnHint = n => showHint((n[0] === 's' && n.length === 2 ? labelOf(n) : SPEC[n].label) + ' ' + valueText(n), 900);
 document.querySelectorAll('[data-k]').forEach(cell => {
-  const slot = +cell.dataset.k, knob = cell.querySelector('.knob'); let d = null;
-  knob.addEventListener('pointerdown', e => { firstGesture(); capture(knob, e); const name = pageParams()[slot]; d = {y:e.clientY, x:e.clientX, v:P[name], name}; e.preventDefault(); });
-  knob.addEventListener('pointermove', e => { if (!d) return; const s = SPEC[d.name]; setParam(d.name, d.v + ((d.y - e.clientY) + (e.clientX - d.x)) * (s.max - s.min) / 240); });
-  knob.addEventListener('pointerup', () => d = null); knob.addEventListener('pointercancel', () => d = null);
-  knob.addEventListener('wheel', e => { e.preventDefault(); const n = pageParams()[slot], s = SPEC[n]; setParam(n, P[n] - e.deltaY * (s.max - s.min) / 1200); }, {passive:false});
+  const slot = +cell.dataset.k; let d = null;
+  cell.addEventListener('pointerdown', e => { firstGesture(); capture(cell, e); const name = pageParams()[slot]; d = {y:e.clientY, x:e.clientX, v:P[name], name}; e.preventDefault(); turnHint(name); });
+  cell.addEventListener('pointermove', e => { if (!d) return; const s = SPEC[d.name]; setParam(d.name, d.v + ((d.y - e.clientY) + (e.clientX - d.x)) * (s.max - s.min) / 240); turnHint(d.name); });
+  cell.addEventListener('pointerup', () => d = null); cell.addEventListener('pointercancel', () => d = null);
+  cell.addEventListener('wheel', e => { e.preventDefault(); const n = pageParams()[slot], s = SPEC[n]; setParam(n, P[n] - e.deltaY * (s.max - s.min) / 1200); turnHint(n); }, {passive:false});
 });
 
 function renderTag() {
