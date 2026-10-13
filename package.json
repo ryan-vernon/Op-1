@@ -1,0 +1,13 @@
+{
+  "name": "op-1-tombola",
+  "private": true,
+  "version": "1.0.0",
+  "description": "OP-1 style instrument with the Tombola sequencer",
+  "scripts": {
+    "build": "bash build.sh",
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": "22"
+  }
+}

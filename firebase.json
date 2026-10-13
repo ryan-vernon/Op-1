@@ -1,20 +1,55 @@
 {
   "hosting": {
     "public": "public",
-    "predeploy": ["bash build.sh"],
-    "ignore": ["firebase.json", "**/.*"],
+    "predeploy": [
+      "bash build.sh"
+    ],
+    "ignore": [
+      "firebase.json",
+      "**/.*"
+    ],
     "headers": [
-      { "source": "**", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] }
+      {
+        "source": "**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      }
     ]
   },
   "dataconnect": {
     "source": "dataconnect"
   },
   "emulators": {
-    "auth": { "port": 9099 },
-    "dataconnect": { "port": 9399 },
-    "hosting": { "port": 5002 },
-    "ui": { "enabled": true, "port": 4000 },
+    "auth": {
+      "port": 9099
+    },
+    "dataconnect": {
+      "port": 9399
+    },
+    "hosting": {
+      "port": 5002
+    },
+    "ui": {
+      "enabled": true,
+      "port": 4000
+    },
     "singleProjectMode": true
+  },
+  "apphosting": {
+    "backendId": "op-1",
+    "rootDir": "/",
+    "ignore": [
+      "node_modules",
+      ".git",
+      ".claude",
+      "dataconnect",
+      "firebase-debug.log",
+      "firebase-debug.*.log",
+      "*-debug.log"
+    ]
   }
 }
