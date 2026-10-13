@@ -17,9 +17,12 @@ const say = msg => { state.textContent = msg; };
 
 async function config() {
   if (LOCAL) return {apiKey: 'demo-key', authDomain: 'demo-tombola.firebaseapp.com', projectId: 'demo-tombola', appId: 'demo-app'};
-  const r = await fetch('/__/firebase/init.json');   // served by Firebase Hosting for this project's web app
-  if (!r.ok) throw new Error('This site has no Firebase web app yet.');
-  return r.json();
+  // The web app config (public by design) is in src/firebase-config.json; Firebase Hosting also serves it
+  // at /__/firebase/init.json, but App Hosting reserves /__/ paths.
+  for (const url of ['src/firebase-config.json', '/__/firebase/init.json']) {
+    try { const r = await fetch(url); if (r.ok) return await r.json(); } catch (e) {}
+  }
+  throw new Error('This site has no Firebase web app config.');
 }
 const q = (name, vars) => D.executeQuery(D.queryRef(dc, name, vars)).then(r => r.data);
 const m = (name, vars) => D.executeMutation(D.mutationRef(dc, name, vars)).then(r => r.data);
