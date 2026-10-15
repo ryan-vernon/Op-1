@@ -11,7 +11,7 @@
   --line-b:rgba(255,255,255,.13); --dim-b:rgba(236,236,234,.42);
   --blue:#5B7CFA; --lav:#5B7CFA; --green:#1ED68F; --white:#E9E9E9; --orange:#FF4D3D; --rec:#E8452C;
   --f-ui:"Encode Sans Condensed","Avenir Next Condensed",system-ui,sans-serif;
-  --u:44px; --gap:4px; color-scheme:light;
+  --u:44px; --gap:2px; color-scheme:light;
 }
 html{height:100%;box-sizing:border-box;background:var(--bg)}
 @supports (height:100dvh){html{height:100dvh}}
@@ -24,43 +24,44 @@ button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 
 #device{display:grid;gap:var(--gap);padding:6px;width:100%;height:100%;
   grid-template-columns:repeat(8,minmax(0,1fr));
-  grid-template-rows:minmax(140px,1fr) var(--u) var(--u) var(--u) var(--u) calc(var(--u) * 5 + var(--gap) * 4)}
+  grid-template-rows:minmax(140px,1fr) var(--u) var(--u) var(--u) var(--u) var(--u) calc(var(--u) * 4 + var(--gap) * 3)}
 #display{grid-column:1/-1}
 .tk,#shift,.mk,.enc{grid-column:span 2}
+.snd{grid-column:span 1}
 .enc{touch-action:none;cursor:ns-resize}
 #keys{grid-column:1/-1}
 #device .padonly{display:none}
 
-/* tiles */
-.tile{border:0;margin:0;padding:0;font:inherit;color:var(--ink);background:linear-gradient(180deg,var(--tile-a),var(--tile-b));
-  border-radius:12px;box-shadow:inset 0 1px 0 #fff,inset 0 -2px 0 rgba(0,0,0,.06),0 1px 3px rgba(0,0,0,.14),0 0 0 1px rgba(0,0,0,.05);
+/* tiles: flat panels with thin dark seams, raised round buttons and oval keys (after the OP-1 Figma kit) */
+.tile{border:0;margin:0;padding:0;font:inherit;color:var(--ink);background:linear-gradient(180deg,#FBFAF8,#F5F3F0);
+  border-radius:4px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.6);
   display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;min-width:0;min-height:0;position:relative;touch-action:manipulation}
 .disc{width:calc(var(--u) * .7);height:calc(var(--u) * .7);border-radius:50%;flex:none;
-  background:radial-gradient(circle at 38% 30%,#fff 0,#F1EFEB 55%,#E0DDD8 100%);box-shadow:0 4px 7px rgba(0,0,0,.2),0 1px 1px rgba(0,0,0,.25);
+  background:radial-gradient(circle at 50% 30%,#fff 0,#FAF9F7 55%,#F0EEEA 100%);
+  box-shadow:0 0 0 1px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.2),0 3px 6px rgba(0,0,0,.1),inset 0 1px 1px #fff,inset 0 -2px 3px rgba(0,0,0,.05);
   display:flex;align-items:center;justify-content:center;font-size:calc(var(--u) * .36);font-weight:300;line-height:1}
 .disc svg{width:58%;height:auto;overflow:visible}
-.on .disc,.tile.down .disc{background:#E2DFDA;box-shadow:inset 0 3px 6px rgba(0,0,0,.28),inset 0 -1px 1px rgba(255,255,255,.8)}
-.led{width:6px;height:6px;border-radius:50%;background:#D3CFC9;flex:none}
-.tile.off{cursor:default}.tile.off .disc{opacity:.35;box-shadow:none;background:#E6E3DE}
+/* only the sequencer key shows a pressed state; the screen tells you which mode or page you are on */
+#seq.on .disc{background:#EAE8E4;box-shadow:0 0 0 1px rgba(0,0,0,.08),inset 0 2px 5px rgba(0,0,0,.22),inset 0 -1px 1px rgba(255,255,255,.8)}
+.tile.off{cursor:default}.tile.off .disc{opacity:.35;box-shadow:none;background:#EDEBE7}
 .lbl{font-size:calc(var(--u) * .24);font-weight:600;letter-spacing:.1em}
-#shift.on{background:linear-gradient(180deg,#E9E6E1,#DCD8D2);box-shadow:inset 0 2px 5px rgba(0,0,0,.18)}
 #rec .dot{width:34%;height:34%;border-radius:50%;background:var(--rec)}
 #rec.on .disc{background:radial-gradient(circle at 38% 30%,#FF7A5C 0,#E8452C 60%,#C7341E 100%);box-shadow:0 0 12px rgba(232,69,44,.55)}
 #rec.on .dot{background:#fff}
 
-/* keyboard: black keys 2 units, white keys 4 units, oval white keys */
+/* keyboard: black keys 1 unit on the phone and 2 on iPad, oval white keys */
 #keys{display:grid;gap:var(--gap);grid-template-columns:repeat(var(--nw,8),minmax(0,1fr));
-  grid-template-rows:calc(var(--u) * 2 + var(--gap)) minmax(0,1fr);touch-action:none}
+  grid-template-rows:var(--u) minmax(0,1fr);touch-action:none}
 .brow{grid-row:1;grid-column:1/-1;position:relative}
 .key.blk{position:absolute;top:0;bottom:0;padding:0}
 .key.blk .bd{position:absolute;top:50%;transform:translate(-50%,-50%)}
 .key.wht{grid-row:2}
 .bd{width:calc(var(--u) * .64);height:calc(var(--u) * .64);border-radius:50%;flex:none;
-  background:radial-gradient(circle at 40% 30%,#555,#111 70%);box-shadow:0 3px 5px rgba(0,0,0,.35)}
-.key.on .bd{background:radial-gradient(circle at 40% 30%,#3a3a3a,#000 70%);box-shadow:inset 0 2px 4px rgba(0,0,0,.7)}
-.pill{width:calc(var(--u) * .6);height:calc(100% - var(--u) * .6);border-radius:999px;background:#F7F5F1;
-  box-shadow:0 4px 7px rgba(0,0,0,.2),0 1px 1px rgba(0,0,0,.25),inset 0 1px 0 #fff}
-.key.on .pill{box-shadow:inset 0 3px 6px rgba(0,0,0,.28)}
+  background:#0A0A0A;box-shadow:0 0 0 1.5px rgba(255,255,255,.85),0 0 0 2.5px rgba(0,0,0,.1),0 1px 3px rgba(0,0,0,.35)}
+.key.on .bd{background:#262626;box-shadow:0 0 0 1.5px rgba(255,255,255,.7),inset 0 2px 3px rgba(0,0,0,.6)}
+.pill{width:calc(var(--u) * .6);height:calc(100% - var(--u) * .6);border-radius:999px;background:linear-gradient(180deg,#fff,#F6F5F2);
+  box-shadow:0 0 0 1px rgba(0,0,0,.05),0 1px 2px rgba(0,0,0,.2),0 4px 8px rgba(0,0,0,.1),inset 0 1px 1px #fff,inset 0 -3px 5px rgba(0,0,0,.05)}
+.key.on .pill{box-shadow:0 0 0 1px rgba(0,0,0,.08),inset 0 3px 6px rgba(0,0,0,.25)}
 
 /* the display */
 #display{position:relative;background:var(--screen);border-radius:30px 30px 12px 12px;overflow:hidden;touch-action:none;min-height:0;container-type:size;color:#E9E9E9}
@@ -99,16 +100,30 @@ body.pad #rec{grid-area:6/1} body.pad #play{grid-area:6/2} body.pad #stop{grid-a
 body.pad #shift{grid-area:6/5/7/7}
 body.pad #t0{grid-area:6/7/7/9} body.pad #t1{grid-area:6/9/7/11} body.pad #t2{grid-area:6/11/7/13} body.pad #t3{grid-area:6/13/7/15}
 body.pad .knob{width:calc(var(--u) * 1.5);height:calc(var(--u) * 1.5)}
+.knob::before{content:"";position:absolute;inset:-9%;border:1.5px solid rgba(120,100,100,.45);border-radius:50%;pointer-events:none}
+body.pad .knob::before{inset:-15%}
 body.pad #k0{grid-area:1/15/3/17} body.pad #k1{grid-area:1/17/3/19} body.pad #k2{grid-area:3/15/5/17} body.pad #k3{grid-area:3/17/5/19}
 body.pad .snd{grid-row:5}body.pad #snd4,body.pad #snd5,body.pad #snd6,body.pad #snd7{grid-row:6}
 body.pad #keys{grid-area:7/1/13/19;grid-template-rows:calc(var(--u) * 2 + var(--gap)) minmax(0,1fr)}
+body.pad #snd0{grid-area:5/15}body.pad #snd1{grid-area:5/16}body.pad #snd2{grid-area:5/17}body.pad #snd3{grid-area:5/18}
+body.pad #snd4{grid-area:6/15}body.pad #snd5{grid-area:6/16}body.pad #snd6{grid-area:6/17}body.pad #snd7{grid-area:6/18}
 #speaker .grill{display:grid;grid-template-columns:repeat(8,5px);gap:6px 5px}
 #speaker .grill i{width:5px;height:5px;border-radius:50%;background:#2A2A2A}
-.knob{width:calc(var(--u) * .86);height:calc(var(--u) * .86);border-radius:50%;background:radial-gradient(circle at 40% 32%,#fff,#E4E1DC 70%);
+.knob{position:relative;width:calc(var(--u) * .86);height:calc(var(--u) * .86);border-radius:50%;background:radial-gradient(circle at 40% 32%,#fff,#E4E1DC 70%);
   box-shadow:0 6px 12px rgba(0,0,0,.22),0 1px 2px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;touch-action:none;cursor:ns-resize}
 .cap{width:62%;height:62%;border-radius:50%;display:flex;justify-content:center;box-shadow:inset 0 -3px 5px rgba(0,0,0,.2)}
 .cap i{display:block;width:10%;height:40%;margin-top:9%;border-radius:3px;background:rgba(255,255,255,.85)}
 #k2 .cap i{background:#2A2A2A}
+
+/* menus on the screen: engine, drum kit, effect, LFO */
+#menu{position:absolute;inset:0;z-index:6;background:#000;display:flex;flex-direction:column;justify-content:center;
+  padding:6cqmin 9cqmin;overflow:auto;touch-action:pan-y}
+#menu[hidden]{display:none}
+#menu .mt{font-size:3.4cqmin;color:#8a8a8a;letter-spacing:.14em;text-transform:uppercase;margin-bottom:2cqmin}
+#menu .list{display:grid;grid-template-columns:repeat(var(--mcols,1),minmax(0,1fr));column-gap:6cqmin}
+#menu button{font-size:5.6cqmin;font-weight:200;text-align:left;color:#E9E9E9;padding:1cqmin 0;letter-spacing:.04em}
+#menu button.cur{color:var(--mc,#5B7CFA);font-weight:300}
+#menu button:hover{color:#fff}
 
 /* song sheet (album) */
 #sheet{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.94);color:#E9E9E9;display:flex;justify-content:center;align-items:flex-start;
@@ -159,6 +174,7 @@ body.pad #keys{grid-area:7/1/13/19;grid-template-rows:calc(var(--u) * 2 + var(--
       <button class="corner pc bl c2" data-slot="2"><span class="lab"></span><span class="val"></span></button>
       <button class="corner pc br c3" data-slot="3"><span class="lab"></span><span class="val"></span></button>
     </div>
+    <div id="menu" hidden role="menu"></div>
     <div id="encRing" hidden></div>
     <div id="hint">tap to turn on sound · drag to spin</div>
   </div>
@@ -169,15 +185,15 @@ body.pad #keys{grid-area:7/1/13/19;grid-template-rows:calc(var(--u) * 2 + var(--
   <div class="tile enc" id="k1" data-k="1"><span class="knob"><span class="cap" style="background:var(--green)"><i></i></span></span></div>
   <div class="tile enc" id="k2" data-k="2"><span class="knob"><span class="cap" style="background:#F4F4F2"><i></i></span></span></div>
   <div class="tile enc" id="k3" data-k="3"><span class="knob"><span class="cap" style="background:var(--orange)"><i></i></span></span></div>
-  <button class="tile mk" id="m_synth" data-mode="synth" aria-label="Synth"><span class="disc"><svg viewBox="0 0 20 14" fill="none" stroke="#5B7CFA" stroke-width="1.8"><path d="M2 12V4a2 2 0 0 1 4 0v6a2 2 0 0 0 4 0V4a2 2 0 0 1 4 0v6a2 2 0 0 0 4 0V2"/></svg></span><span class="led"></span></button>
-  <button class="tile mk" id="m_drum" data-mode="drum" aria-label="Drum"><span class="disc"><svg viewBox="0 0 16 16" fill="none" stroke="#1ED68F" stroke-width="1.8"><circle cx="8" cy="6.5" r="4.5"/><path d="M8 11v4"/></svg></span><span class="led"></span></button>
-  <button class="tile mk" id="m_tape" data-mode="tape" aria-label="Tape"><span class="disc"><svg viewBox="0 0 20 12" fill="none" stroke="#FF4D3D" stroke-width="1.8"><circle cx="5" cy="6" r="3.5"/><circle cx="15" cy="6" r="3.5"/><path d="M5 9.5h10"/></svg></span><span class="led"></span></button>
-  <button class="tile mk" id="m_mixer" data-mode="mixer" aria-label="Mixer"><span class="disc"><svg viewBox="0 0 16 14" fill="none" stroke="#8A8A8A" stroke-width="1.8"><path d="M3 13V8M8 13V2M13 13V6"/></svg></span><span class="led"></span></button>
+  <button class="tile mk" id="m_synth" data-mode="synth" aria-label="Synth"><span class="disc"><svg viewBox="0 0 20 14" fill="none" stroke="#5B7CFA" stroke-width="1.8"><path d="M2 12V4a2 2 0 0 1 4 0v6a2 2 0 0 0 4 0V4a2 2 0 0 1 4 0v6a2 2 0 0 0 4 0V2"/></svg></span></button>
+  <button class="tile mk" id="m_drum" data-mode="drum" aria-label="Drum"><span class="disc"><svg viewBox="0 0 16 16" fill="none" stroke="#1ED68F" stroke-width="1.8"><circle cx="8" cy="6.5" r="4.5"/><path d="M8 11v4"/></svg></span></button>
+  <button class="tile mk" id="m_tape" data-mode="tape" aria-label="Tape"><span class="disc"><svg viewBox="0 0 20 12" fill="none" stroke="#FF4D3D" stroke-width="1.8"><circle cx="5" cy="6" r="3.5"/><circle cx="15" cy="6" r="3.5"/><path d="M5 9.5h10"/></svg></span></button>
+  <button class="tile mk" id="m_mixer" data-mode="mixer" aria-label="Mixer"><span class="disc"><svg viewBox="0 0 16 14" fill="none" stroke="#8A8A8A" stroke-width="1.8"><path d="M3 13V8M8 13V2M13 13V6"/></svg></span></button>
 
-  <button class="tile tk" id="t0" data-t="0" aria-label="T1"><span class="disc">1</span><span class="led"></span></button>
-  <button class="tile tk" id="t1" data-t="1" aria-label="T2"><span class="disc">2</span><span class="led"></span></button>
-  <button class="tile tk" id="t2" data-t="2" aria-label="T3"><span class="disc">3</span><span class="led"></span></button>
-  <button class="tile tk" id="t3" data-t="3" aria-label="T4"><span class="disc">4</span><span class="led"></span></button>
+  <button class="tile tk" id="t0" data-t="0" aria-label="T1"><span class="disc">1</span></button>
+  <button class="tile tk" id="t1" data-t="1" aria-label="T2"><span class="disc">2</span></button>
+  <button class="tile tk" id="t2" data-t="2" aria-label="T3"><span class="disc">3</span></button>
+  <button class="tile tk" id="t3" data-t="3" aria-label="T4"><span class="disc">4</span></button>
 
   <button class="tile" id="rec" aria-label="Record"><span class="disc"><span class="dot"></span></span></button>
   <button class="tile" id="play" aria-label="Play"><span class="disc"><svg viewBox="0 0 12 12"><path d="M3 1.5l7.5 4.5-7.5 4.5z" fill="#2A2A2A"/></svg></span></button>
@@ -186,6 +202,15 @@ body.pad #keys{grid-area:7/1/13/19;grid-template-rows:calc(var(--u) * 2 + var(--
   <button class="tile" id="octDn" aria-label="Octave down"><span class="disc">‹</span></button>
   <button class="tile" id="octUp" aria-label="Octave up"><span class="disc">›</span></button>
   <button class="tile" id="shift" aria-label="Shift"><span class="lbl">SHIFT</span></button>
+
+  <button class="tile snd" id="snd0" data-snd="0" aria-label="Sound 1. Tap for the sound, hold to store the current one, Shift plus key to choose a synth or kit"><span class="disc">1</span></button>
+  <button class="tile snd" id="snd1" data-snd="1" aria-label="Sound 2. Tap for the sound, hold to store the current one, Shift plus key to choose a synth or kit"><span class="disc">2</span></button>
+  <button class="tile snd" id="snd2" data-snd="2" aria-label="Sound 3. Tap for the sound, hold to store the current one, Shift plus key to choose a synth or kit"><span class="disc">3</span></button>
+  <button class="tile snd" id="snd3" data-snd="3" aria-label="Sound 4. Tap for the sound, hold to store the current one, Shift plus key to choose a synth or kit"><span class="disc">4</span></button>
+  <button class="tile snd" id="snd4" data-snd="4" aria-label="Sound 5. Tap for the sound, hold to store the current one, Shift plus key to choose a synth or kit"><span class="disc">5</span></button>
+  <button class="tile snd" id="snd5" data-snd="5" aria-label="Sound 6. Tap for the sound, hold to store the current one, Shift plus key to choose a synth or kit"><span class="disc">6</span></button>
+  <button class="tile snd" id="snd6" data-snd="6" aria-label="Sound 7. Tap for the sound, hold to store the current one, Shift plus key to choose a synth or kit"><span class="disc">7</span></button>
+  <button class="tile snd" id="snd7" data-snd="7" aria-label="Sound 8. Tap for the sound, hold to store the current one, Shift plus key to choose a synth or kit"><span class="disc">8</span></button>
 
   <div id="keys" role="group" aria-label="Keyboard"></div>
 
@@ -200,14 +225,6 @@ body.pad #keys{grid-area:7/1/13/19;grid-template-rows:calc(var(--u) * 2 + var(--
   <button class="tile padonly" id="lift" aria-label="Lift: cut the selected tape track"><span class="disc"><svg viewBox="0 0 16 16" fill="none" stroke="#FF4D3D" stroke-width="1.6"><path d="M8 13V3M4 7l4-4 4 4M3 15h10"/></svg></span></button>
   <button class="tile padonly" id="drop" aria-label="Drop: paste onto the selected tape track"><span class="disc"><svg viewBox="0 0 16 16" fill="none" stroke="#FF4D3D" stroke-width="1.6"><path d="M8 3v10M4 9l4 4 4-4M3 1h10"/></svg></span></button>
   <button class="tile padonly off" id="split" aria-label="Split (not available yet)"><span class="disc"><svg viewBox="0 0 16 16" fill="none" stroke="#FF4D3D" stroke-width="1.5"><circle cx="4" cy="4" r="2.5"/><circle cx="4" cy="12" r="2.5"/><path d="M6 5l9 7M6 11l9-7"/></svg></span></button>
-  <button class="tile padonly snd" id="snd0" data-snd="0" style="grid-column:15" aria-label="Sound 1. Shift plus key stores the current sound"><span class="disc">1</span></button>
-  <button class="tile padonly snd" id="snd1" data-snd="1" style="grid-column:16" aria-label="Sound 2. Shift plus key stores the current sound"><span class="disc">2</span></button>
-  <button class="tile padonly snd" id="snd2" data-snd="2" style="grid-column:17" aria-label="Sound 3. Shift plus key stores the current sound"><span class="disc">3</span></button>
-  <button class="tile padonly snd" id="snd3" data-snd="3" style="grid-column:18" aria-label="Sound 4. Shift plus key stores the current sound"><span class="disc">4</span></button>
-  <button class="tile padonly snd" id="snd4" data-snd="4" style="grid-column:15" aria-label="Sound 5. Shift plus key stores the current sound"><span class="disc">5</span></button>
-  <button class="tile padonly snd" id="snd5" data-snd="5" style="grid-column:16" aria-label="Sound 6. Shift plus key stores the current sound"><span class="disc">6</span></button>
-  <button class="tile padonly snd" id="snd6" data-snd="6" style="grid-column:17" aria-label="Sound 7. Shift plus key stores the current sound"><span class="disc">7</span></button>
-  <button class="tile padonly snd" id="snd7" data-snd="7" style="grid-column:18" aria-label="Sound 8. Shift plus key stores the current sound"><span class="disc">8</span></button>
 </div>
 
 <section id="sheet" hidden aria-label="Songs">
@@ -283,6 +300,7 @@ const SPEC = {
   fxsend:{min:0, max:100, v:55, col:'white', label:'fx send'},
 };
 const P = {}; for (const k in SPEC) P[k] = SPEC[k].v;
+P.fxType = 'spring'; P.lfoType = 'tremolo'; P.lfoOn = true;
 P.engine = 'fm'; P.fx = true; P.digiRing = false; P.key = 0; P.scale = 'major';
 P.syn = {}; for (const e of ENGINE_ORDER) P.syn[e] = ENGINES[e].def.slice();
 const loadEngineParams = () => P.syn[P.engine].forEach((v, i) => P['s' + i] = v);
@@ -290,10 +308,37 @@ loadEngineParams();
 const sv = i => P.syn[P.engine][i] / 100;
 const KEYS = ['C','C♯','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
 const SCALES = {major:[0,2,4,7,9], minor:[0,3,5,7,10]};
+/* effects: five send effects share the same four encoder slots (taper, turns, damp, width) with their own names */
+const FX_TYPES = {
+  spring:{labels:['taper','turns','damp','width']}, delay:{labels:['time','feedback','tone','spread']},
+  grid:{labels:['rate','depth','tone','mix']}, nitro:{labels:['cutoff','reso','drive','mix']},
+  phone:{labels:['band','grit','noise','level']}, punch:{labels:['squash','attack','release','gain']}};
+const LFO_TYPES = {tremolo:{}, random:{}};
+const FXP = ['taper','turns','damp','width'];
+/* eight synth sounds and eight drum kits ship as the sound buttons 1-8; hold a button to store your own */
+const SYNTH_PRESETS = [
+  {name:'fm bell', engine:'fm', vals:[62,55,45,70], env:[2,55,30,55]},
+  {name:'digital crush', engine:'digital', vals:[72,70,40,62], env:[2,35,60,25]},
+  {name:'string pluck', engine:'string', vals:[72,60,32,40], env:[2,45,35,35]},
+  {name:'pulse bass', engine:'pulse', vals:[22,28,42,35], env:[2,30,60,15]},
+  {name:'cluster pad', engine:'cluster', vals:[62,72,38,62], env:[45,50,80,65]},
+  {name:'fm electric', engine:'fm', vals:[30,80,20,30], env:[2,40,40,25]},
+  {name:'pulse lead', engine:'pulse', vals:[58,72,55,50], env:[6,35,65,30]},
+  {name:'string soft', engine:'string', vals:[38,88,15,72], env:[12,60,60,60]}];
+const DRUM_KITS = [
+  {name:'808', kit:[35,70,40,80]}, {name:'tight', kit:[56,24,62,80]}, {name:'big', kit:[28,90,35,85]}, {name:'lo-fi', kit:[44,46,14,74]},
+  {name:'bright', kit:[62,34,88,76]}, {name:'dusty', kit:[40,56,20,70]}, {name:'punch', kit:[50,40,56,92]}, {name:'long', kit:[50,96,50,76]}];
+const factoryPresets = () => ({
+  synth:SYNTH_PRESETS.map(x => ({mode:'synth', engine:x.engine, vals:x.vals.slice(), ring:false, env:x.env.slice()})),
+  drum:DRUM_KITS.map(x => ({mode:'drum', kit:x.kit.slice()}))});
 const labelOf = name => {
-  if (!(name[0] === 's' && name.length === 2)) return SPEC[name].label;
-  if (P.engine === 'digital' && name === 's2') return P.digiRing ? 'ring mod' : 'detune';
-  return ENGINES[P.engine].labels[+name[1]];
+  if (name[0] === 's' && name.length === 2) {
+    if (P.engine === 'digital' && name === 's2') return P.digiRing ? 'ring mod' : 'detune';
+    return ENGINES[P.engine].labels[+name[1]];
+  }
+  const fi = FXP.indexOf(name); if (fi >= 0) return FX_TYPES[P.fxType].labels[fi];
+  if (P.lfoType === 'random') { if (name === 'lwav') return 'smooth'; if (name === 'lspd') return 'rate'; }
+  return SPEC[name].label;
 };
 
 const knobViews = {};
@@ -433,17 +478,17 @@ const GLYPHS = {
    mixer has levels (T1) and master (T2). Each page puts four parameters in the screen's corners,
    colored like the OP-1's encoders: blue, green, white, orange. */
 const UI = {mode:'synth', page:{synth:0, drum:0, mixer:0}, seqOn:true, seqView:true, seqMode:'synth',
-  shift:false, shiftUsed:false, oct:0, track:0, title:'untitled', dirty:false, presets:Array(8).fill(null)};
+  shift:false, shiftUsed:false, oct:0, track:0, title:'untitled', dirty:false, presets:factoryPresets(), lastInst:'synth', kit:-1};
 const WAVES = ['sine', 'triangle', 'square', 'sawtooth'];
 const PAGES = {
   synth: [
     {name:'engine', params:['s0','s1','s2','s3'], draw:t => drawSynth(t)},
     {name:'envelope', params:['atk','dcy','sus','rel'], draw:() => drawEnvPage()},
-    {name:'effect', params:['taper','turns','damp','width'], draw:t => drawSpring(t)},
+    {name:'effect', params:['taper','turns','damp','width'], draw:t => drawFx(t)},
     {name:'lfo', params:['lspd','lpit','lvol','lwav'], draw:t => drawLfo(t)}],
   drum: [
     {name:'kit', params:['dpit','ddec','dton','dlvl'], draw:t => drawDrum(t)}, null,
-    {name:'effect', params:['taper','turns','damp','width'], draw:t => drawSpring(t)},
+    {name:'effect', params:['taper','turns','damp','width'], draw:t => drawFx(t)},
     {name:'lfo', params:['lspd','lpit','lvol','lwav'], draw:t => drawLfo(t)}],
   mixer: [
     {name:'levels', params:['m1','m2','m3','m4'], draw:() => drawMixer(['m1','m2','m3','m4'])},
@@ -456,11 +501,12 @@ function pageParams() {
   if (inSeqView()) return ['speed','gravity','shape','mass'];
   const p = curPage(); return typeof p.params === 'function' ? p.params() : p.params;
 }
-const valueText = name => name === 'lwav' ? ['sine','tri','square','saw'][Math.min(3, Math.floor(P.lwav / 25))]
+const valueText = name => name === 'lwav' && P.lfoType !== 'random' ? ['sine','tri','square','saw'][Math.min(3, Math.floor(P.lwav / 25))]
   : name === 'click' && !P.click ? 'off' : String(P[name]);
 const curSynth = () => ({mode:'synth', engine:P.engine, vals:P.syn[P.engine].slice(), ring:P.digiRing, env:[P.atk, P.dcy, P.sus, P.rel]});
 const curDrum = () => ({mode:'drum', kit:[P.dpit, P.ddec, P.dton, P.dlvl]});
-const liveInst = () => UI.mode === 'drum' ? curDrum() : curSynth();
+const instMode = () => UI.mode === 'drum' || (UI.mode !== 'synth' && UI.lastInst === 'drum') ? 'drum' : 'synth';
+const liveInst = () => instMode() === 'drum' ? curDrum() : curSynth();
 function playInst(inst, midi, vel, pan, o = {}) {
   return inst.mode === 'drum' ? playDrum(midi, vel, pan, inst, o) : playNote(midi, vel, pan, Object.assign({inst}, o));
 }
@@ -485,7 +531,7 @@ pcs.forEach((btn, slot) => {
 });
 /* the encoders (a row under the screen on phones, beside it on iPad) turn the same four values;
    the whole tile is the touch target, and turning one shows its name and value */
-const turnHint = n => showHint((n[0] === 's' && n.length === 2 ? labelOf(n) : SPEC[n].label) + ' ' + valueText(n), 900);
+const turnHint = n => showHint(labelOf(n) + ' ' + valueText(n), 900);
 document.querySelectorAll('[data-k]').forEach(cell => {
   const slot = +cell.dataset.k; let d = null;
   cell.addEventListener('pointerdown', e => { firstGesture(); capture(cell, e); const name = pageParams()[slot]; d = {y:e.clientY, x:e.clientX, v:P[name], name}; e.preventDefault(); turnHint(name); });
@@ -502,7 +548,7 @@ function renderShell() {
   const seqv = inSeqView(), names = pageParams();
   tombUI.hidden = !seqv; pageUI.hidden = seqv;
   if (!seqv) pcs.forEach((b, i) => {
-    const n = names[i], lab = n[0] === 's' && n.length === 2 ? labelOf(n) : SPEC[n].label, val = valueText(n);
+    const n = names[i], lab = labelOf(n), val = valueText(n);
     const l = b.querySelector('.lab'), v = b.querySelector('.val');
     if (l.textContent !== lab) l.textContent = lab;
     if (v.textContent !== val) v.textContent = val;
@@ -511,52 +557,47 @@ function renderShell() {
   document.querySelectorAll('[data-k]').forEach((cell, i) => {
     const n = names[i], s = SPEC[n], a = -135 + (P[n] - s.min) / (s.max - s.min) * 270;
     cell.querySelector('.cap').style.transform = `rotate(${a}deg)`;
-    cell.setAttribute('aria-label', (SPEC[n].label || labelOf(n)) + ' encoder');
+    cell.setAttribute('aria-label', labelOf(n) + ' encoder');
   });
-  for (const m of ['synth','drum','tape','mixer']) {
-    const b = $('#m_' + m), on = UI.mode === m;
-    b.classList.toggle('on', on); b.setAttribute('aria-pressed', on);
-    b.querySelector('.led').style.background = on ? ({synth:'var(--blue)', drum:'var(--green)', tape:'var(--orange)', mixer:'#8A8A8A'})[m] : '';
-  }
+  // no selection dots and no pressed look: the screen shows the mode and page. Only SEQ (and REC) show state.
+  for (const m of ['synth','drum','tape','mixer']) $('#m_' + m).setAttribute('aria-pressed', UI.mode === m);
   for (let i = 0; i < 4; i++) {
-    const b = $('#t' + i), led = b.querySelector('.led');
-    let on = false, off = false, col = '';
-    if (UI.mode === 'tape') {
-      on = UI.track === i; col = on ? (tape.recording ? 'var(--rec)' : 'var(--orange)') : tape.tracks[i].events.length ? '#9a958f' : '';
-    } else {
-      const pg = PAGES[UI.mode][i]; off = !pg; on = !seqv && UI.page[UI.mode] === i && !off;
-      if (UI.mode !== 'mixer') col = i === 0 ? (UI.mode === 'drum' ? 'var(--green)' : 'var(--blue)') : i === 2 && P.fx ? 'var(--green)' : i === 3 && (P.lpit || P.lvol) ? 'var(--white)' : '';
-      else col = on ? '#8A8A8A' : '';
-    }
-    b.classList.toggle('on', on); b.classList.toggle('off', off); led.style.background = col;
+    const b = $('#t' + i);
+    const off = UI.mode !== 'tape' && !PAGES[UI.mode][i];
+    b.classList.toggle('off', off);
+    b.setAttribute('aria-current', UI.mode === 'tape' ? UI.track === i : (!seqv && UI.page[UI.mode] === i && !off));
     b.setAttribute('aria-label', UI.mode === 'tape' ? 'Track ' + (i + 1) : 'T' + (i + 1) + (PAGES[UI.mode][i] ? ' ' + PAGES[UI.mode][i].name : ''));
   }
   const seqOk = UI.mode === 'synth' || UI.mode === 'drum';
   $('#seq').classList.toggle('off', !seqOk); $('#seq').classList.toggle('on', seqOk && UI.seqOn);
-  $('#rec').classList.toggle('on', tape.recording); $('#play').classList.toggle('on', tape.playing);
-  $('#shift').classList.toggle('on', UI.shift);
+  $('#rec').classList.toggle('on', tape.recording);
   $('#bpmShow').textContent = P.tempo;
   renderTag();
 }
 
-/* T1–T4: pages in synth, drum and mixer; tracks in tape. Pressing the open page again does its
-   second job: T1 changes the synth engine, T3 turns the effect on or off. */
+/* T1–T4: pages in synth, drum and mixer; tracks in tape. Pressing the open page again does its second job:
+   T1 steps the synth engine, T3 turns the effect on or off, T4 turns the LFO on or off.
+   SHIFT + T1 / T3 / T4 open the engine (or drum kit), effect and LFO menus; SHIFT + a sound key (1-8) opens the
+   engine / kit menu and puts your choice on that key. */
 function useShift() { const s = UI.shift; if (s) { UI.shift = false; UI.shiftUsed = true; } return s; }
 function tPress(i) {
-  firstGesture(); closeRing();
+  firstGesture(); closeRing(); closeMenu();
   const shift = useShift();
   if (UI.mode === 'tape') {
     if (shift) { tape.tracks[i] = {inst:null, events:[]}; markDirty(); }
     UI.track = i;
-  } else if (inSeqView() && shift) {
-    [() => layRun(), () => { dots.length = 0; }, () => { P.key = (P.key + 7) % 12; showHint('key ' + KEYS[P.key]); },
-     () => { P.scale = P.scale === 'major' ? 'minor' : 'major'; showHint(P.scale); }][i]();
-    markDirty();
+  } else if (shift && i === 1 && inSeqView()) {
+    dots.length = 0; showHint('cleared'); markDirty();
   } else {
     const pages = PAGES[UI.mode]; if (!pages[i]) return;
+    if (shift && (UI.mode === 'synth' || UI.mode === 'drum') && (i === 0 || i === 2 || i === 3)) {
+      UI.page[UI.mode] = i; UI.seqView = false;
+      openMenu(i === 0 ? (UI.mode === 'drum' ? 'drum' : 'engine') : i === 2 ? 'fx' : 'lfo'); renderShell(); return;
+    }
     if (!inSeqView() && UI.page[UI.mode] === i) {
-      if (UI.mode === 'synth' && i === 0) nextEngine(shift ? -1 : 1);
+      if (UI.mode === 'synth' && i === 0) nextEngine(1);
       if (i === 2) toggleFx();
+      if (i === 3) toggleLfo();
     }
     UI.page[UI.mode] = i; UI.seqView = false;
   }
@@ -566,26 +607,63 @@ function nextEngine(d) {
   P.engine = ENGINE_ORDER[(ENGINE_ORDER.indexOf(P.engine) + d + ENGINE_ORDER.length) % ENGINE_ORDER.length];
   loadEngineParams(); ensureAudio(); playNote(noteMidi(5), 0.55, 0); showHint(P.engine); markDirty();
 }
-function toggleFx() {
-  P.fx = !P.fx; updateGains(); showHint('effect ' + (P.fx ? 'on' : 'off')); markDirty();
+function toggleFx() { P.fx = !P.fx; updateGains(); showHint('effect ' + (P.fx ? P.fxType : 'off')); markDirty(); }
+function toggleLfo() { P.lfoOn = !P.lfoOn; updateLfo(); showHint('lfo ' + (P.lfoOn ? P.lfoType : 'off')); markDirty(); }
+
+const menuEl = $('#menu'); let menuKind = null, menuSlot = null;
+const MENU_DEF = {
+  engine:{title:'synth', col:'var(--blue)', cols:1, items:() => ENGINE_ORDER.map(e => [e, e]), cur:() => P.engine, pick:(id, slot) => pickEngine(id, slot)},
+  drum:{title:'drum kit', col:'var(--green)', cols:2, items:() => DRUM_KITS.map((k, i) => [i, k.name]), cur:() => UI.kit, pick:(id, slot) => pickKit(id, slot)},
+  fx:{title:'effect', col:'var(--green)', cols:1, items:() => Object.keys(FX_TYPES).map(k => [k, k]), cur:() => P.fxType, pick:id => pickFx(id)},
+  lfo:{title:'lfo', col:'var(--orange)', cols:1, items:() => Object.keys(LFO_TYPES).map(k => [k, k]), cur:() => P.lfoType, pick:id => pickLfo(id)}};
+function openMenu(kind, slot = null) {
+  const d = MENU_DEF[kind]; menuKind = kind; menuSlot = slot; const cur = d.cur();
+  menuEl.style.setProperty('--mc', d.col); menuEl.style.setProperty('--mcols', d.cols);
+  menuEl.innerHTML = `<div class="mt">${d.title}</div><div class="list">` +
+    d.items().map(([id, label]) => `<button role="menuitem" data-id="${id}"${id === cur ? ' class="cur"' : ''}>${label}</button>`).join('') + '</div>';
+  menuEl.hidden = false; closeRing();
 }
+function closeMenu() { menuKind = null; menuEl.hidden = true; }
+menuEl.addEventListener('click', e => {
+  const b = e.target.closest('button[data-id]');
+  if (!b) { if (e.target === menuEl) closeMenu(); return; }
+  firstGesture(); const kind = menuKind, slot = menuSlot, id = b.dataset.id;
+  closeMenu(); MENU_DEF[kind].pick(kind === 'drum' ? +id : id, slot); renderShell();
+});
+function previewInst() { const dm = instMode() === 'drum'; playInst(dm ? curDrum() : curSynth(), dm ? 38 : 60, 0.8, 0, dm ? {bus:liveBus} : {gate:0.45, bus:liveBus}); }
+function pickEngine(id, slot) {
+  P.engine = id; loadEngineParams();
+  if (slot !== null) UI.presets.synth[slot] = curSynth();
+  previewInst(); showHint(id + (slot !== null ? ' on sound ' + (slot + 1) : '')); markDirty();
+}
+function pickKit(i, slot) {
+  [P.dpit, P.ddec, P.dton, P.dlvl] = DRUM_KITS[i].kit; UI.kit = i;
+  if (slot !== null) UI.presets.drum[slot] = curDrum();
+  previewInst(); showHint(DRUM_KITS[i].name + (slot !== null ? ' on sound ' + (slot + 1) : '')); markDirty();
+}
+function goPage(i) { if (UI.mode === 'synth' || UI.mode === 'drum') { UI.page[UI.mode] = i; UI.seqView = false; } }
+function pickFx(id) { P.fxType = id; P.fx = true; goPage(2); updateGains(); scheduleReverb(); showHint(id); markDirty(); }
+function pickLfo(id) { P.lfoType = id; P.lfoOn = true; goPage(3); updateLfo(); showHint(id); markDirty(); }
+
 for (let i = 0; i < 4; i++) $('#t' + i).addEventListener('click', () => tPress(i));
 document.querySelectorAll('.mk').forEach(b => b.addEventListener('click', () => {
-  firstGesture(); closeRing(); useShift();
-  UI.mode = b.dataset.mode; if (UI.mode === 'tape' || UI.mode === 'mixer') UI.seqView = false;
+  firstGesture(); closeRing(); closeMenu(); useShift();
+  UI.mode = b.dataset.mode; if (UI.mode === 'synth' || UI.mode === 'drum') UI.lastInst = UI.mode;
+  if (UI.mode === 'tape' || UI.mode === 'mixer') UI.seqView = false;
   renderShell();
 }));
 $('#seq').addEventListener('click', () => {
   if (!(UI.mode === 'synth' || UI.mode === 'drum')) return;
-  firstGesture(); closeRing(); useShift();
+  firstGesture(); closeRing(); closeMenu();
+  if (useShift()) { layRun(); markDirty(); renderShell(); return; }
   if (!UI.seqOn) { UI.seqOn = true; UI.seqView = true; UI.seqMode = UI.mode; }
   else if (!UI.seqView || UI.seqMode !== UI.mode) { UI.seqView = true; UI.seqMode = UI.mode; }
   else { UI.seqOn = false; UI.seqView = false; }
   renderShell();
 });
-$('#shift').addEventListener('click', () => { UI.shift = !UI.shift; UI.shiftUsed = false; renderShell(); if (UI.shift && inSeqView()) showHint('shift + T1 lay 5 · T2 clear · T3 key · T4 scale'); });
-$('#octDn').addEventListener('click', () => { useShift(); UI.oct = Math.max(-3, UI.oct - 1); showHint('octave ' + (UI.oct > 0 ? '+' : '') + UI.oct); renderShell(); });
-$('#octUp').addEventListener('click', () => { useShift(); UI.oct = Math.min(3, UI.oct + 1); showHint('octave ' + (UI.oct > 0 ? '+' : '') + UI.oct); renderShell(); });
+$('#shift').addEventListener('click', () => { closeMenu(); UI.shift = !UI.shift; UI.shiftUsed = false; renderShell(); });
+$('#octDn').addEventListener('click', () => { if (useShift()) { P.key = (P.key + 5) % 12; showHint('key ' + KEYS[P.key]); markDirty(); renderShell(); return; } UI.oct = Math.max(-3, UI.oct - 1); showHint('octave ' + (UI.oct > 0 ? '+' : '') + UI.oct); renderShell(); });
+$('#octUp').addEventListener('click', () => { if (useShift()) { P.scale = P.scale === 'major' ? 'minor' : 'major'; showHint(P.scale); markDirty(); renderShell(); return; } UI.oct = Math.min(3, UI.oct + 1); showHint('octave ' + (UI.oct > 0 ? '+' : '') + UI.oct); renderShell(); });
 $('#play').addEventListener('click', () => { firstGesture(); useShift(); tapePlay(); renderShell(); });
 $('#stop').addEventListener('click', () => { useShift(); tapeStop(); renderShell(); });
 $('#rec').addEventListener('click', () => {
@@ -611,18 +689,27 @@ $('#tempoKey').addEventListener('click', () => {
   b.addEventListener('pointerup', () => d = null); b.addEventListener('pointercancel', () => d = null);
 })();
 $('#speaker .grill').innerHTML = '<i></i>'.repeat(88);
-/* sound keys 1–8 (iPad): tap recalls a stored sound, SHIFT + key stores the current one */
-document.querySelectorAll('[data-snd]').forEach(b => b.addEventListener('click', () => {
-  firstGesture(); const i = +b.dataset.snd;
-  if (useShift()) { UI.presets[i] = UI.mode === 'drum' ? curDrum() : curSynth(); showHint('stored sound ' + (i + 1)); markDirty(); }
-  else {
-    const pr = UI.presets[i]; if (!pr) { showHint('sound ' + (i + 1) + ' is empty · shift + ' + (i + 1) + ' stores'); return; }
-    if (pr.mode === 'drum') { [P.dpit, P.ddec, P.dton, P.dlvl] = pr.kit; UI.mode = 'drum'; }
-    else { P.engine = pr.engine; P.syn[pr.engine] = pr.vals.slice(); P.digiRing = pr.ring; [P.atk, P.dcy, P.sus, P.rel] = pr.env; loadEngineParams(); UI.mode = 'synth'; }
-    showHint('sound ' + (i + 1)); markDirty();
-  }
-  renderShell();
-}));
+/* sound keys 1-8: tap recalls a synth sound (or drum kit), hold stores the current one,
+   SHIFT + key opens the engine (or kit) menu and puts the choice on that key */
+function applyPreset(pm, pr) {
+  if (pm === 'drum') { [P.dpit, P.ddec, P.dton, P.dlvl] = pr.kit; UI.kit = DRUM_KITS.findIndex(k => k.kit.join() === pr.kit.join()); }
+  else { P.engine = pr.engine; P.syn[pr.engine] = pr.vals.slice(); P.digiRing = !!pr.ring; [P.atk, P.dcy, P.sus, P.rel] = pr.env; loadEngineParams(); digiCache.clear(); ksCache.clear(); }
+}
+document.querySelectorAll('[data-snd]').forEach(b => {
+  let hold = 0, held = false; const i = +b.dataset.snd;
+  b.addEventListener('pointerdown', () => {
+    held = false; clearTimeout(hold);
+    hold = setTimeout(() => { held = true; const pm = instMode(); UI.presets[pm][i] = pm === 'drum' ? curDrum() : curSynth(); showHint('stored sound ' + (i + 1)); markDirty(); }, 650);
+  });
+  const end = () => clearTimeout(hold);
+  b.addEventListener('pointerleave', end); b.addEventListener('pointercancel', end);
+  b.addEventListener('pointerup', () => {
+    clearTimeout(hold); if (held) { held = false; return; }
+    firstGesture(); closeRing(); const pm = instMode();
+    if (useShift()) { openMenu(pm === 'drum' ? 'drum' : 'engine', i); renderShell(); return; }
+    closeMenu(); applyPreset(pm, UI.presets[pm][i]); previewInst(); showHint('sound ' + (i + 1)); markDirty(); renderShell();
+  });
+});
 
 let hintMsg = '', hintUntil = 0;
 function showHint(msg, ms = 1800) { hintMsg = msg; hintUntil = performance.now() + ms; }
@@ -799,7 +886,7 @@ function songState() {
   return {
     title: UI.title, tempo: P.tempo,
     settings: {engine:P.engine, syn:P.syn, digiRing:P.digiRing, fx:P.fx, key:P.key, scale:P.scale, oct:UI.oct,
-      presets:UI.presets, params:Object.fromEntries(PERSIST.map(k => [k, P[k]]))},
+      presets:UI.presets, fxType:P.fxType, lfoType:P.lfoType, lfoOn:P.lfoOn, params:Object.fromEntries(PERSIST.map(k => [k, P[k]]))},
     patterns: [{kind:'tombola', data:{seqOn:UI.seqOn, seqMode:UI.seqMode, theta:+theta.toFixed(3),
       dots:dots.filter(d => !d.out).map(d => [+d.x.toFixed(3), +d.y.toFixed(3), d.idx])}}],
     recordings: tape.tracks.map((tr, i) => ({track:i + 1, instrument:tr.inst, ppq:PPQ, lengthTicks:loopTicks(), events:tr.events})),
@@ -812,7 +899,12 @@ function loadSong(s) {
   if (st.syn) for (const e of ENGINE_ORDER) if (Array.isArray(st.syn[e])) P.syn[e] = st.syn[e].slice(0, 4);
   if (ENGINES[st.engine]) P.engine = st.engine;
   P.digiRing = !!st.digiRing; P.fx = st.fx !== false; P.key = st.key | 0; P.scale = st.scale === 'minor' ? 'minor' : 'major';
-  UI.oct = clamp(st.oct | 0, -3, 3); UI.presets = Array.isArray(st.presets) ? st.presets.slice(0, 8) : Array(8).fill(null);
+  UI.oct = clamp(st.oct | 0, -3, 3); UI.presets = factoryPresets();
+  if (st.presets && Array.isArray(st.presets.synth) && Array.isArray(st.presets.drum)) {
+    st.presets.synth.slice(0, 8).forEach((x, i) => { if (x && ENGINES[x.engine] && Array.isArray(x.vals)) UI.presets.synth[i] = x; });
+    st.presets.drum.slice(0, 8).forEach((x, i) => { if (x && Array.isArray(x.kit)) UI.presets.drum[i] = x; });
+  }
+  P.fxType = FX_TYPES[st.fxType] ? st.fxType : 'spring'; P.lfoType = LFO_TYPES[st.lfoType] ? st.lfoType : 'tremolo'; P.lfoOn = st.lfoOn !== false;
   loadEngineParams();
   for (const k of PERSIST) { const v = st.params && st.params[k]; P[k] = typeof v === 'number' ? clamp(Math.round(v), SPEC[k].min, SPEC[k].max) : SPEC[k].v; }
   if (typeof s.tempo === 'number') P.tempo = clamp(s.tempo, SPEC.tempo.min, SPEC.tempo.max);
@@ -847,17 +939,18 @@ $('#sheetClose').addEventListener('click', () => { $('#sheet').hidden = true; })
 $('#songTitle').addEventListener('change', e => window.Tombola.setTitle(e.target.value.trim()));
 
 /* ---------- layout: phone (8 columns) or iPad (18 x 12) ---------- */
+const GAP = 2;
 function layout() {
   const w = innerWidth, h = innerHeight, pad = w >= 900 && w > h * 1.15 && h >= 560, root = document.documentElement.style;
   document.body.classList.toggle('pad', pad);
   const dev = $('#device');
   if (pad) {
-    const u = Math.floor(Math.min((w - 24 - 17 * 4) / 18, (h - 24 - 11 * 4) / 12));
+    const u = Math.floor(Math.min((w - 24 - 17 * GAP) / 18, (h - 24 - 11 * GAP) / 12));
     root.setProperty('--u', u + 'px'); dev.style.maxWidth = ''; buildKeys(18);
   } else {
-    let dw = Math.min(w, 520), u = (dw - 12 - 7 * 4) / 8;
-    u = Math.min(u, (h - 12 - 150 - 5 * 4 - 5 * 4) / 9);   // leave the screen at least 150px
-    dw = u * 8 + 7 * 4 + 12;
+    let dw = Math.min(w, 520), u = (dw - 12 - 7 * GAP) / 8;
+    u = Math.min(u, (h - 12 - 150 - 9 * GAP) / 9);   // nine units of keys and rows under a screen of at least 150px
+    dw = u * 8 + 7 * GAP + 12;
     root.setProperty('--u', u.toFixed(2) + 'px'); dev.style.maxWidth = dw + 'px'; buildKeys(8);
   }
 }
@@ -902,16 +995,24 @@ function updateGains() {
   set(wetGain.gain, P.fx ? P.fxsend / 100 : 0);
   set(clickBus.gain, P.click / 100 * 0.5);
 }
+let lfoSrc = null, lfoKey = '', lfoTimer = 0;
 function updateLfo() {
   if (!AC) return;
-  const wave = WAVES[Math.min(3, Math.floor(P.lwav / 25))], hz = 0.1 * Math.pow(2, P.lspd / 100 * 7);
-  if (!lfo || lfo.type !== wave) {
-    if (lfo) { try { lfo.stop(); lfo.disconnect(); } catch (e) {} }
-    lfo = AC.createOscillator(); lfo.type = wave; lfo.connect(lfoPitch); lfo.connect(lfoVol); lfo.start();
+  const type = P.lfoType, wave = WAVES[Math.min(3, Math.floor(P.lwav / 25))], key = type + '|' + (type === 'random' ? '' : wave);
+  if (lfoKey !== key) {
+    if (lfoSrc) { try { lfoSrc.stop(); lfoSrc.disconnect(); } catch (e) {} }
+    lfoSrc = type === 'random' ? AC.createConstantSource() : AC.createOscillator();
+    if (type !== 'random') lfoSrc.type = wave;
+    lfoSrc.connect(lfoPitch); lfoSrc.connect(lfoVol); lfoSrc.start(); lfoKey = key;
   }
-  const t = AC.currentTime, depth = P.lvol / 100 * 0.5;
-  lfo.frequency.setTargetAtTime(hz, t, 0.05);
-  lfoPitch.gain.setTargetAtTime(P.lpit / 100 * 120, t, 0.05);   // up to a semitone either way, in cents
+  const t = AC.currentTime, hz = 0.1 * Math.pow(2, P.lspd / 100 * 7);
+  clearInterval(lfoTimer);
+  if (type === 'random') {   // sample and hold: a new random value every cycle, glided by "smooth"
+    const tc = 0.004 + P.lwav / 100 * 0.2, step = () => lfoSrc.offset.setTargetAtTime(Math.random() * 2 - 1, AC.currentTime, tc);
+    step(); lfoTimer = setInterval(step, Math.max(40, 1000 / hz));
+  } else lfoSrc.frequency.setTargetAtTime(hz, t, 0.05);
+  const depth = P.lfoOn ? P.lvol / 100 * 0.5 : 0, cents = P.lfoOn ? P.lpit / 100 * 120 : 0;   // up to a semitone either way
+  lfoPitch.gain.setTargetAtTime(cents, t, 0.05);
   trem.gain.setTargetAtTime(1 - depth, t, 0.05);
   lfoVol.gain.setTargetAtTime(depth, t, 0.05);
 }
@@ -1184,18 +1285,68 @@ function springIR() {
   }
   return buf;
 }
+/* send effects: a node chain per type, built from the four encoder values and crossfaded in when they change */
+function curve(k) { const n = 256, c = new Float32Array(n); for (let i = 0; i < n; i++) { const x = i / (n - 1) * 2 - 1; c[i] = Math.tanh(x * (1 + k * 12)) / Math.tanh(1 + k * 12); } return c; }
+function makeFx(type) {
+  const T = P.taper / 100, R = P.turns / 100, D = P.damp / 100, W = P.width / 100;
+  const inp = AC.createGain(), out = AC.createGain(), nodes = [inp, out], srcs = [];
+  const add = n => (nodes.push(n), n);
+  switch (type) {
+    case 'delay': {
+      const tm = 0.04 + T * 0.7, cut = 500 * Math.pow(2, (1 - D) * 5);
+      const tap = (time, pan) => {
+        const dl = add(AC.createDelay(2)), lp = add(AC.createBiquadFilter()), fb = add(AC.createGain());
+        dl.delayTime.value = time; lp.type = 'lowpass'; lp.frequency.value = cut; fb.gain.value = R * 0.88;
+        inp.connect(dl); dl.connect(lp); lp.connect(fb); fb.connect(dl);
+        if (AC.createStereoPanner) { const p = add(AC.createStereoPanner()); p.pan.value = pan; lp.connect(p); p.connect(out); } else lp.connect(out);
+      };
+      tap(tm, -W); tap(tm * (1.02 + W * 0.5), W); break;
+    }
+    case 'grid': {   // rhythmic gate locked to the tempo
+      const g = add(AC.createGain()), lp = add(AC.createBiquadFilter()), o = AC.createOscillator(), og = add(AC.createGain());
+      lp.type = 'lowpass'; lp.frequency.value = 400 * Math.pow(2, D * 5);
+      o.type = 'square'; o.frequency.value = P.tempo / 60 * Math.pow(2, Math.floor(T * 3.99)) / 2;
+      g.gain.value = 1 - R / 2; og.gain.value = R / 2; o.connect(og); og.connect(g.gain); o.start(); srcs.push(o);
+      inp.connect(lp); lp.connect(g); g.connect(out); out.gain.value = 0.3 + W * 0.7; break;
+    }
+    case 'nitro': {
+      const f = add(AC.createBiquadFilter()), sh = add(AC.createWaveShaper());
+      f.type = 'lowpass'; f.frequency.value = Math.min(16000, 100 * Math.pow(2, T * 7)); f.Q.value = 0.5 + R * 14;
+      sh.curve = curve(D); inp.connect(f); f.connect(sh); sh.connect(out); out.gain.value = 0.4 + W * 0.6; break;
+    }
+    case 'phone': {
+      const hp = add(AC.createBiquadFilter()), lp = add(AC.createBiquadFilter()), sh = add(AC.createWaveShaper());
+      hp.type = 'highpass'; hp.frequency.value = 200 + T * 700; lp.type = 'lowpass'; lp.frequency.value = 1800 + T * 3400;
+      sh.curve = curve(R); inp.connect(hp); hp.connect(lp); lp.connect(sh); sh.connect(out); out.gain.value = 0.3 + W * 0.9;
+      const ns = AC.createBufferSource(), ng = add(AC.createGain()); ns.buffer = noise(); ns.loop = true; ng.gain.value = D * 0.06;
+      ns.connect(ng); ng.connect(out); ns.start(); srcs.push(ns); break;
+    }
+    case 'punch': {
+      const c = add(AC.createDynamicsCompressor());
+      c.threshold.value = -8 - T * 40; c.ratio.value = 4 + T * 16; c.attack.value = 0.001 + R * 0.05; c.release.value = 0.05 + D * 0.4;
+      inp.connect(c); c.connect(out); out.gain.value = 1 + W * 2; break;
+    }
+    default: {   // spring
+      const c = add(AC.createConvolver()); c.normalize = true; c.buffer = springIR(); inp.connect(c); c.connect(out);
+    }
+  }
+  return {inp, out, nodes, srcs};
+}
+let fxCur = null;
 function rebuildReverb() {
   if (!AC) return;
-  const c = AC.createConvolver(), cg = AC.createGain();
-  c.normalize = true; c.buffer = springIR();
-  cg.gain.value = 0; voiceBus.connect(c); c.connect(cg); cg.connect(wetGain);
+  const f = makeFx(P.fxType), cg = AC.createGain(); cg.gain.value = 0;
+  voiceBus.connect(f.inp); f.out.connect(cg); cg.connect(wetGain);
   cg.gain.setTargetAtTime(1, AC.currentTime, 0.05);
-  if (conv) {
-    const oc = conv, og = convGain;
-    og.gain.setTargetAtTime(0, AC.currentTime, 0.05);
-    setTimeout(() => { try { voiceBus.disconnect(oc); oc.disconnect(); og.disconnect(); } catch (e) {} }, 400);
+  if (fxCur) {
+    const o = fxCur; o.cg.gain.setTargetAtTime(0, AC.currentTime, 0.05);
+    setTimeout(() => {
+      try { voiceBus.disconnect(o.f.inp); } catch (e) {}
+      o.f.srcs.forEach(n => { try { n.stop(); } catch (e) {} });
+      o.f.nodes.forEach(n => { try { n.disconnect(); } catch (e) {} }); try { o.cg.disconnect(); } catch (e) {}
+    }, 500);
   }
-  conv = c; convGain = cg;
+  fxCur = {f, cg};
 }
 let revT = 0;
 function scheduleReverb() { clearTimeout(revT); revT = setTimeout(rebuildReverb, 140); }
@@ -1492,17 +1643,80 @@ function drawEnvPage() {   // the manual's colored ADSR: blue attack, green deca
 }
 function drawLfo(t) {
   const c = vizCtx(), x0 = VW * 0.08, x1 = VW * 0.92, yc = VH * 0.5, A = VH * 0.32;
-  const w = WAVES[Math.min(3, Math.floor(P.lwav / 25))], hz = 0.1 * Math.pow(2, P.lspd / 100 * 7);
-  const fn = ph => { ph = ((ph % 1) + 1) % 1; return w === 'sine' ? Math.sin(TAU * ph) : w === 'triangle' ? 1 - 4 * Math.abs(ph - 0.5) : w === 'square' ? (ph < 0.5 ? 1 : -1) : 2 * ph - 1; };
-  const cycles = 2, ph0 = t * hz;
+  const w = WAVES[Math.min(3, Math.floor(P.lwav / 25))], hz = 0.1 * Math.pow(2, P.lspd / 100 * 7), rnd = P.lfoType === 'random';
+  const hash = i => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return (x - Math.floor(x)) * 2 - 1; };
+  const fn = ph => {
+    if (rnd) { const i = Math.floor(ph * 8); return hash(i + Math.floor(t * hz / 2) * 8); }
+    ph = ((ph % 1) + 1) % 1; return w === 'sine' ? Math.sin(TAU * ph) : w === 'triangle' ? 1 - 4 * Math.abs(ph - 0.5) : w === 'square' ? (ph < 0.5 ? 1 : -1) : 2 * ph - 1;
+  };
+  const cycles = rnd ? 0.5 : 2, ph0 = t * hz;
+  c.globalAlpha = P.lfoOn ? 1 : 0.3;
+  c.font = FONT(Math.max(12, VH * 0.07)); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = COL.orange;
+  c.fillText(P.lfoOn ? P.lfoType.toUpperCase() : 'LFO OFF', VW / 2, VH * 0.04);
   c.strokeStyle = COL.line; c.lineWidth = 1; c.beginPath(); c.moveTo(x0, yc); c.lineTo(x1, yc); c.stroke();
   c.strokeStyle = COL.blue; c.lineWidth = 2;
   polyline(c, 240, u => x0 + u * (x1 - x0), u => yc - A * fn(u * cycles));
-  const u = (ph0 % cycles) / cycles, dx = x0 + u * (x1 - x0), dy = yc - A * fn(ph0);
-  c.fillStyle = COL.white; c.beginPath(); c.arc(dx, dy, 5, 0, TAU); c.fill();
+  if (P.lfoOn) {
+    const u = (ph0 % cycles) / cycles, dx = x0 + u * (x1 - x0), dy = yc - A * fn(rnd ? u : ph0);
+    c.fillStyle = COL.white; c.beginPath(); c.arc(dx, dy, 5, 0, TAU); c.fill();
+  }
   // where it goes: green pitch bar, white volume bar
   c.fillStyle = COL.green; c.fillRect(x0, VH * 0.96, (x1 - x0) * 0.45 * P.lpit / 100, 3);
   c.fillStyle = COL.white; c.fillRect(x0 + (x1 - x0) * 0.55, VH * 0.96, (x1 - x0) * 0.45 * P.lvol / 100, 3);
+  c.globalAlpha = 1;
+}
+const drawFx = t => {
+  if (P.fxType === 'spring') drawSpring(t); else drawFxPage(t);
+  if (!P.fx) {
+    cx.setTransform(DPR, 0, 0, DPR, 0, 0); cx.fillStyle = 'rgba(0,0,0,.65)'; cx.fillRect(0, H * 0.2, W, H * 0.6);
+    cx.font = FONT(H * 0.08); cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillStyle = COL.white; cx.fillText('EFFECT OFF', W / 2, H * 0.5);
+  }
+};
+function drawFxPage(t) {
+  const c = vizCtx(), x0 = VW * 0.08, x1 = VW * 0.92, yc = VH * 0.52, A = VH * 0.3;
+  const T = P.taper / 100, R = P.turns / 100, D = P.damp / 100, Wd = P.width / 100;
+  c.font = FONT(Math.max(12, VH * 0.07)); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = COL.green;
+  c.fillText(P.fxType.toUpperCase(), VW / 2, VH * 0.04);
+  c.lineCap = 'round';
+  switch (P.fxType) {
+    case 'delay': {   // echoes, spaced by time, fading by feedback
+      const gap = (x1 - x0) * (0.06 + T * 0.2); c.lineWidth = 3;
+      for (let i = 0; x0 + i * gap < x1; i++) {
+        const h = A * Math.pow(0.35 + R * 0.6, i), x = x0 + i * gap; c.strokeStyle = i ? COL.green : COL.white; c.globalAlpha = Math.max(0.15, 1 - i * 0.07);
+        c.beginPath(); c.moveTo(x, yc + h); c.lineTo(x, yc - h); c.stroke();
+      }
+      c.globalAlpha = 1; break;
+    }
+    case 'grid': {   // a gate pattern; the moving column follows the tempo
+      const cols = 8, rows = 4, cw = (x1 - x0) / cols, ch = A * 1.8 / rows, rate = Math.pow(2, Math.floor(T * 3.99)), cur = Math.floor(t * P.tempo / 60 * rate / 2) % cols;
+      for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++) {
+        const on = ((i * rate) % 2 === 0) !== (j % 2 === 1); c.globalAlpha = (on ? 0.35 + R * 0.65 : 0.12) * (i === cur ? 1 : 0.6);
+        c.fillStyle = i === cur ? COL.white : COL.green; c.fillRect(x0 + i * cw + 2, yc - A * 0.9 + j * ch + 2, cw - 4, ch - 4);
+      }
+      c.globalAlpha = 1; break;
+    }
+    case 'nitro': {   // the filter: cutoff moves the corner, reso lifts the peak
+      c.strokeStyle = COL.blue; c.lineWidth = 2.4; let px = 0, py = 1e9;
+      polyline(c, 200, u => x0 + u * (x1 - x0), u => {
+        const r = Math.pow(2, (u - T) * 7), Q = 0.5 + R * 14, m = 1 / Math.sqrt(Math.pow(1 - r * r, 2) + Math.pow(r / Q, 2));
+        const y = yc + A * 0.7 - Math.max(0, Math.min(60, 20 * Math.log10(m) + 24)) / 60 * A * 1.5; if (y < py) { py = y; px = x0 + u * (x1 - x0); } return y;
+      });
+      c.fillStyle = COL.orange; c.beginPath(); c.arc(px, py, 3 + D * 5, 0, TAU); c.fill(); break;
+    }
+    case 'phone': {   // a narrow band, a little grit
+      const lo = 0.15 + T * 0.3, hi = lo + 0.2 + (1 - D) * 0.1; c.strokeStyle = COL.white; c.lineWidth = 2.4; c.beginPath();
+      c.moveTo(x0, yc + A * 0.6); c.lineTo(x0 + (x1 - x0) * lo, yc + A * 0.6); c.lineTo(x0 + (x1 - x0) * (lo + 0.05), yc - A * 0.5);
+      c.lineTo(x0 + (x1 - x0) * (hi - 0.05), yc - A * 0.5); c.lineTo(x0 + (x1 - x0) * hi, yc + A * 0.6); c.lineTo(x1, yc + A * 0.6); c.stroke();
+      c.fillStyle = COL.green; for (let i = 0; i < 6 + R * 40; i++) { const hx = Math.sin(i * 12.9898 + t) * 43758.5; c.fillRect(x0 + (hx - Math.floor(hx)) * (x1 - x0), yc + A * 0.75 + (i % 3) * 5, 2, 2); }
+      break;
+    }
+    case 'punch': {   // a wave pressed flat under a ceiling
+      const ceil = A * (1 - T * 0.65); c.strokeStyle = COL.line; c.lineWidth = 1; c.beginPath(); c.moveTo(x0, yc - ceil); c.lineTo(x1, yc - ceil); c.moveTo(x0, yc + ceil); c.lineTo(x1, yc + ceil); c.stroke();
+      c.strokeStyle = COL.orange; c.lineWidth = 2.4;
+      polyline(c, 200, u => x0 + u * (x1 - x0), u => yc - Math.max(-ceil, Math.min(ceil, A * 1.25 * Math.sin(TAU * (3 * u + t * 0.4)))));
+      break;
+    }
+  }
 }
 function drawDrum() {   // twelve pads, one per semitone; hit pads flash
   const c = vizCtx(), cols = 4, rows = 3, gx = VW * 0.84 / cols, gy = VH * 0.9 / rows, x0 = VW * 0.08, y0 = VH * 0.05;
@@ -1722,6 +1936,7 @@ function frame(now) {
 function updateHint(now) {
   let msg = '', show = true;
   if (now < hintUntil) msg = hintMsg;
+  else if (UI.shift) msg = 'shift · T1 synth · T3 effect · T4 lfo · 1-8 pick' + (inSeqView() ? ' · T2 clear · SEQ lay 5 · ‹ key · › scale' : '');
   else if (!AC || AC.state !== 'running') msg = inSeqView() ? 'tap to turn on sound · drag to spin' : 'tap a key to turn on sound';
   else if (inSeqView() && UI.seqOn && !dots.length) msg = 'tap inside the tombola to add notes';
   else { msg = hint.textContent; show = false; }
