@@ -387,6 +387,7 @@ const labelOf = name => {
     if (P.engine === 'digital' && name === 's2') return P.digiRing ? 'ring mod' : 'detune/ring';
     return ENGINES[P.engine].labels[+name[1]];
   }
+  if (UI.mode === 'tape' && !UI.util && /^m[1-4]$/.test(name)) return 'level';   // the tape page's orange encoder: this track's level
   const fi = FXP.indexOf(name); if (fi >= 0) return FX_TYPES[P.fxType].labels[fi];
   return SPEC[name].label;
 };
