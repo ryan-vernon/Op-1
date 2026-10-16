@@ -10,7 +10,7 @@ mkdir -p public
     '<meta name="theme-color" content="#5e5b58">' \
     '<meta name="apple-mobile-web-app-capable" content="yes">' \
     '<meta name="apple-mobile-web-app-status-bar-style" content="black">' \
-    '<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>' \
+    '<style>:root{padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}</style>' \
     '</head>' '<body>'
   cat tombola.html
   printf '%s\n' '</body>' '</html>'

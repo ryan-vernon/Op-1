@@ -7,11 +7,11 @@
    Phone: screen, T1–T4, transport, one octave of keys, mode bar (8 columns).
    iPad (wide screens): 18 x 12 units with a full-width 2½-octave keyboard. JS sets --u. */
 :root{--k:calc(var(--u) / 92);
-  --bg:#7A7671; --tile-a:#F8F6F2; --tile-b:#EAE7E2; --ink:#2A2A2A; --screen:#000;
+  --bg:#84817E; --tile-a:#F8F6F2; --tile-b:#EAE7E2; --ink:#2A2A2A; --screen:#000;
   --line-b:rgba(255,255,255,.13); --dim-b:rgba(236,236,234,.42);
   --blue:#5B7CFA; --lav:#5B7CFA; --green:#1ED68F; --white:#E9E9E9; --orange:#FF4D3D; --rec:#E8452C;
   --f-ui:"Encode Sans Condensed","Avenir Next Condensed",system-ui,sans-serif;
-  --u:44px; --gap:2px; color-scheme:light;
+  --u:44px; --gap:1px; color-scheme:light;
 }
 html{height:100%;box-sizing:border-box;background:var(--bg)}
 @supports (height:100dvh){html{height:100dvh}}
@@ -66,7 +66,7 @@ button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 .key.on .pill{background:#EFEBEA;box-shadow:inset calc(var(--k) * 3) calc(var(--k) * 3) calc(var(--k) * 6) rgba(150,138,134,.55),inset calc(var(--k) * -1) calc(var(--k) * -1) 0 rgba(255,255,255,.8)}
 
 /* the display */
-#display{position:relative;background:var(--screen);border-radius:30px 30px 12px 12px;overflow:hidden;touch-action:none;min-height:0;container-type:size;color:#E9E9E9}
+#display{position:relative;background:var(--screen);border-radius:calc(var(--k) * 5);overflow:hidden;touch-action:none;min-height:0;container-type:size;color:#E9E9E9}
 #screen{position:absolute;inset:0;width:100%;height:100%;display:block}
 .corner{position:absolute;display:flex;align-items:center;gap:3cqmin;padding:5cqmin;touch-action:none;z-index:2;line-height:1}
 .corner .letter{font-size:9cqmin;font-weight:400}
@@ -91,7 +91,7 @@ button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 /* iPad: 18 x 12 grid, every cell used */
 body.pad #device{width:auto;height:auto;padding:0;grid-template-columns:repeat(18,var(--u));grid-template-rows:repeat(12,var(--u))}
 body.pad #device .padonly{display:flex}
-body.pad #display{border-radius:10px;grid-area:1/5/6/15}
+body.pad #display{grid-area:1/5/6/15}
 body.pad #speaker{grid-area:1/1/4/3;cursor:default}
 body.pad #volume{grid-area:1/3}  body.pad #help{grid-area:1/4}
 body.pad #tempoKey{grid-area:2/3} body.pad #mic{grid-area:2/4}
@@ -112,7 +112,7 @@ body.pad #snd4{grid-area:6/15}body.pad #snd5{grid-area:6/16}body.pad #snd6{grid-
 #speaker .grill i{width:5px;height:5px;border-radius:50%;background:#2A2A2A}
 .knob{--ks:calc(var(--u) * .86);position:relative;width:var(--ks);height:var(--ks);border-radius:50%;background:linear-gradient(135deg,#F0EDEC,#F6F3F2);
   box-shadow:inset 1px 1px 1px #fff,calc(var(--ks) * .16) calc(var(--ks) * .2) calc(var(--ks) * .3) rgba(60,30,24,.3);display:flex;align-items:center;justify-content:center;touch-action:none;cursor:ns-resize}
-.cap{width:46.7%;height:46.7%;border-radius:50%;display:flex;justify-content:center;box-shadow:0 0 0 calc(var(--ks) * .057) #F6F3F2,inset -1px -1px 2px rgba(0,0,0,.45),calc(var(--ks) * .05) calc(var(--ks) * .05) calc(var(--ks) * .1) calc(var(--ks) * .057) rgba(61,38,32,.45)}
+.cap{width:calc(var(--k) * 64);height:calc(var(--k) * 64);flex:none;border-radius:50%;display:flex;justify-content:center;box-shadow:0 0 0 calc(var(--ks) * .057) #F6F3F2,inset -1px -1px 2px rgba(0,0,0,.45),calc(var(--ks) * .05) calc(var(--ks) * .05) calc(var(--ks) * .1) calc(var(--ks) * .057) rgba(61,38,32,.45)}
 .cap i{display:block;width:9%;height:38%;margin-top:8%;border-radius:3px;background:rgba(255,255,255,.85)}
 #k2 .cap i{background:#2A2A2A}
 
@@ -120,6 +120,33 @@ body.pad #snd4{grid-area:6/15}body.pad #snd5{grid-area:6/16}body.pad #snd6{grid-
 #menu{position:absolute;inset:0;z-index:6;background:#000;display:flex;flex-direction:column;justify-content:center;
   padding:6cqmin 9cqmin;overflow:auto;touch-action:pan-y}
 #menu[hidden]{display:none}
+/* holding a sound key: a ring fills while it saves, so a tap never overwrites a sound */
+#saving{position:absolute;inset:0;z-index:7;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);pointer-events:none}
+#saving[hidden]{display:none}
+#saving .ring{position:relative;width:38cqmin;height:38cqmin}
+#saving svg{width:100%;height:100%;transform:rotate(-90deg);overflow:visible}
+#saving circle{fill:none;stroke-width:2.5}
+#saving .trk{stroke:rgba(255,255,255,.16)}
+#saving .arc{stroke:var(--green);stroke-dasharray:100 100;stroke-dashoffset:100;stroke-linecap:round}
+#saving.run .arc{transition:stroke-dashoffset var(--save-ms,2s) linear;stroke-dashoffset:0}
+#saving .txt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5cqmin;color:#E9E9E9}
+#saving .n{font-size:12cqmin;font-weight:200;line-height:1}
+#saving .w{font-size:3.6cqmin;letter-spacing:.16em;text-transform:uppercase;color:#8a8a8a}
+#saving.done .w{color:var(--green)}
+
+/* phone in landscape: 15 x 7 units with a two-octave keyboard (C to C) */
+body.land #device{width:auto;height:auto;padding:0;grid-template-columns:repeat(15,var(--u));grid-template-rows:repeat(7,var(--u))}
+body.land #display{grid-area:1/4/4/14}
+body.land #m_synth{grid-area:1/1} body.land #m_drum{grid-area:1/2} body.land #m_tape{grid-area:1/3}
+body.land #m_mixer{grid-area:2/1} body.land #seq{grid-area:2/2} body.land #album{grid-area:2/3;display:flex}
+body.land #rec{grid-area:3/1} body.land #play{grid-area:3/2} body.land #stop{grid-area:3/3}
+body.land #k0{grid-area:1/14} body.land #k1{grid-area:1/15} body.land #k2{grid-area:2/14} body.land #k3{grid-area:2/15}
+body.land #help{grid-area:3/14;display:flex} body.land #tempoKey{grid-area:3/15;display:flex}
+body.land #t0{grid-area:4/1} body.land #t1{grid-area:4/2} body.land #t2{grid-area:4/3} body.land #t3{grid-area:4/4}
+body.land #snd0{grid-area:4/5} body.land #snd1{grid-area:4/6} body.land #snd2{grid-area:4/7} body.land #snd3{grid-area:4/8}
+body.land #snd4{grid-area:4/9} body.land #snd5{grid-area:4/10} body.land #snd6{grid-area:4/11} body.land #snd7{grid-area:4/12}
+body.land #octDn{grid-area:4/13} body.land #octUp{grid-area:4/14} body.land #shift{grid-area:4/15}
+body.land #keys{grid-area:5/1/8/16}
 #menu .mt{font-size:3.4cqmin;color:#8a8a8a;letter-spacing:.14em;text-transform:uppercase;margin-bottom:2cqmin}
 #menu .list{display:grid;grid-template-columns:repeat(var(--mcols,1),minmax(0,1fr));column-gap:6cqmin}
 #menu button{font-size:5.6cqmin;font-weight:200;text-align:left;color:#E9E9E9;padding:1cqmin 0;letter-spacing:.04em}
@@ -176,6 +203,7 @@ body.pad #snd4{grid-area:6/15}body.pad #snd5{grid-area:6/16}body.pad #snd6{grid-
       <button class="corner pc br c3" data-slot="3"><span class="lab"></span><span class="val"></span></button>
     </div>
     <div id="menu" hidden role="menu"></div>
+    <div id="saving" hidden aria-live="polite"><div class="ring"><svg viewBox="0 0 100 100"><circle class="trk" cx="50" cy="50" r="46"/><circle class="arc" cx="50" cy="50" r="46" pathLength="100"/></svg><div class="txt"><span class="n">1</span><span class="w">saving</span></div></div></div>
     <div id="encRing" hidden></div>
     <div id="hint">tap to turn on sound · drag to spin</div>
   </div>
@@ -285,10 +313,15 @@ const SPEC = {
   lpit:{min:0, max:100, v:0,  col:'green', label:'pitch'},
   lvol:{min:0, max:100, v:0,  col:'white', label:'volume'},
   lwav:{min:0, max:100, v:0,  col:'orange', label:'wave'},
-  // drum kit
-  dpit:{min:0, max:100, v:50, col:'blue', label:'pitch'},
-  ddec:{min:0, max:100, v:50, col:'green', label:'decay'},
-  dton:{min:0, max:100, v:50, col:'white', label:'tone'},
+  // drum sampler (manual 6.3): one part of the kit's 12-second recording per key. In and out are in ms.
+  // Hold SHIFT for the second row: direction, fine in, fine out, level. "span" sets how far a full drag turns.
+  dpit:{min:-12, max:12, v:0, col:'blue', label:'pitch', span:24},
+  din:{min:0, max:12000, v:0, col:'green', label:'in', span:3000},
+  dout:{min:0, max:12000, v:600, col:'white', label:'out', span:3000},
+  dmode:{min:0, max:2, v:0, col:'orange', label:'play', span:4},
+  ddir:{min:0, max:1, v:0, col:'blue', label:'direction', span:2},
+  dinf:{min:0, max:12000, v:0, col:'green', label:'in fine', span:200},
+  doutf:{min:0, max:12000, v:600, col:'white', label:'out fine', span:200},
   dlvl:{min:0, max:100, v:80, col:'orange', label:'level'},
   // tape
   tempo:{min:40, max:240, v:120, col:'blue', label:'tempo'},
@@ -307,6 +340,8 @@ P.syn = {}; for (const e of ENGINE_ORDER) P.syn[e] = ENGINES[e].def.slice();
 const loadEngineParams = () => P.syn[P.engine].forEach((v, i) => P['s' + i] = v);
 loadEngineParams();
 const sv = i => P.syn[P.engine][i] / 100;
+const span = s => s.span || s.max - s.min;
+const DPART = {dpit:'pitch', din:'in', dinf:'in', dout:'out', doutf:'out', dmode:'mode', ddir:'rev', dlvl:'level'};
 const KEYS = ['C','C♯','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
 const SCALES = {major:[0,2,4,7,9], minor:[0,3,5,7,10]};
 /* effects: five send effects share the same four encoder slots (taper, turns, damp, width) with their own names */
@@ -331,7 +366,7 @@ const DRUM_KITS = [
   {name:'bright', kit:[62,34,88,76]}, {name:'dusty', kit:[40,56,20,70]}, {name:'punch', kit:[50,40,56,92]}, {name:'long', kit:[50,96,50,76]}];
 const factoryPresets = () => ({
   synth:SYNTH_PRESETS.map(x => ({mode:'synth', engine:x.engine, vals:x.vals.slice(), ring:false, env:x.env.slice()})),
-  drum:DRUM_KITS.map(x => ({mode:'drum', kit:x.kit.slice()}))});
+  drum:DRUM_KITS.map(x => ({mode:'drum', kit:x.kit.slice(), parts:null}))});
 const labelOf = name => {
   if (name[0] === 's' && name.length === 2) {
     if (P.engine === 'digital' && name === 's2') return P.digiRing ? 'ring mod' : 'detune';
@@ -453,6 +488,7 @@ function onParam(name) {
   if (name === 'gravity') peek('#gPeek', '#gIcon', P.gravity);
   if (name === 'mass') peek('#mPeek', '#mIcon', P.mass);
   if (name === 'shape') peek('#shPeek', '#shIcon', P.shape);
+  if (DPART[name]) writePart(name);
   if (['taper','turns','damp','width'].includes(name)) scheduleReverb();
   if (['lspd','lpit','lvol','lwav'].includes(name)) updateLfo();
   if (['master','live','fxsend','click','m1','m2','m3','m4'].includes(name)) updateGains();
@@ -479,7 +515,7 @@ const GLYPHS = {
    mixer has levels (T1) and master (T2). Each page puts four parameters in the screen's corners,
    colored like the OP-1's encoders: blue, green, white, orange. */
 const UI = {mode:'synth', page:{synth:0, drum:0, mixer:0}, seqOn:true, seqView:true, seqMode:'synth',
-  shift:false, shiftUsed:false, oct:0, track:0, title:'untitled', dirty:false, presets:factoryPresets(), lastInst:'synth', kit:-1};
+  shift:false, shiftUsed:false, oct:0, track:0, title:'untitled', dirty:false, presets:factoryPresets(), lastInst:'synth', kit:0, drum:{kit:DRUM_KITS[0].kit.slice(), parts:null}, dkey:0};
 const WAVES = ['sine', 'triangle', 'square', 'sawtooth'];
 const PAGES = {
   synth: [
@@ -488,7 +524,7 @@ const PAGES = {
     {name:'effect', params:['taper','turns','damp','width'], draw:t => drawFx(t)},
     {name:'lfo', params:['lspd','lpit','lvol','lwav'], draw:t => drawLfo(t)}],
   drum: [
-    {name:'kit', params:['dpit','ddec','dton','dlvl'], draw:t => drawDrum(t)}, null,
+    {name:'sampler', params:() => UI.shift ? ['ddir','dinf','doutf','dlvl'] : ['dpit','din','dout','dmode'], draw:t => drawDrum(t)}, null,
     {name:'effect', params:['taper','turns','damp','width'], draw:t => drawFx(t)},
     {name:'lfo', params:['lspd','lpit','lvol','lwav'], draw:t => drawLfo(t)}],
   mixer: [
@@ -502,10 +538,13 @@ function pageParams() {
   if (inSeqView()) return ['speed','gravity','shape','mass'];
   const p = curPage(); return typeof p.params === 'function' ? p.params() : p.params;
 }
-const valueText = name => name === 'lwav' && P.lfoType !== 'random' ? ['sine','tri','square','saw'][Math.min(3, Math.floor(P.lwav / 25))]
+const secs = v => (v / 1000).toFixed(3);
+const valueText = name => name === 'dmode' ? ['to end','loop','once'][P.dmode] : name === 'ddir' ? (P.ddir ? 'rev' : 'fwd')
+  : /^d(in|out)/.test(name) ? secs(P[name]) : name === 'dpit' ? (P.dpit > 0 ? '+' : '') + P.dpit
+  : name === 'lwav' && P.lfoType !== 'random' ? ['sine','tri','square','saw'][Math.min(3, Math.floor(P.lwav / 25))]
   : name === 'click' && !P.click ? 'off' : String(P[name]);
 const curSynth = () => ({mode:'synth', engine:P.engine, vals:P.syn[P.engine].slice(), ring:P.digiRing, env:[P.atk, P.dcy, P.sus, P.rel]});
-const curDrum = () => ({mode:'drum', kit:[P.dpit, P.ddec, P.dton, P.dlvl]});
+const curDrum = () => ({mode:'drum', kit:UI.drum.kit.slice(), parts:UI.drum.parts ? UI.drum.parts.map(p => Object.assign({}, p)) : null});
 const instMode = () => UI.mode === 'drum' || (UI.mode !== 'synth' && UI.lastInst === 'drum') ? 'drum' : 'synth';
 const liveInst = () => instMode() === 'drum' ? curDrum() : curSynth();
 function playInst(inst, midi, vel, pan, o = {}) {
@@ -521,13 +560,13 @@ pcs.forEach((btn, slot) => {
   btn.addEventListener('pointerdown', e => { firstGesture(); capture(btn, e); const name = pageParams()[slot]; d = {y:e.clientY, x:e.clientX, v:P[name], name}; });
   btn.addEventListener('pointermove', e => {
     if (!d) return; const s = SPEC[d.name];
-    setParam(d.name, d.v + ((d.y - e.clientY) + (e.clientX - d.x)) * (s.max - s.min) / 260);
+    setParam(d.name, d.v + ((d.y - e.clientY) + (e.clientX - d.x)) * span(s) / 260);
   });
   btn.addEventListener('pointerup', () => d = null); btn.addEventListener('pointercancel', () => d = null);
-  btn.addEventListener('wheel', e => { e.preventDefault(); const n = pageParams()[slot], s = SPEC[n]; setParam(n, P[n] - e.deltaY * (s.max - s.min) / 1200); }, {passive:false});
+  btn.addEventListener('wheel', e => { e.preventDefault(); const n = pageParams()[slot], s = SPEC[n]; setParam(n, P[n] - e.deltaY * span(s) / 1200); }, {passive:false});
   btn.addEventListener('keydown', e => {
     const k = {ArrowUp:1, ArrowRight:1, ArrowDown:-1, ArrowLeft:-1}[e.key]; if (!k) return;
-    e.preventDefault(); const n = pageParams()[slot], s = SPEC[n]; setParam(n, P[n] + k * Math.max(1, (s.max - s.min) / 50));
+    e.preventDefault(); const n = pageParams()[slot], s = SPEC[n]; setParam(n, P[n] + k * Math.max(1, span(s) / 50));
   });
 });
 /* the encoders (a row under the screen on phones, beside it on iPad) turn the same four values;
@@ -536,9 +575,9 @@ const turnHint = n => showHint(labelOf(n) + ' ' + valueText(n), 900);
 document.querySelectorAll('[data-k]').forEach(cell => {
   const slot = +cell.dataset.k; let d = null;
   cell.addEventListener('pointerdown', e => { firstGesture(); capture(cell, e); const name = pageParams()[slot]; d = {y:e.clientY, x:e.clientX, v:P[name], name}; e.preventDefault(); turnHint(name); });
-  cell.addEventListener('pointermove', e => { if (!d) return; const s = SPEC[d.name]; setParam(d.name, d.v + ((d.y - e.clientY) + (e.clientX - d.x)) * (s.max - s.min) / 240); turnHint(d.name); });
+  cell.addEventListener('pointermove', e => { if (!d) return; const s = SPEC[d.name]; setParam(d.name, d.v + ((d.y - e.clientY) + (e.clientX - d.x)) * span(s) / 240); turnHint(d.name); });
   cell.addEventListener('pointerup', () => d = null); cell.addEventListener('pointercancel', () => d = null);
-  cell.addEventListener('wheel', e => { e.preventDefault(); const n = pageParams()[slot], s = SPEC[n]; setParam(n, P[n] - e.deltaY * (s.max - s.min) / 1200); turnHint(n); }, {passive:false});
+  cell.addEventListener('wheel', e => { e.preventDefault(); const n = pageParams()[slot], s = SPEC[n]; setParam(n, P[n] - e.deltaY * span(s) / 1200); turnHint(n); }, {passive:false});
 });
 
 function renderTag() {
@@ -638,7 +677,7 @@ function pickEngine(id, slot) {
   previewInst(); showHint(id + (slot !== null ? ' on sound ' + (slot + 1) : '')); markDirty();
 }
 function pickKit(i, slot) {
-  [P.dpit, P.ddec, P.dton, P.dlvl] = DRUM_KITS[i].kit; UI.kit = i;
+  UI.drum = {kit:DRUM_KITS[i].kit.slice(), parts:null}; UI.kit = i; whenKit(syncPart);
   if (slot !== null) UI.presets.drum[slot] = curDrum();
   previewInst(); showHint(DRUM_KITS[i].name + (slot !== null ? ' on sound ' + (slot + 1) : '')); markDirty();
 }
@@ -693,19 +732,39 @@ $('#speaker .grill').innerHTML = '<i></i>'.repeat(88);
 /* sound keys 1-8: tap recalls a synth sound (or drum kit), hold stores the current one,
    SHIFT + key opens the engine (or kit) menu and puts the choice on that key */
 function applyPreset(pm, pr) {
-  if (pm === 'drum') { [P.dpit, P.ddec, P.dton, P.dlvl] = pr.kit; UI.kit = DRUM_KITS.findIndex(k => k.kit.join() === pr.kit.join()); }
+  if (pm === 'drum') {
+    UI.drum = {kit:pr.kit.slice(), parts:Array.isArray(pr.parts) ? pr.parts.map(p => Object.assign({}, p)) : null};
+    UI.kit = DRUM_KITS.findIndex(k => k.kit.join() === pr.kit.join()); whenKit(syncPart);
+  }
   else { P.engine = pr.engine; P.syn[pr.engine] = pr.vals.slice(); P.digiRing = !!pr.ring; [P.atk, P.dcy, P.sus, P.rel] = pr.env; loadEngineParams(); digiCache.clear(); ksCache.clear(); }
 }
+const SAVE_MS = 2000, savingEl = $('#saving');
+savingEl.style.setProperty('--save-ms', SAVE_MS + 'ms');
+const hideSaving = () => { savingEl.hidden = true; savingEl.classList.remove('run', 'done'); };
 document.querySelectorAll('[data-snd]').forEach(b => {
-  let hold = 0, held = false; const i = +b.dataset.snd;
-  b.addEventListener('pointerdown', () => {
-    held = false; clearTimeout(hold);
-    hold = setTimeout(() => { held = true; const pm = instMode(); UI.presets[pm][i] = pm === 'drum' ? curDrum() : curSynth(); showHint('stored sound ' + (i + 1)); markDirty(); }, 650);
+  let hold = 0, t0 = 0, down = false, saved = false; const i = +b.dataset.snd;
+  b.addEventListener('pointerdown', e => {
+    capture(b, e); down = true; saved = false; t0 = performance.now(); clearTimeout(hold);
+    if (UI.shift) return;
+    hold = setTimeout(() => {   // still held: show the ring, and save when it has gone all the way round
+      savingEl.querySelector('.n').textContent = i + 1; savingEl.querySelector('.w').textContent = 'saving';
+      savingEl.classList.remove('run', 'done'); savingEl.hidden = false; void savingEl.offsetWidth; savingEl.classList.add('run');
+      hold = setTimeout(() => {
+        saved = true; const pm = instMode();
+        if (pm === 'drum') ensureParts();
+        UI.presets[pm][i] = pm === 'drum' ? curDrum() : curSynth(); markDirty();
+        savingEl.classList.add('done'); savingEl.querySelector('.w').textContent = 'saved';
+        hold = setTimeout(hideSaving, 900);
+      }, SAVE_MS);
+    }, 250);
   });
-  const end = () => clearTimeout(hold);
-  b.addEventListener('pointerleave', end); b.addEventListener('pointercancel', end);
+  const cancel = () => { if (!down) return; down = false; if (!saved) { clearTimeout(hold); hideSaving(); } };
+  b.addEventListener('pointercancel', cancel);
   b.addEventListener('pointerup', () => {
-    clearTimeout(hold); if (held) { held = false; return; }
+    if (!down) return; down = false;
+    if (saved) return;
+    clearTimeout(hold); hideSaving();
+    if (performance.now() - t0 > 250 && !UI.shift) { showHint('not saved', 900); return; }   // let go before the ring closed
     firstGesture(); closeRing(); const pm = instMode();
     if (useShift()) { openMenu(pm === 'drum' ? 'drum' : 'engine', i); renderShell(); return; }
     closeMenu(); applyPreset(pm, UI.presets[pm][i]); previewInst(); showHint('sound ' + (i + 1)); markDirty(); renderShell();
@@ -796,6 +855,7 @@ window.addEventListener('keyup', e => {
 const heldNotes = new Map();
 function noteOn(n, vel) {
   firstGesture(); noteOff(n);
+  if (UI.mode === 'drum') selectPart(partOf(n));
   const v = playInst(liveInst(), n, vel, 0, {gate:Infinity, bus:liveBus});
   heldNotes.set(n, v); keyLight(n, true);
   if (tape.recording) tape.pending.set(n, {tick:tapeTick(), vel});
@@ -883,12 +943,12 @@ function recNote(n, vel, t0, t1) {
 function flushRec() { for (const [n, p] of tape.pending) recNote(n, p.vel, p.tick, tapeTick()); tape.pending.clear(); }
 
 /* ---------- song state, read and written by the cloud module (src/cloud.js) ---------- */
-const PERSIST = Object.keys(SPEC).filter(k => !/^s[0-3]$/.test(k));
+const PERSIST = Object.keys(SPEC).filter(k => !/^s[0-3]$/.test(k) && !DPART[k]);
 function songState() {
   return {
     title: UI.title, tempo: P.tempo,
     settings: {engine:P.engine, syn:P.syn, digiRing:P.digiRing, fx:P.fx, key:P.key, scale:P.scale, oct:UI.oct,
-      presets:UI.presets, fxType:P.fxType, lfoType:P.lfoType, lfoOn:P.lfoOn, params:Object.fromEntries(PERSIST.map(k => [k, P[k]]))},
+      presets:UI.presets, drum:UI.drum, fxType:P.fxType, lfoType:P.lfoType, lfoOn:P.lfoOn, params:Object.fromEntries(PERSIST.map(k => [k, P[k]]))},
     patterns: [{kind:'tombola', data:{seqOn:UI.seqOn, seqMode:UI.seqMode, theta:+theta.toFixed(3),
       dots:dots.filter(d => !d.out).map(d => [+d.x.toFixed(3), +d.y.toFixed(3), d.idx])}}],
     recordings: tape.tracks.map((tr, i) => ({track:i + 1, instrument:tr.inst, ppq:PPQ, lengthTicks:loopTicks(), events:tr.events})),
@@ -904,8 +964,11 @@ function loadSong(s) {
   UI.oct = clamp(st.oct | 0, -3, 3); UI.presets = factoryPresets();
   if (st.presets && Array.isArray(st.presets.synth) && Array.isArray(st.presets.drum)) {
     st.presets.synth.slice(0, 8).forEach((x, i) => { if (x && ENGINES[x.engine] && Array.isArray(x.vals)) UI.presets.synth[i] = x; });
-    st.presets.drum.slice(0, 8).forEach((x, i) => { if (x && Array.isArray(x.kit)) UI.presets.drum[i] = x; });
+    st.presets.drum.slice(0, 8).forEach((x, i) => { if (x && Array.isArray(x.kit)) UI.presets.drum[i] = {mode:'drum', kit:x.kit, parts:validParts(x.parts)}; });
   }
+  UI.drum = {kit:DRUM_KITS[0].kit.slice(), parts:null};
+  if (st.drum && Array.isArray(st.drum.kit) && st.drum.kit.length === 4) UI.drum = {kit:st.drum.kit.map(Number), parts:validParts(st.drum.parts)};
+  UI.kit = DRUM_KITS.findIndex(k => k.kit.join() === UI.drum.kit.join()); whenKit(syncPart);
   P.fxType = FX_TYPES[st.fxType] ? st.fxType : 'spring'; P.lfoType = LFO_TYPES[st.lfoType] ? st.lfoType : 'tremolo'; P.lfoOn = st.lfoOn !== false;
   loadEngineParams();
   for (const k of PERSIST) { const v = st.params && st.params[k]; P[k] = typeof v === 'number' ? clamp(Math.round(v), SPEC[k].min, SPEC[k].max) : SPEC[k].v; }
@@ -941,12 +1004,17 @@ $('#sheetClose').addEventListener('click', () => { $('#sheet').hidden = true; })
 $('#songTitle').addEventListener('change', e => window.Tombola.setTitle(e.target.value.trim()));
 
 /* ---------- layout: phone (8 columns) or iPad (18 x 12) ---------- */
-const GAP = 2;
+const GAP = 1;
 function layout() {
-  const w = innerWidth, h = innerHeight, pad = w >= 900 && w > h * 1.15 && h >= 560, root = document.documentElement.style;
-  document.body.classList.toggle('pad', pad);
+  const cs = getComputedStyle(document.documentElement), inset = k => parseFloat(cs[k]) || 0;
+  const w = innerWidth - inset('paddingLeft') - inset('paddingRight'), h = innerHeight - inset('paddingTop') - inset('paddingBottom');
+  const pad = w >= 900 && w > h * 1.15 && h >= 560, land = !pad && w > h * 1.15, root = document.documentElement.style;
+  document.body.classList.toggle('pad', pad); document.body.classList.toggle('land', land);
   const dev = $('#device');
-  if (pad) {
+  if (land) {   // phone on its side: 15 x 7 units, keyboard C3 to C5
+    const u = Math.floor(Math.min((w - 16 - 14 * GAP) / 15, (h - 12 - 6 * GAP) / 7));
+    root.setProperty('--u', u + 'px'); dev.style.maxWidth = ''; buildKeys(15);
+  } else if (pad) {
     const u = Math.floor(Math.min((w - 24 - 17 * GAP) / 18, (h - 24 - 11 * GAP) / 12));
     root.setProperty('--u', u + 'px'); dev.style.maxWidth = ''; buildKeys(18);
   } else {
@@ -1200,32 +1268,26 @@ function playNote(midi, vel, pan, o = {}) {
 
 /* drum kit: twelve synthesized sounds, one per semitone (C kick ... B high tom) */
 const DRUMS = ['kick','rim','snare','clap','snare 2','hat','pedal hat','open hat','low tom','mid tom','cowbell','high tom'];
-const drumHits = new Float32Array(12);
-let noiseBuf = null;
-function noise() {
-  if (!noiseBuf) { const n = AC.sampleRate; noiseBuf = AC.createBuffer(1, n, n); const d = noiseBuf.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1; }
-  return noiseBuf;
-}
-function playDrum(midi, vel, pan, inst, o = {}) {
-  if (!AC || AC.state !== 'running' || voices > 32) return null;
-  const [pi, de, to, lv] = (inst.kit || [50, 50, 50, 80]).map(x => x / 100);
-  const t = Math.max(AC.currentTime, o.when || 0), k = ((midi % 12) + 12) % 12, type = DRUMS[k];
-  const pitch = Math.pow(2, (pi - 0.5) * 1.5), dl = 0.35 + de * 1.65, g = (0.15 + 0.85 * vel) * lv * 0.9;
-  const out = AC.createGain(); let tail = out;
-  if (AC.createStereoPanner) { const p = AC.createStereoPanner(); p.pan.value = clamp(pan, -1, 1); out.connect(p); tail = p; }
-  tail.connect(o.bus || liveBus);
-  let end = t;
+const drumHits = new Float32Array(24);
+/* The drum sampler (manual 6.2-6.3). Each kit is one 12-second recording, rendered offline from the drum
+   synthesis below with one sound per second. Each of the 24 keys plays its own part of that recording:
+   in and out points, pitch, direction, play mode (to end, loop, once) and level. */
+const KIT_SR = 22050, KIT_SEC = 12, KIT_MS = KIT_SEC * 1000, NPART = 24;
+const kits = new Map();
+function synthHit(ctx, dest, t, k, kit, nb) {   // one drum sound into any audio context
+  const [pi, de, to, lv] = kit.map(x => x / 100), type = DRUMS[k];
+  const pitch = Math.pow(2, (pi - 0.5) * 1.5), dl = 0.35 + de * 1.65, g = lv * 0.9;
   const tone = (wave, f0, f1, dur, amp, at = t) => {
-    const s = AC.createOscillator(), e = AC.createGain(); s.type = wave;
+    const s = ctx.createOscillator(), e = ctx.createGain(); s.type = wave;
     s.frequency.setValueAtTime(f0 * pitch, at); s.frequency.exponentialRampToValueAtTime(f1 * pitch, at + dur * 0.5);
     e.gain.setValueAtTime(amp * g, at); e.gain.exponentialRampToValueAtTime(0.0001, at + dur);
-    s.connect(e); e.connect(out); s.start(at); s.stop(at + dur + 0.02); end = Math.max(end, at + dur);
+    s.connect(e); e.connect(dest); s.start(at); s.stop(at + dur + 0.02);
   };
   const hiss = (ft, fq, q, dur, amp, at = t) => {
-    const s = AC.createBufferSource(), fl = AC.createBiquadFilter(), e = AC.createGain();
-    s.buffer = noise(); fl.type = ft; fl.frequency.value = fq * (0.5 + to) * pitch; fl.Q.value = q;
+    const s = ctx.createBufferSource(), fl = ctx.createBiquadFilter(), e = ctx.createGain();
+    s.buffer = nb; fl.type = ft; fl.frequency.value = Math.min(ctx.sampleRate * 0.45, fq * (0.5 + to) * pitch); fl.Q.value = q;
     e.gain.setValueAtTime(amp * g, at); e.gain.exponentialRampToValueAtTime(0.0001, at + dur);
-    s.connect(fl); fl.connect(e); e.connect(out); s.start(at, Math.random() * 0.5); s.stop(at + dur + 0.02); end = Math.max(end, at + dur);
+    s.connect(fl); fl.connect(e); e.connect(dest); s.start(at, (k * 0.037) % 0.5); s.stop(at + dur + 0.02);
   };
   switch (type) {
     case 'kick': tone('sine', 150, 42, 0.45 * dl, 1.1); tone('triangle', 700, 120, 0.03, 0.35 * (0.3 + to)); break;
@@ -1241,9 +1303,79 @@ function playDrum(midi, vel, pan, inst, o = {}) {
     case 'cowbell': tone('square', 560, 560, 0.25 * dl, 0.16); tone('square', 845, 845, 0.25 * dl, 0.16); break;
     case 'high tom': tone('sine', 280, 180, 0.3 * dl, 0.8); break;
   }
-  voices++; setTimeout(() => { voices--; try { tail.disconnect(); out.disconnect(); } catch (e) {} }, (end - AC.currentTime + 0.3) * 1000);
-  setTimeout(() => { drumHits[k] = 1; excite = Math.min(1, excite + 0.5); }, Math.max(0, (t - AC.currentTime) * 1000));
-  return {release() {}};
+}
+function getKit(kit) {   // renders once per kit; returns {ready, buf, rev, data, ends, peaks, def}
+  const key = kit.join(',');
+  let e = kits.get(key); if (e) return e;
+  e = {ready:false, cbs:[]}; kits.set(key, e);
+  const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+  const oc = new OAC(1, KIT_SR * KIT_SEC, KIT_SR);
+  const nb = oc.createBuffer(1, KIT_SR, KIT_SR), nd = nb.getChannelData(0), r = rng(7);
+  for (let i = 0; i < nd.length; i++) nd[i] = r() * 2 - 1;
+  for (let k = 0; k < 12; k++) synthHit(oc, oc.destination, k + 0.004, k, kit, nb);
+  const done = buf => {
+    const d = buf.getChannelData(0), rev = new AudioBuffer({length:d.length, sampleRate:KIT_SR, numberOfChannels:1}), rd = rev.getChannelData(0);
+    for (let i = 0; i < d.length; i++) rd[i] = d[d.length - 1 - i];
+    const ends = [];
+    for (let k = 0; k < 12; k++) { let j = (k + 1) * KIT_SR - 1; while (j > k * KIT_SR && Math.abs(d[j]) < 0.003) j--; ends.push(Math.max(k * 1000 + 40, Math.ceil(j / KIT_SR * 1000) + 10)); }
+    const NP = 1200, peaks = new Float32Array(NP * 2), per = d.length / NP;
+    for (let c = 0; c < NP; c++) { let lo = 0, hi = 0; for (let i = Math.floor(c * per); i < Math.floor((c + 1) * per); i += 2) { const v = d[i]; if (v < lo) lo = v; if (v > hi) hi = v; } peaks[c * 2] = lo; peaks[c * 2 + 1] = hi; }
+    Object.assign(e, {ready:true, buf, rev, data:d, ends, peaks, thumbs:new Map()});
+    e.def = Array.from({length:NPART}, (_, j) => ({in:(j % 12) * 1000, out:ends[j % 12], pitch:j < 12 ? 0 : 0, rev:0, mode:0, level:80}));
+    e.cbs.splice(0).forEach(f => f(e));
+  };
+  const p = oc.startRendering(); if (p && p.then) p.then(done); else oc.oncomplete = ev => done(ev.renderedBuffer);
+  return e;
+}
+const partOf = midi => (((midi - 60) % NPART) + NPART) % NPART;   // middle C is key 1
+const whenKit = f => { const e = getKit(UI.drum.kit); if (e.ready) f(e); else e.cbs.push(f); };
+const partsOf = inst => { const e = getKit(inst.kit || DRUM_KITS[0].kit); return e.ready ? {e, parts:inst.parts || e.def} : null; };
+function ensureParts() {
+  if (!UI.drum.parts) { const e = getKit(UI.drum.kit); if (!e.ready) return null; UI.drum.parts = e.def.map(p => Object.assign({}, p)); }
+  return UI.drum.parts;
+}
+function validParts(a) {
+  if (!Array.isArray(a) || a.length !== NPART) return null;
+  return a.map(p => ({in:clamp(+p.in || 0, 0, KIT_MS - 10), out:clamp(+p.out || 0, 10, KIT_MS), pitch:clamp(p.pitch | 0, -12, 12),
+    rev:p.rev ? 1 : 0, mode:clamp(p.mode | 0, 0, 2), level:clamp(p.level ?? 80, 0, 100)}));
+}
+function syncPart() {   // the encoders show the selected key's part
+  const e = getKit(UI.drum.kit); if (!e.ready) return;
+  const p = (UI.drum.parts || e.def)[UI.dkey];
+  P.dpit = p.pitch; P.din = P.dinf = p.in; P.dout = P.doutf = p.out; P.dmode = p.mode; P.ddir = p.rev; P.dlvl = p.level;
+  renderShell();
+}
+function selectPart(j) { if (j !== UI.dkey) { UI.dkey = j; whenKit(syncPart); } }
+function writePart(name) {
+  const parts = ensureParts(); if (!parts) return;
+  const p = parts[UI.dkey], f = DPART[name]; let v = P[name];
+  if (f === 'in') v = Math.min(v, p.out - 10);
+  if (f === 'out') v = Math.max(v, p.in + 10);
+  p[f] = v; syncPart();
+}
+function playDrum(midi, vel, pan, inst, o = {}) {
+  if (!AC || AC.state !== 'running' || voices > 32) return null;
+  const kp = partsOf(inst); if (!kp) return null;
+  const j = partOf(midi), p = kp.parts[j], e = kp.e;
+  const t = Math.max(AC.currentTime, o.when || 0), rate = Math.pow(2, p.pitch / 12);
+  let a = p.in / 1000, b = p.out / 1000; if (p.rev) [a, b] = [KIT_SEC - b, KIT_SEC - a];
+  const src = AC.createBufferSource(), g = AC.createGain();
+  src.buffer = p.rev ? e.rev : e.buf; src.playbackRate.value = rate;
+  g.gain.value = (0.15 + 0.85 * vel) * p.level / 100 * 1.25;
+  let tail = g;
+  if (AC.createStereoPanner) { const pn = AC.createStereoPanner(); pn.pan.value = clamp(pan, -1, 1); g.connect(pn); tail = pn; }
+  src.connect(g); tail.connect(o.bus || liveBus);
+  if (p.mode === 1) { src.loop = true; src.loopStart = a; src.loopEnd = b; src.start(t, a); }
+  else src.start(t, a, b - a);
+  voices++; let gone = false;
+  const free = () => { if (gone) return; gone = true; voices--; try { tail.disconnect(); g.disconnect(); } catch (err) {} };
+  src.onended = free;
+  if (o.gate !== undefined && o.gate !== Infinity && p.mode !== 0) { try { src.stop(t + o.gate + 0.02); } catch (err) {} }
+  setTimeout(() => { drumHits[j] = 1; excite = Math.min(1, excite + 0.5); }, Math.max(0, (t - AC.currentTime) * 1000));
+  return {release() {
+    if (p.mode === 0) return;   // "to end" plays the whole part
+    const now = AC.currentTime; g.gain.setTargetAtTime(0, now, 0.012); try { src.stop(now + 0.08); } catch (err) {}
+  }};
 }
 function playClick(at, accent) {
   const s = AC.createOscillator(), e = AC.createGain();
@@ -1720,16 +1852,55 @@ function drawFxPage(t) {
     }
   }
 }
-function drawDrum() {   // twelve pads, one per semitone; hit pads flash
-  const c = vizCtx(), cols = 4, rows = 3, gx = VW * 0.84 / cols, gy = VH * 0.9 / rows, x0 = VW * 0.08, y0 = VH * 0.05;
-  c.font = FONT(Math.max(10, Math.min(gx, gy) * 0.17)); c.textAlign = 'center'; c.textBaseline = 'top';
-  for (let k = 0; k < 12; k++) {
-    const cx_ = x0 + (k % cols + 0.5) * gx, cy_ = y0 + (Math.floor(k / cols) + 0.4) * gy, r = Math.min(gx, gy) * 0.26, f = drumHits[k];
-    c.strokeStyle = f > 0.05 ? COL.green : COL.line; c.lineWidth = 1.5 + f * 2;
-    c.beginPath(); c.arc(cx_, cy_, r * (1 + f * 0.25), 0, TAU); c.stroke();
-    if (f > 0.05) { c.fillStyle = COL.green; c.globalAlpha = f * 0.6; c.beginPath(); c.arc(cx_, cy_, r * 0.6, 0, TAU); c.fill(); c.globalAlpha = 1; }
-    c.fillStyle = f > 0.05 ? COL.white : COL.dim; c.fillText(DRUMS[k], cx_, cy_ + r * 1.35);
+function drawDrum() {   // the kit's recording with the selected part's in and out, then 24 keys showing their parts
+  const c = vizCtx(), e = getKit(UI.drum.kit);
+  c.font = FONT(Math.max(10, VH * 0.075)); c.textBaseline = 'middle';
+  if (!e.ready) { c.fillStyle = COL.dim; c.textAlign = 'center'; c.fillText('loading kit', VW / 2, VH / 2); return; }
+  const parts = UI.drum.parts || e.def, p = parts[UI.dkey];
+  const x0 = VW * 0.05, w = VW * 0.9, y0 = 0, h = VH * 0.36, mid = y0 + h / 2, NP = e.peaks.length / 2;
+  const xs = ms => x0 + ms / KIT_MS * w;
+  c.fillStyle = 'rgba(30,214,143,.13)'; c.fillRect(xs(p.in), y0, xs(p.out) - xs(p.in), h);
+  for (let px = 0; px < w; px++) {
+    const ci = Math.floor(px / w * NP), lo = e.peaks[ci * 2], hi = e.peaks[ci * 2 + 1], ms = px / w * KIT_MS;
+    c.strokeStyle = ms >= p.in && ms <= p.out ? COL.green : 'rgba(233,233,233,.32)'; c.lineWidth = 1;
+    c.beginPath(); c.moveTo(x0 + px + 0.5, mid - hi * h * 0.48); c.lineTo(x0 + px + 0.5, mid - lo * h * 0.48 + 0.5); c.stroke();
   }
+  c.lineWidth = 2;
+  c.strokeStyle = COL.green; c.beginPath(); c.moveTo(xs(p.in), y0); c.lineTo(xs(p.in), y0 + h); c.stroke();
+  c.strokeStyle = COL.white; c.beginPath(); c.moveTo(xs(p.out), y0); c.lineTo(xs(p.out), y0 + h); c.stroke();
+  // a line under it: kit, key, sound, play mode and direction
+  const kitName = UI.kit >= 0 ? DRUM_KITS[UI.kit].name : 'kit', sound = DRUMS[clamp(Math.floor(p.in / 1000), 0, 11)];
+  c.fillStyle = COL.dim; c.textAlign = 'left'; c.fillText(`${kitName} · key ${UI.dkey + 1} · ${sound}`, x0, VH * 0.45);
+  c.textAlign = 'right'; c.fillText(['to end', 'loop', 'once'][p.mode] + (p.rev ? ' · rev' : ''), x0 + w, VH * 0.45);
+  // 24 keys (two octaves), each drawing the waveform of its own part
+  const ky = VH * 0.53, kh = VH * 0.47, ww = w / 14, BL = [1, 3, 6, 8, 10], WI = [0, 2, 4, 5, 7, 9, 11];
+  const thumb = (q, bx, by, bw, bh, col) => {
+    const tk = q.in + ',' + q.out + ',' + q.rev; let th = e.thumbs.get(tk);
+    if (!th) {
+      const n = 24, a = Math.floor(q.in / 1000 * KIT_SR), b = Math.floor(q.out / 1000 * KIT_SR); th = new Float32Array(n);
+      for (let i = 0; i < n; i++) { let m = 0; const s0 = a + Math.floor((b - a) * i / n), s1 = a + Math.floor((b - a) * (i + 1) / n);
+        for (let k = s0; k < s1; k += 4) m = Math.max(m, Math.abs(e.data[k] || 0)); th[q.rev ? n - 1 - i : i] = m; }
+      if (e.thumbs.size > 400) e.thumbs.clear(); e.thumbs.set(tk, th);
+    }
+    c.fillStyle = col; c.beginPath();
+    const n = th.length, cy = by + bh / 2;
+    for (let i = 0; i < n; i++) c.lineTo(bx + bw * (i + 0.5) / n, cy - Math.min(1, th[i] * 1.4) * bh * 0.45);
+    for (let i = n - 1; i >= 0; i--) c.lineTo(bx + bw * (i + 0.5) / n, cy + Math.min(1, th[i] * 1.4) * bh * 0.45);
+    c.closePath(); c.fill();
+  };
+  const key = (j, bx, by, bw, bh, black) => {
+    const sel = j === UI.dkey, f = drumHits[j];
+    c.fillStyle = black ? '#000' : f > 0.05 ? `rgba(30,214,143,${f * 0.35})` : '#000';
+    c.fillRect(bx, by, bw, bh);
+    c.strokeStyle = sel ? COL.green : 'rgba(233,233,233,.35)'; c.lineWidth = sel ? 2 : 1; c.strokeRect(bx + 0.5, by + 0.5, bw - 1, bh - 1);
+    thumb(parts[j], bx + bw * 0.12, by + (black ? bh * 0.12 : bh * 0.55), bw * 0.76, black ? bh * 0.76 : bh * 0.4,
+      sel ? COL.green : f > 0.05 ? COL.white : 'rgba(233,233,233,.6)');
+  };
+  for (let o = 0; o < 2; o++) WI.forEach((s, i) => key(o * 12 + s, x0 + (o * 7 + i) * ww, ky, ww, kh, false));
+  for (let o = 0; o < 2; o++) BL.forEach(s => {
+    const wi = WI.indexOf(s - 1) + 1, bx = x0 + (o * 7 + wi) * ww - ww * 0.32;
+    key(o * 12 + s, bx, ky, ww * 0.64, kh * 0.5, true);
+  });
 }
 function drawTape(t) {   // two reels, then the four tracks with their notes and the playhead
   const c = vizCtx(), x0 = VW * 0.08, x1 = VW * 0.92, L = loopTicks(), pos = tapeTick() / L;
@@ -1930,7 +2101,7 @@ function frame(now) {
   if (ringName && inSeqView()) placeRing();
   step(dt);
   excite *= Math.exp(-dt * 2.2);
-  for (let k = 0; k < 12; k++) drumHits[k] *= Math.exp(-dt * 6);
+  for (let k = 0; k < NPART; k++) drumHits[k] *= Math.exp(-dt * 6);
   if (inSeqView()) render(dt); else curPage().draw(now / 1000);
   updateHint(now);
   requestAnimationFrame(frame);
@@ -1938,6 +2109,7 @@ function frame(now) {
 function updateHint(now) {
   let msg = '', show = true;
   if (now < hintUntil) msg = hintMsg;
+  else if (UI.shift && UI.mode === 'drum' && !inSeqView() && UI.page.drum === 0) msg = 'shift · encoders: direction · fine in · fine out · level';
   else if (UI.shift) msg = 'shift · T1 synth · T3 effect · T4 lfo · 1-8 pick' + (inSeqView() ? ' · T2 clear · SEQ lay 5 · ‹ key · › scale' : '');
   else if (!AC || AC.state !== 'running') msg = inSeqView() ? 'tap to turn on sound · drag to spin' : 'tap a key to turn on sound';
   else if (inSeqView() && UI.seqOn && !dots.length) msg = 'tap inside the tombola to add notes';
@@ -1946,6 +2118,7 @@ function updateHint(now) {
   hint.style.opacity = show ? 1 : 0;
 }
 size(); computeSegs(theta, 0); renderShell();
+whenKit(syncPart); setTimeout(() => DRUM_KITS.forEach(k => getKit(k.kit)), 1500);
 requestAnimationFrame(frame);
 })();
 </script>

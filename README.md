@@ -9,6 +9,7 @@ The page itself is one file, `tombola.html`. Cloud saving lives in `src/cloud.js
 Everything sits on a grid of white tiles. One unit is the width of a white key.
 
 - **Phone (portrait):** the screen, then T1–T4, then the transport row (record, play, stop, sequencer, octave down and up, shift), then one octave of keys, then the four mode keys.
+- **Phone (landscape):** a 15 × 7 grid with a two-octave keyboard (C to C).
 - **iPad (landscape, 900px and wider):** an 18 × 12 grid.
   - A 2:1 display sits on top, flanked by the OP-1's keys and four encoders.
   - A full-width keyboard runs 2½ octaves, C3 to F5.
@@ -21,7 +22,13 @@ Everything sits on a grid of white tiles. One unit is the width of a white key.
   - **T3 spring reverb:** press T3 again to turn it on or off.
   - **T4 LFO:** speed, pitch, volume and wave.
 - **Sequencer (SEQ):** the spinning Tombola. Tap inside to drop notes and drag to spin. Its corners set speed, gravity, shape and mass. With SHIFT, T1–T4 lay five notes, clear, change key and change scale.
-- **Drum:** a synthesized kit with one sound per semitone. T1 sets pitch, decay, tone and level.
+- **Drum:** the drum sampler from the OP-1 manual (6.2–6.3).
+  - Each kit is one 12-second recording, rendered in the browser with one drum sound per second.
+  - Each of the 24 keys (middle C is key 1) plays its own part of that recording.
+  - The screen shows the recording with the selected key's in and out points, and every key with the waveform of its part.
+  - T1 encoders: blue pitch, green in point, white out point, orange play mode (to end, loop, once).
+  - With SHIFT: direction, fine in, fine out and level.
+- **Sounds 1–8:** tap a key to recall its synth sound or drum kit. Hold it to save: a ring fills on the screen and the sound is saved when it closes, so a tap never overwrites one. SHIFT plus a key opens the engine or kit menu.
 - **Tape:**
   - Four tracks. T1–T4 pick the track; SHIFT plus a T key clears it.
   - REC records notes from the keys, MIDI and the Tombola onto the selected track. The tape loops over the bars you set.
