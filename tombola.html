@@ -149,9 +149,9 @@ body.land #octDn{grid-area:4/13} body.land #octUp{grid-area:4/14} body.land #shi
 body.land #keys{grid-area:5/1/8/16}
 #menu .mt{font-size:3.4cqmin;color:#8a8a8a;letter-spacing:.14em;text-transform:uppercase;margin-bottom:2cqmin}
 #menu .list{display:grid;grid-template-columns:repeat(var(--mcols,1),minmax(0,1fr));column-gap:6cqmin}
-#menu button{font-size:5.6cqmin;font-weight:200;text-align:left;color:#E9E9E9;padding:1cqmin 0;letter-spacing:.04em}
-#menu button.cur{color:var(--mc,#5B7CFA);font-weight:300}
-#menu button:hover{color:#fff}
+#menu button{font-size:5.6cqmin;font-weight:200;text-align:left;color:var(--mc,#5B7CFA);padding:.6cqmin 1.6cqmin;margin-left:-1.6cqmin;letter-spacing:.04em;text-transform:uppercase}
+#menu button.cur{background:var(--mc,#5B7CFA);color:#0A0A0B;font-weight:300}
+#menu button:not(.cur):hover{color:#fff}
 
 /* song sheet (album) */
 #sheet{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.94);color:#E9E9E9;display:flex;justify-content:center;align-items:flex-start;
@@ -283,11 +283,11 @@ const COL = {blue:css('--blue'), lav:css('--lav'), green:css('--green'), white:c
 
 /* ---------- synth engines (four encoder params each, after the OP-1) ---------- */
 const ENGINES = {
-  digital:{labels:['shaper','octave','detune','digital'], def:[30,75,25,35]},
-  fm:     {labels:['ratio','amount','mod env','decay'], def:[55,40,40,50]},
-  string: {labels:['tone','sustain','pluck','body'], def:[60,60,25,40]},
-  pulse:  {labels:['width','cutoff','reso','decay'], def:[30,50,45,35]},
-  cluster:{labels:['spread','voices','filter','decay'], def:[40,60,50,55]},
+  digital:{labels:['wave shaper','octave','detune','digitalness'], def:[30,75,25,35]},
+  fm:     {labels:['topology','freq','fm amount','detune'], def:[30,55,40,15]},
+  string: {labels:['tension','impulse dec','detune','impulse type'], def:[60,60,25,40]},
+  pulse:  {labels:['filter','amplitude','2nd pulse','modulation'], def:[50,35,30,45]},
+  cluster:{labels:['waves','wave env','spread','unitor'], def:[60,50,40,55]},
 };
 const ENGINE_ORDER = ['digital','fm','string','pulse','cluster'];
 const FM_RATIOS = [0.5,1,1.5,2,2.5,3,3.5,4,5,7];
@@ -309,10 +309,18 @@ const SPEC = {
   sus:{min:0, max:100, v:70, col:'white', label:'sustain'},
   rel:{min:0, max:100, v:30, col:'orange', label:'release'},
   // T4 LFO (tremolo)
-  lspd:{min:0, max:100, v:35, col:'blue', label:'speed'},
+  lspd:{min:0, max:6, v:4, col:'blue', label:'speed', span:8},
   lpit:{min:0, max:100, v:0,  col:'green', label:'pitch'},
   lvol:{min:0, max:100, v:0,  col:'white', label:'volume'},
-  lwav:{min:0, max:100, v:0,  col:'orange', label:'wave'},
+  lwav:{min:0, max:100, v:0,  col:'orange', label:'env'},
+  lamt:{min:0, max:100, v:40, col:'blue', label:'amount'}, lrsp:{min:0, max:100, v:40, col:'green', label:'speed'},
+  ldst:{min:0, max:2, v:0, col:'white', label:'dest', span:4},
+  // drum T2: dynamic envelope (manual 6.4)
+  dyatk:{min:0, max:100, v:100, col:'blue', label:'attack'}, dymid:{min:0, max:100, v:100, col:'green', label:'mid'},
+  dyrel:{min:0, max:100, v:100, col:'white', label:'release'}, dyreg:{min:0, max:100, v:50, col:'orange', label:'region'},
+  // mixer T2: EQ
+  eqlo:{min:0, max:100, v:50, col:'blue', label:'low'}, eqmid:{min:0, max:100, v:50, col:'green', label:'mid'},
+  eqhi:{min:0, max:100, v:50, col:'white', label:'high'}, eqamt:{min:0, max:100, v:100, col:'orange', label:'amount'},
   // drum sampler (manual 6.3): one part of the kit's 12-second recording per key. In and out are in ms.
   // Hold SHIFT for the second row: direction, fine in, fine out, level. "span" sets how far a full drag turns.
   dpit:{min:-12, max:12, v:0, col:'blue', label:'pitch', span:24},
@@ -346,20 +354,20 @@ const KEYS = ['C','C♯','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
 const SCALES = {major:[0,2,4,7,9], minor:[0,3,5,7,10]};
 /* effects: five send effects share the same four encoder slots (taper, turns, damp, width) with their own names */
 const FX_TYPES = {
-  spring:{labels:['taper','turns','damp','width']}, delay:{labels:['time','feedback','tone','spread']},
-  grid:{labels:['rate','depth','tone','mix']}, nitro:{labels:['cutoff','reso','drive','mix']},
-  phone:{labels:['band','grit','noise','level']}, punch:{labels:['squash','attack','release','gain']}};
+  spring:{labels:['tone','turns','damp','send']}, delay:{labels:['size','speed','feedback','mix']},
+  grid:{labels:['x size','y size','z fdb','mix']}, nitro:{labels:['freq','ff','res','freq']},
+  phone:{labels:['tone','phonic','baud','telematic']}, punch:{labels:['freq','rounds','punch','power']}};
 const LFO_TYPES = {tremolo:{}, random:{}};
 const FXP = ['taper','turns','damp','width'];
 /* eight synth sounds and eight drum kits ship as the sound buttons 1-8; hold a button to store your own */
 const SYNTH_PRESETS = [
-  {name:'fm bell', engine:'fm', vals:[62,55,45,70], env:[2,55,30,55]},
+  {name:'fm bell', engine:'fm', vals:[30,62,55,20], env:[2,55,30,55]},
   {name:'digital crush', engine:'digital', vals:[72,70,40,62], env:[2,35,60,25]},
   {name:'string pluck', engine:'string', vals:[72,60,32,40], env:[2,45,35,35]},
-  {name:'pulse bass', engine:'pulse', vals:[22,28,42,35], env:[2,30,60,15]},
-  {name:'cluster pad', engine:'cluster', vals:[62,72,38,62], env:[45,50,80,65]},
-  {name:'fm electric', engine:'fm', vals:[30,80,20,30], env:[2,40,40,25]},
-  {name:'pulse lead', engine:'pulse', vals:[58,72,55,50], env:[6,35,65,30]},
+  {name:'pulse bass', engine:'pulse', vals:[28,35,22,42], env:[2,30,60,15]},
+  {name:'cluster pad', engine:'cluster', vals:[72,38,62,62], env:[45,50,80,65]},
+  {name:'fm electric', engine:'fm', vals:[10,30,80,10], env:[2,40,40,25]},
+  {name:'pulse lead', engine:'pulse', vals:[72,50,58,55], env:[6,35,65,30]},
   {name:'string soft', engine:'string', vals:[38,88,15,72], env:[12,60,60,60]}];
 const DRUM_KITS = [
   {name:'808', kit:[35,70,40,80]}, {name:'tight', kit:[56,24,62,80]}, {name:'big', kit:[28,90,35,85]}, {name:'lo-fi', kit:[44,46,14,74]},
@@ -373,7 +381,6 @@ const labelOf = name => {
     return ENGINES[P.engine].labels[+name[1]];
   }
   const fi = FXP.indexOf(name); if (fi >= 0) return FX_TYPES[P.fxType].labels[fi];
-  if (P.lfoType === 'random') { if (name === 'lwav') return 'smooth'; if (name === 'lspd') return 'rate'; }
   return SPEC[name].label;
 };
 
@@ -490,9 +497,9 @@ function onParam(name) {
   if (name === 'shape') peek('#shPeek', '#shIcon', P.shape);
   if (DPART[name]) writePart(name);
   if (['taper','turns','damp','width'].includes(name)) scheduleReverb();
-  if (['lspd','lpit','lvol','lwav'].includes(name)) updateLfo();
-  if (['master','live','fxsend','click','m1','m2','m3','m4'].includes(name)) updateGains();
-  if (name === 'tempo') retime();
+  if (['lspd','lpit','lvol','lwav','lamt','lrsp','ldst'].includes(name)) updateLfo();
+  if (['master','live','fxsend','click','m1','m2','m3','m4','eqlo','eqmid','eqhi','eqamt'].includes(name)) updateGains();
+  if (name === 'tempo') { retime(); updateLfo(); }
   renderShell(); markDirty();
 }
 
@@ -519,19 +526,21 @@ const UI = {mode:'synth', page:{synth:0, drum:0, mixer:0}, seqOn:true, seqView:t
 const WAVES = ['sine', 'triangle', 'square', 'sawtooth'];
 const PAGES = {
   synth: [
-    {name:'engine', params:['s0','s1','s2','s3'], draw:t => drawSynth(t)},
-    {name:'envelope', params:['atk','dcy','sus','rel'], draw:() => drawEnvPage()},
+    {name:'engine', params:['s0','s1','s2','s3'], draw:t => drawArt(P.engine, t)},
+    {name:'envelope', params:['atk','dcy','sus','rel'], draw:t => drawArt('envelope', t)},
     {name:'effect', params:['taper','turns','damp','width'], draw:t => drawFx(t)},
-    {name:'lfo', params:['lspd','lpit','lvol','lwav'], draw:t => drawLfo(t)}],
+    {name:'lfo', params:() => P.lfoType === 'random' ? ['lamt','lrsp','ldst','lwav'] : ['lspd','lpit','lvol','lwav'], draw:t => drawArt(P.lfoType, t)}],
   drum: [
-    {name:'sampler', params:() => UI.shift ? ['ddir','dinf','doutf','dlvl'] : ['dpit','din','dout','dmode'], draw:t => drawDrum(t)}, null,
+    {name:'sampler', params:() => UI.shift ? ['ddir','dinf','doutf','dlvl'] : ['dpit','din','dout','dmode'], draw:t => drawArt('sampler', t, {full:true})},
+    {name:'envelope', params:['dyatk','dymid','dyrel','dyreg'], draw:t => drawArt('dynenv', t)},
     {name:'effect', params:['taper','turns','damp','width'], draw:t => drawFx(t)},
-    {name:'lfo', params:['lspd','lpit','lvol','lwav'], draw:t => drawLfo(t)}],
+    {name:'lfo', params:() => P.lfoType === 'random' ? ['lamt','lrsp','ldst','lwav'] : ['lspd','lpit','lvol','lwav'], draw:t => drawArt(P.lfoType, t)}],
   mixer: [
-    {name:'levels', params:['m1','m2','m3','m4'], draw:() => drawMixer(['m1','m2','m3','m4'])},
-    {name:'master', params:['master','live','fxsend','click'], draw:() => drawMixer(['master','live','fxsend','click'])}, null, null],
+    {name:'levels', params:['m1','m2','m3','m4'], draw:t => drawArt('mixer', t)},
+    {name:'eq', params:['eqlo','eqmid','eqhi','eqamt'], draw:t => drawArt('eq', t)}, null,
+    {name:'master', params:['master','live','fxsend','click'], draw:t => drawArt('out', t)}],
 };
-const TAPE_PAGE = {name:'tape', params:() => ['tempo','bars','m' + (UI.track + 1),'click'], draw:t => drawTape(t)};
+const TAPE_PAGE = {name:'tape', params:() => ['tempo','bars','m' + (UI.track + 1),'click'], draw:t => drawArt('tape', t)};
 const inSeqView = () => UI.seqOn && UI.seqView && (UI.mode === 'synth' || UI.mode === 'drum');
 const curPage = () => UI.mode === 'tape' ? TAPE_PAGE : PAGES[UI.mode][UI.page[UI.mode]];
 function pageParams() {
@@ -539,9 +548,11 @@ function pageParams() {
   const p = curPage(); return typeof p.params === 'function' ? p.params() : p.params;
 }
 const secs = v => (v / 1000).toFixed(3);
-const valueText = name => name === 'dmode' ? ['to end','loop','once'][P.dmode] : name === 'ddir' ? (P.ddir ? 'rev' : 'fwd')
+const LFO_DIVS = [['2/1', 8], ['1/1', 4], ['1/2', 2], ['1/4', 1], ['1/8', 0.5], ['1/16', 0.25], ['1/32', 0.125]];
+const lfoHz = () => P.lfoType === 'random' ? 0.25 * Math.pow(2, P.lrsp / 100 * 6) : P.tempo / 60 / LFO_DIVS[clamp(P.lspd, 0, 6)][1];
+const valueText = name => name === 'lspd' ? LFO_DIVS[clamp(P.lspd, 0, 6)][0] : name === 'ldst' ? ['pitch', 'volume', 'all'][P.ldst]
+  : name === 'lwav' ? (P.lwav ? '+' + P.lwav : 'off') : name === 'eqamt' ? (P.eqamt > 50 ? 'max' : 'clean') + ' ' + P.eqamt : name === 'dmode' ? ['to end','loop','once'][P.dmode] : name === 'ddir' ? (P.ddir ? 'rev' : 'fwd')
   : /^d(in|out)/.test(name) ? secs(P[name]) : name === 'dpit' ? (P.dpit > 0 ? '+' : '') + P.dpit
-  : name === 'lwav' && P.lfoType !== 'random' ? ['sine','tri','square','saw'][Math.min(3, Math.floor(P.lwav / 25))]
   : name === 'click' && !P.click ? 'off' : String(P[name]);
 const curSynth = () => ({mode:'synth', engine:P.engine, vals:P.syn[P.engine].slice(), ring:P.digiRing, env:[P.atk, P.dcy, P.sus, P.rel]});
 const curDrum = () => ({mode:'drum', kit:UI.drum.kit.slice(), parts:UI.drum.parts ? UI.drum.parts.map(p => Object.assign({}, p)) : null});
@@ -587,6 +598,7 @@ function renderTag() {
 function renderShell() {
   const seqv = inSeqView(), names = pageParams();
   tombUI.hidden = !seqv; pageUI.hidden = seqv;
+  pageUI.style.opacity = !seqv && curPage() && curPage().name === 'effect' && !P.fx ? 0.25 : 1;
   if (!seqv) pcs.forEach((b, i) => {
     const n = names[i], lab = labelOf(n), val = valueText(n);
     const l = b.querySelector('.lab'), v = b.querySelector('.val');
@@ -856,6 +868,7 @@ const heldNotes = new Map();
 function noteOn(n, vel) {
   firstGesture(); noteOff(n);
   if (UI.mode === 'drum') selectPart(partOf(n));
+  lfoEnvKick();
   const v = playInst(liveInst(), n, vel, 0, {gate:Infinity, bus:liveBus});
   heldNotes.set(n, v); keyLight(n, true);
   if (tape.recording) tape.pending.set(n, {tick:tapeTick(), vel});
@@ -1027,6 +1040,7 @@ function layout() {
 addEventListener('resize', layout); layout();
 
 /* ---------- audio ---------- */
+let eqL, eqM, eqH;
 let AC = null, master, voiceBus, wetGain, analyser, conv = null, convGain = null, voices = 0, excite = 0;
 /* signal path: live notes (keys, MIDI, tombola) and the four tape tracks each have a level,
    all feed voiceBus -> tremolo -> dry/spring -> master. The LFO wobbles pitch and the tremolo. */
@@ -1039,7 +1053,9 @@ function ensureAudio() {
   const comp = AC.createDynamicsCompressor();
   comp.threshold.value = -16; comp.knee.value = 12; comp.ratio.value = 4; comp.attack.value = 0.003; comp.release.value = 0.2;
   master = AC.createGain();
-  master.connect(comp); comp.connect(AC.destination);
+  eqL = AC.createBiquadFilter(); eqM = AC.createBiquadFilter(); eqH = AC.createBiquadFilter();
+  eqL.type = 'lowshelf'; eqL.frequency.value = 220; eqM.type = 'peaking'; eqM.frequency.value = 1200; eqM.Q.value = 0.8; eqH.type = 'highshelf'; eqH.frequency.value = 4500;
+  master.connect(eqL); eqL.connect(eqM); eqM.connect(eqH); eqH.connect(comp); comp.connect(AC.destination);
   voiceBus = AC.createGain(); trem = AC.createGain();
   const dry = AC.createGain(); dry.gain.value = 0.9;
   voiceBus.connect(trem); trem.connect(dry); dry.connect(master);
@@ -1064,27 +1080,37 @@ function updateGains() {
   trackBus.forEach((g, i) => set(g.gain, P['m' + (i + 1)] / 100));
   set(wetGain.gain, P.fx ? P.fxsend / 100 : 0);
   set(clickBus.gain, P.click / 100 * 0.5);
+  const ea = P.eqamt / 100 * 12; set(eqL.gain, (P.eqlo - 50) / 50 * ea); set(eqM.gain, (P.eqmid - 50) / 50 * ea); set(eqH.gain, (P.eqhi - 50) / 50 * ea);
 }
 let lfoSrc = null, lfoKey = '', lfoTimer = 0;
+function lfoTargets() {   // how far the LFO moves pitch (cents) and volume
+  if (!P.lfoOn) return {cents:0, depth:0};
+  if (P.lfoType === 'random') { const a = P.lamt / 100; return {cents:P.ldst !== 1 ? a * 120 : 0, depth:P.ldst !== 0 ? a * 0.5 : 0}; }
+  return {cents:P.lpit / 100 * 120, depth:P.lvol / 100 * 0.5};
+}
 function updateLfo() {
   if (!AC) return;
-  const type = P.lfoType, wave = WAVES[Math.min(3, Math.floor(P.lwav / 25))], key = type + '|' + (type === 'random' ? '' : wave);
-  if (lfoKey !== key) {
+  const type = P.lfoType;
+  if (lfoKey !== type) {
     if (lfoSrc) { try { lfoSrc.stop(); lfoSrc.disconnect(); } catch (e) {} }
     lfoSrc = type === 'random' ? AC.createConstantSource() : AC.createOscillator();
-    if (type !== 'random') lfoSrc.type = wave;
-    lfoSrc.connect(lfoPitch); lfoSrc.connect(lfoVol); lfoSrc.start(); lfoKey = key;
+    lfoSrc.connect(lfoPitch); lfoSrc.connect(lfoVol); lfoSrc.start(); lfoKey = type;
   }
-  const t = AC.currentTime, hz = 0.1 * Math.pow(2, P.lspd / 100 * 7);
+  const t = AC.currentTime, hz = lfoHz();
   clearInterval(lfoTimer);
-  if (type === 'random') {   // sample and hold: a new random value every cycle, glided by "smooth"
-    const tc = 0.004 + P.lwav / 100 * 0.2, step = () => lfoSrc.offset.setTargetAtTime(Math.random() * 2 - 1, AC.currentTime, tc);
+  if (type === 'random') {   // sample and hold: a new random value every step
+    const step = () => lfoSrc.offset.setTargetAtTime(Math.random() * 2 - 1, AC.currentTime, 0.012);
     step(); lfoTimer = setInterval(step, Math.max(40, 1000 / hz));
-  } else lfoSrc.frequency.setTargetAtTime(hz, t, 0.05);
-  const depth = P.lfoOn ? P.lvol / 100 * 0.5 : 0, cents = P.lfoOn ? P.lpit / 100 * 120 : 0;   // up to a semitone either way
-  lfoPitch.gain.setTargetAtTime(cents, t, 0.05);
-  trem.gain.setTargetAtTime(1 - depth, t, 0.05);
-  lfoVol.gain.setTargetAtTime(depth, t, 0.05);
+  } else lfoSrc.frequency.setTargetAtTime(hz, t, 0.05);   // tremolo: a sine locked to the tempo
+  const {cents, depth} = lfoTargets();
+  lfoPitch.gain.setTargetAtTime(cents, t, 0.05); trem.gain.setTargetAtTime(1 - depth, t, 0.05); lfoVol.gain.setTargetAtTime(depth, t, 0.05);
+}
+function lfoEnvKick() {   // "env": the LFO fades in over up to two seconds after each new note
+  if (!AC || !P.lfoOn || P.lwav < 2) return;
+  const T = P.lwav / 100 * 2, t = AC.currentTime, {cents, depth} = lfoTargets();
+  for (const [p, a, b] of [[lfoPitch.gain, 0, cents], [lfoVol.gain, 0, depth], [trem.gain, 1, 1 - depth]]) {
+    p.cancelScheduledValues(t); p.setValueAtTime(a, t); p.linearRampToValueAtTime(b, t + T);
+  }
 }
 /* iOS only unlocks audio on touchend/click (not touchstart/pointerdown), and Web Audio is muted by the
    silent switch unless a media element is playing — so unlock on those events and keep a silent clip looping. */
@@ -1189,7 +1215,7 @@ function playNote(midi, vel, pan, o = {}) {
   if (AC.createStereoPanner) { const p = AC.createStereoPanner(); p.pan.value = clamp(pan, -1, 1); env.connect(p); tail = p; }
   tail.connect(o.bus || liveBus);
   const peak = 0.04 + 0.34 * Math.pow(vel, 0.8);
-  const dec = 0.12 + Math.pow(sv(3), 2) * 3.2;
+  const dec = 0.12 + Math.pow(inst.engine === 'pulse' ? sv(1) : inst.engine === 'fm' ? 0.62 : sv(3), 2) * 3.2;
   const srcs = [];
   let len = dec, sustains = false;
   switch (inst.engine) {
@@ -1197,15 +1223,22 @@ function playNote(midi, vel, pan, o = {}) {
       const s = AC.createBufferSource(); s.buffer = digiBuffer(midi, inst.vals, inst.ring); s.connect(out);
       len = s.buffer.duration; out.gain.setValueAtTime(peak * 0.8, t); srcs.push(s); break;
     }
-    case 'fm': {
-      const ratio = FM_RATIOS[Math.round(sv(0) * (FM_RATIOS.length - 1))];
+    case 'fm': {   // topology: how the operators connect; freq: the ratio; then FM amount and detune
+      const topo = Math.min(3, Math.floor(sv(0) * 4)), ratio = FM_RATIOS[Math.round(sv(1) * (FM_RATIOS.length - 1))];
       const car = AC.createOscillator(), mod = AC.createOscillator(), mg = AC.createGain();
-      car.frequency.value = f; mod.frequency.value = f * ratio;
-      const depth = f * ratio * sv(1) * 9 * (0.35 + 0.65 * vel), modT = 0.04 + Math.pow(sv(2), 2) * 2.5;
-      mg.gain.setValueAtTime(depth + 0.01, t); mg.gain.exponentialRampToValueAtTime(depth * 0.01 + 0.01, t + modT);
-      mod.connect(mg); mg.connect(car.frequency); car.connect(out);
-      if (held) { out.gain.setValueAtTime(peak * 0.8, t); sustains = true; } else ampEnv(out, t, peak, dec);
-      srcs.push(car, mod); break;
+      car.frequency.value = f; car.detune.value = sv(3) * 18; mod.frequency.value = f * ratio;
+      const depth = f * ratio * sv(2) * 9 * (0.35 + 0.65 * vel), modT = 0.25 + topo * 0.35;
+      mg.gain.setValueAtTime(depth + 0.01, t); mg.gain.exponentialRampToValueAtTime(depth * 0.05 + 0.01, t + modT);
+      mod.connect(mg); mg.connect(car.frequency); car.connect(out); srcs.push(car, mod);
+      if (topo === 1 || topo === 2) {   // a second modulator, in series (1) or side by side (2)
+        const m2 = AC.createOscillator(), g2 = AC.createGain(); m2.frequency.value = f * ratio * 2; g2.gain.value = depth * 0.5;
+        m2.connect(g2); g2.connect(topo === 1 ? mod.frequency : car.frequency); srcs.push(m2);
+      }
+      if (topo === 3) {   // two carriers detuned against each other
+        const c2 = AC.createOscillator(); c2.frequency.value = f; c2.detune.value = -sv(3) * 18 - 4; mg.connect(c2.frequency); c2.connect(out); srcs.push(c2);
+      }
+      if (held) { out.gain.setValueAtTime(peak * 0.7, t); sustains = true; } else ampEnv(out, t, peak * 0.85, dec);
+      break;
     }
     case 'string': {
       const s = AC.createBufferSource(); s.buffer = ksBuffer(f, inst.vals);
@@ -1216,21 +1249,22 @@ function playNote(midi, vel, pan, o = {}) {
     }
     case 'pulse': {
       const osc = AC.createOscillator(), lpf = AC.createBiquadFilter();
-      osc.setPeriodicWave(pulseWave(0.04 + sv(0) * 0.46)); osc.frequency.value = f;
-      const fc = 180 * Math.pow(2, sv(1) * 6.2);
-      lpf.type = 'lowpass'; lpf.Q.value = 0.5 + sv(2) * 16;
+      osc.setPeriodicWave(pulseWave(0.04 + sv(2) * 0.46)); osc.frequency.value = f;
+      const fc = 180 * Math.pow(2, sv(0) * 6.2);
+      lpf.type = 'lowpass'; lpf.Q.value = 0.5 + sv(3) * 16;
       lpf.frequency.setValueAtTime(Math.min(18000, fc * (1.5 + vel * 3)), t); lpf.frequency.exponentialRampToValueAtTime(fc, t + 0.25);
       osc.connect(lpf); lpf.connect(out);
       if (held) { out.gain.setValueAtTime(peak * 0.6, t); sustains = true; } else ampEnv(out, t, peak * 0.6, dec);
       srcs.push(osc); break;
     }
     case 'cluster': {
-      const n = 2 + Math.round(sv(1) * 5), lpf = AC.createBiquadFilter();
-      lpf.type = 'lowpass'; lpf.Q.value = 0.8; lpf.frequency.value = 300 * Math.pow(2, sv(2) * 5.5);
+      const n = 2 + Math.round(sv(0) * 5), lpf = AC.createBiquadFilter();
+      lpf.type = 'lowpass'; lpf.Q.value = 0.8;   // wave env: the filter opens and closes with each note
+      lpf.frequency.setValueAtTime(300 * Math.pow(2, 1.5 + sv(1) * 4.5), t); lpf.frequency.setTargetAtTime(300 * Math.pow(2, 0.5 + sv(1) * 2), t + 0.02, 0.25);
       lpf.connect(out);
       for (let i = 0; i < n; i++) {
         const osc = AC.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = f;
-        osc.detune.value = n === 1 ? 0 : (i / (n - 1) - 0.5) * 2 * sv(0) * 38;
+        osc.detune.value = n === 1 ? 0 : (i / (n - 1) - 0.5) * 2 * sv(2) * 38;
         osc.connect(lpf); srcs.push(osc);
       }
       out.gain.setValueAtTime(0, t); out.gain.linearRampToValueAtTime(peak * 0.7 / Math.sqrt(n), t + 0.012);
@@ -1269,6 +1303,11 @@ function playNote(midi, vel, pan, o = {}) {
 /* drum kit: twelve synthesized sounds, one per semitone (C kick ... B high tom) */
 const DRUMS = ['kick','rim','snare','clap','snare 2','hat','pedal hat','open hat','low tom','mid tom','cowbell','high tom'];
 const drumHits = new Float32Array(24);
+let noiseBuf = null;   // one second of white noise, for the phone effect
+function noise() {
+  if (!noiseBuf) { const n = AC.sampleRate; noiseBuf = AC.createBuffer(1, n, n); const d = noiseBuf.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1; }
+  return noiseBuf;
+}
 /* The drum sampler (manual 6.2-6.3). Each kit is one 12-second recording, rendered offline from the drum
    synthesis below with one sound per second. Each of the 24 keys plays its own part of that recording:
    in and out points, pitch, direction, play mode (to end, loop, once) and level. */
@@ -1361,7 +1400,9 @@ function playDrum(midi, vel, pan, inst, o = {}) {
   let a = p.in / 1000, b = p.out / 1000; if (p.rev) [a, b] = [KIT_SEC - b, KIT_SEC - a];
   const src = AC.createBufferSource(), g = AC.createGain();
   src.buffer = p.rev ? e.rev : e.buf; src.playbackRate.value = rate;
-  g.gain.value = (0.15 + 0.85 * vel) * p.level / 100 * 1.25;
+  const G = (0.15 + 0.85 * vel) * p.level / 100 * 1.25, dur = (b - a) / rate;   // T2 dynamic envelope: attack, mid and release levels
+  g.gain.setValueAtTime(G * P.dyatk / 100, t); g.gain.linearRampToValueAtTime(G * P.dymid / 100, t + dur * (0.05 + P.dyreg / 100 * 0.9));
+  g.gain.linearRampToValueAtTime(G * P.dyrel / 100, t + dur);
   let tail = g;
   if (AC.createStereoPanner) { const pn = AC.createStereoPanner(); pn.pan.value = clamp(pan, -1, 1); g.connect(pn); tail = pn; }
   src.connect(g); tail.connect(o.bus || liveBus);
@@ -1388,7 +1429,7 @@ function playClick(at, accent) {
 function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 function springIR() {
   const sr = AC.sampleRate, len = Math.floor(sr * 3.2);
-  const t = P.turns / 100, w = P.width / 100, d = P.damp / 100, p = P.taper / 100;
+  const t = P.turns / 100, w = 0.5, d = P.damp / 100, p = P.taper / 100;
   const buf = AC.createBuffer(2, len, sr);
   const T = 0.022 + t * 0.075, g = 0.93 - d * 0.3, Lc = 0.012 + t * 0.03;
   const fHi = 5200 - p * 2600, fLo = 130 + p * 140, ratio = fLo / fHi, noiseAmt = 0.06 + p * 0.5;
@@ -1426,27 +1467,31 @@ function makeFx(type) {
   const inp = AC.createGain(), out = AC.createGain(), nodes = [inp, out], srcs = [];
   const add = n => (nodes.push(n), n);
   switch (type) {
-    case 'delay': {
-      const tm = 0.04 + T * 0.7, cut = 500 * Math.pow(2, (1 - D) * 5);
+    case 'delay': {   // size: delay time; speed: a slow wobble on the time; feedback; mix
+      const tm = 0.04 + T * 0.7, wob = AC.createOscillator(), wg = add(AC.createGain());
+      wob.frequency.value = 0.15 + R * 5; wg.gain.value = tm * 0.012 * (0.2 + R); wob.connect(wg); wob.start(); srcs.push(wob);
       const tap = (time, pan) => {
         const dl = add(AC.createDelay(2)), lp = add(AC.createBiquadFilter()), fb = add(AC.createGain());
-        dl.delayTime.value = time; lp.type = 'lowpass'; lp.frequency.value = cut; fb.gain.value = R * 0.88;
+        dl.delayTime.value = time; wg.connect(dl.delayTime); lp.type = 'lowpass'; lp.frequency.value = 3200; fb.gain.value = D * 0.88;
         inp.connect(dl); dl.connect(lp); lp.connect(fb); fb.connect(dl);
         if (AC.createStereoPanner) { const p = add(AC.createStereoPanner()); p.pan.value = pan; lp.connect(p); p.connect(out); } else lp.connect(out);
       };
-      tap(tm, -W); tap(tm * (1.02 + W * 0.5), W); break;
+      tap(tm, -0.5); tap(tm * 1.27, 0.5); out.gain.value = W * 1.5; break;
     }
     case 'grid': {   // rhythmic gate locked to the tempo
       const g = add(AC.createGain()), lp = add(AC.createBiquadFilter()), o = AC.createOscillator(), og = add(AC.createGain());
-      lp.type = 'lowpass'; lp.frequency.value = 400 * Math.pow(2, D * 5);
+      lp.type = 'lowpass'; lp.frequency.value = 6000;
       o.type = 'square'; o.frequency.value = P.tempo / 60 * Math.pow(2, Math.floor(T * 3.99)) / 2;
       g.gain.value = 1 - R / 2; og.gain.value = R / 2; o.connect(og); og.connect(g.gain); o.start(); srcs.push(o);
-      inp.connect(lp); lp.connect(g); g.connect(out); out.gain.value = 0.3 + W * 0.7; break;
+      inp.connect(lp); lp.connect(g); g.connect(out); out.gain.value = 0.3 + W * 0.7;
+      const zd = add(AC.createDelay(2)), zf = add(AC.createGain()); zd.delayTime.value = 60 / P.tempo / 2; zf.gain.value = D * 0.7;   // z fdb: echoes of the gate
+      g.connect(zd); zd.connect(zf); zf.connect(zd); zd.connect(out); break;
     }
-    case 'nitro': {
-      const f = add(AC.createBiquadFilter()), sh = add(AC.createWaveShaper());
-      f.type = 'lowpass'; f.frequency.value = Math.min(16000, 100 * Math.pow(2, T * 7)); f.Q.value = 0.5 + R * 14;
-      sh.curve = curve(D); inp.connect(f); f.connect(sh); sh.connect(out); out.gain.value = 0.4 + W * 0.6; break;
+    case 'nitro': {   // freq: low-pass cutoff; ff: drive; res: resonance; freq: a high-pass in front
+      const hp = add(AC.createBiquadFilter()), f = add(AC.createBiquadFilter()), sh = add(AC.createWaveShaper());
+      hp.type = 'highpass'; hp.frequency.value = 20 * Math.pow(2, W * 8);
+      f.type = 'lowpass'; f.frequency.value = Math.min(16000, 100 * Math.pow(2, T * 7)); f.Q.value = 0.5 + D * 14;
+      sh.curve = curve(R); inp.connect(hp); hp.connect(f); f.connect(sh); sh.connect(out); out.gain.value = 0.8; break;
     }
     case 'phone': {
       const hp = add(AC.createBiquadFilter()), lp = add(AC.createBiquadFilter()), sh = add(AC.createWaveShaper());
@@ -1455,13 +1500,14 @@ function makeFx(type) {
       const ns = AC.createBufferSource(), ng = add(AC.createGain()); ns.buffer = noise(); ns.loop = true; ng.gain.value = D * 0.06;
       ns.connect(ng); ng.connect(out); ns.start(); srcs.push(ns); break;
     }
-    case 'punch': {
-      const c = add(AC.createDynamicsCompressor());
-      c.threshold.value = -8 - T * 40; c.ratio.value = 4 + T * 16; c.attack.value = 0.001 + R * 0.05; c.release.value = 0.05 + D * 0.4;
-      inp.connect(c); c.connect(out); out.gain.value = 1 + W * 2; break;
+    case 'punch': {   // freq: a low shelf boost; rounds: attack; punch: how hard it squeezes; power: output
+      const ls = add(AC.createBiquadFilter()), c = add(AC.createDynamicsCompressor());
+      ls.type = 'lowshelf'; ls.frequency.value = 40 * Math.pow(2, T * 4); ls.gain.value = 9;
+      c.threshold.value = -8 - D * 40; c.ratio.value = 4 + D * 16; c.attack.value = 0.001 + R * 0.05; c.release.value = 0.2;
+      inp.connect(ls); ls.connect(c); c.connect(out); out.gain.value = 0.6 + W * 2.2; break;
     }
     default: {   // spring
-      const c = add(AC.createConvolver()); c.normalize = true; c.buffer = springIR(); inp.connect(c); c.connect(out);
+      const c = add(AC.createConvolver()); c.normalize = true; c.buffer = springIR(); inp.connect(c); c.connect(out); out.gain.value = 0.15 + W * 1.4;
     }
   }
   return {inp, out, nodes, srcs};
@@ -1760,191 +1806,7 @@ function vizCtx() {
   c.lineCap = 'round'; c.lineJoin = 'round'; c.globalAlpha = 1; c.setLineDash([]);
   return c;
 }
-function drawEnvPage() {   // the manual's colored ADSR: blue attack, green decay, white sustain, orange release
-  const c = vizCtx(), x0 = VW * 0.08, x1 = VW * 0.92, y0 = VH * 0.88, y1 = VH * 0.1;
-  const a = P.atk / 100, d = P.dcy / 100, s = P.sus / 100, r = P.rel / 100;
-  const wa = 0.04 + a * 0.24, wd = 0.04 + d * 0.24, ws = 0.18, wr = 0.04 + r * 0.26, sum = wa + wd + ws + wr;
-  const X = u => x0 + u / sum * (x1 - x0), ys = y0 - s * (y0 - y1);
-  c.strokeStyle = COL.line; c.lineWidth = 1; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y0); c.stroke();
-  const seg = (col, pts) => { c.strokeStyle = col; c.lineWidth = 2.4; c.beginPath(); pts.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.stroke(); };
-  seg(COL.blue, [[X(0), y0], [X(wa), y1]]);
-  const dk = []; for (let i = 0; i <= 24; i++) { const u = i / 24; dk.push([X(wa + u * wd), ys + (y1 - ys) * Math.exp(-u * 4)]); } seg(COL.green, dk);
-  seg(COL.white, [[X(wa + wd), ys], [X(wa + wd + ws), ys]]);
-  const rk = []; for (let i = 0; i <= 24; i++) { const u = i / 24; rk.push([X(wa + wd + ws + u * wr), y0 - (y0 - ys) * Math.exp(-u * 4)]); } seg(COL.orange, rk);
-  c.fillStyle = COL.white; [[X(wa), y1], [X(wa + wd), ys], [X(wa + wd + ws), ys]].forEach(([x, y]) => { c.beginPath(); c.arc(x, y, 3.5, 0, TAU); c.fill(); });
-  // held notes light the sustain line
-  if (heldNotes.size) { c.strokeStyle = COL.white; c.globalAlpha = 0.25; c.lineWidth = 8; c.beginPath(); c.moveTo(X(wa + wd), ys); c.lineTo(X(wa + wd + ws), ys); c.stroke(); c.globalAlpha = 1; }
-}
-function drawLfo(t) {
-  const c = vizCtx(), x0 = VW * 0.08, x1 = VW * 0.92, yc = VH * 0.5, A = VH * 0.32;
-  const w = WAVES[Math.min(3, Math.floor(P.lwav / 25))], hz = 0.1 * Math.pow(2, P.lspd / 100 * 7), rnd = P.lfoType === 'random';
-  const hash = i => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return (x - Math.floor(x)) * 2 - 1; };
-  const fn = ph => {
-    if (rnd) { const i = Math.floor(ph * 8); return hash(i + Math.floor(t * hz / 2) * 8); }
-    ph = ((ph % 1) + 1) % 1; return w === 'sine' ? Math.sin(TAU * ph) : w === 'triangle' ? 1 - 4 * Math.abs(ph - 0.5) : w === 'square' ? (ph < 0.5 ? 1 : -1) : 2 * ph - 1;
-  };
-  const cycles = rnd ? 0.5 : 2, ph0 = t * hz;
-  c.globalAlpha = P.lfoOn ? 1 : 0.3;
-  c.font = FONT(Math.max(12, VH * 0.07)); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = COL.orange;
-  c.fillText(P.lfoOn ? P.lfoType.toUpperCase() : 'LFO OFF', VW / 2, VH * 0.04);
-  c.strokeStyle = COL.line; c.lineWidth = 1; c.beginPath(); c.moveTo(x0, yc); c.lineTo(x1, yc); c.stroke();
-  c.strokeStyle = COL.blue; c.lineWidth = 2;
-  polyline(c, 240, u => x0 + u * (x1 - x0), u => yc - A * fn(u * cycles));
-  if (P.lfoOn) {
-    const u = (ph0 % cycles) / cycles, dx = x0 + u * (x1 - x0), dy = yc - A * fn(rnd ? u : ph0);
-    c.fillStyle = COL.white; c.beginPath(); c.arc(dx, dy, 5, 0, TAU); c.fill();
-  }
-  // where it goes: green pitch bar, white volume bar
-  c.fillStyle = COL.green; c.fillRect(x0, VH * 0.96, (x1 - x0) * 0.45 * P.lpit / 100, 3);
-  c.fillStyle = COL.white; c.fillRect(x0 + (x1 - x0) * 0.55, VH * 0.96, (x1 - x0) * 0.45 * P.lvol / 100, 3);
-  c.globalAlpha = 1;
-}
-const drawFx = t => {
-  if (P.fxType === 'spring') drawSpring(t); else drawFxPage(t);
-  if (!P.fx) {
-    cx.setTransform(DPR, 0, 0, DPR, 0, 0); cx.fillStyle = 'rgba(0,0,0,.65)'; cx.fillRect(0, H * 0.2, W, H * 0.6);
-    cx.font = FONT(H * 0.08); cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillStyle = COL.white; cx.fillText('EFFECT OFF', W / 2, H * 0.5);
-  }
-};
-function drawFxPage(t) {
-  const c = vizCtx(), x0 = VW * 0.08, x1 = VW * 0.92, yc = VH * 0.52, A = VH * 0.3;
-  const T = P.taper / 100, R = P.turns / 100, D = P.damp / 100, Wd = P.width / 100;
-  c.font = FONT(Math.max(12, VH * 0.07)); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = COL.green;
-  c.fillText(P.fxType.toUpperCase(), VW / 2, VH * 0.04);
-  c.lineCap = 'round';
-  switch (P.fxType) {
-    case 'delay': {   // echoes, spaced by time, fading by feedback
-      const gap = (x1 - x0) * (0.06 + T * 0.2); c.lineWidth = 3;
-      for (let i = 0; x0 + i * gap < x1; i++) {
-        const h = A * Math.pow(0.35 + R * 0.6, i), x = x0 + i * gap; c.strokeStyle = i ? COL.green : COL.white; c.globalAlpha = Math.max(0.15, 1 - i * 0.07);
-        c.beginPath(); c.moveTo(x, yc + h); c.lineTo(x, yc - h); c.stroke();
-      }
-      c.globalAlpha = 1; break;
-    }
-    case 'grid': {   // a gate pattern; the moving column follows the tempo
-      const cols = 8, rows = 4, cw = (x1 - x0) / cols, ch = A * 1.8 / rows, rate = Math.pow(2, Math.floor(T * 3.99)), cur = Math.floor(t * P.tempo / 60 * rate / 2) % cols;
-      for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++) {
-        const on = ((i * rate) % 2 === 0) !== (j % 2 === 1); c.globalAlpha = (on ? 0.35 + R * 0.65 : 0.12) * (i === cur ? 1 : 0.6);
-        c.fillStyle = i === cur ? COL.white : COL.green; c.fillRect(x0 + i * cw + 2, yc - A * 0.9 + j * ch + 2, cw - 4, ch - 4);
-      }
-      c.globalAlpha = 1; break;
-    }
-    case 'nitro': {   // the filter: cutoff moves the corner, reso lifts the peak
-      c.strokeStyle = COL.blue; c.lineWidth = 2.4; let px = 0, py = 1e9;
-      polyline(c, 200, u => x0 + u * (x1 - x0), u => {
-        const r = Math.pow(2, (u - T) * 7), Q = 0.5 + R * 14, m = 1 / Math.sqrt(Math.pow(1 - r * r, 2) + Math.pow(r / Q, 2));
-        const y = yc + A * 0.7 - Math.max(0, Math.min(60, 20 * Math.log10(m) + 24)) / 60 * A * 1.5; if (y < py) { py = y; px = x0 + u * (x1 - x0); } return y;
-      });
-      c.fillStyle = COL.orange; c.beginPath(); c.arc(px, py, 3 + D * 5, 0, TAU); c.fill(); break;
-    }
-    case 'phone': {   // a narrow band, a little grit
-      const lo = 0.15 + T * 0.3, hi = lo + 0.2 + (1 - D) * 0.1; c.strokeStyle = COL.white; c.lineWidth = 2.4; c.beginPath();
-      c.moveTo(x0, yc + A * 0.6); c.lineTo(x0 + (x1 - x0) * lo, yc + A * 0.6); c.lineTo(x0 + (x1 - x0) * (lo + 0.05), yc - A * 0.5);
-      c.lineTo(x0 + (x1 - x0) * (hi - 0.05), yc - A * 0.5); c.lineTo(x0 + (x1 - x0) * hi, yc + A * 0.6); c.lineTo(x1, yc + A * 0.6); c.stroke();
-      c.fillStyle = COL.green; for (let i = 0; i < 6 + R * 40; i++) { const hx = Math.sin(i * 12.9898 + t) * 43758.5; c.fillRect(x0 + (hx - Math.floor(hx)) * (x1 - x0), yc + A * 0.75 + (i % 3) * 5, 2, 2); }
-      break;
-    }
-    case 'punch': {   // a wave pressed flat under a ceiling
-      const ceil = A * (1 - T * 0.65); c.strokeStyle = COL.line; c.lineWidth = 1; c.beginPath(); c.moveTo(x0, yc - ceil); c.lineTo(x1, yc - ceil); c.moveTo(x0, yc + ceil); c.lineTo(x1, yc + ceil); c.stroke();
-      c.strokeStyle = COL.orange; c.lineWidth = 2.4;
-      polyline(c, 200, u => x0 + u * (x1 - x0), u => yc - Math.max(-ceil, Math.min(ceil, A * 1.25 * Math.sin(TAU * (3 * u + t * 0.4)))));
-      break;
-    }
-  }
-}
-function drawDrum() {   // the kit's recording with the selected part's in and out, then 24 keys showing their parts
-  const c = vizCtx(), e = getKit(UI.drum.kit);
-  c.font = FONT(Math.max(10, VH * 0.075)); c.textBaseline = 'middle';
-  if (!e.ready) { c.fillStyle = COL.dim; c.textAlign = 'center'; c.fillText('loading kit', VW / 2, VH / 2); return; }
-  const parts = UI.drum.parts || e.def, p = parts[UI.dkey];
-  const x0 = VW * 0.05, w = VW * 0.9, y0 = 0, h = VH * 0.36, mid = y0 + h / 2, NP = e.peaks.length / 2;
-  const xs = ms => x0 + ms / KIT_MS * w;
-  c.fillStyle = 'rgba(30,214,143,.13)'; c.fillRect(xs(p.in), y0, xs(p.out) - xs(p.in), h);
-  for (let px = 0; px < w; px++) {
-    const ci = Math.floor(px / w * NP), lo = e.peaks[ci * 2], hi = e.peaks[ci * 2 + 1], ms = px / w * KIT_MS;
-    c.strokeStyle = ms >= p.in && ms <= p.out ? COL.green : 'rgba(233,233,233,.32)'; c.lineWidth = 1;
-    c.beginPath(); c.moveTo(x0 + px + 0.5, mid - hi * h * 0.48); c.lineTo(x0 + px + 0.5, mid - lo * h * 0.48 + 0.5); c.stroke();
-  }
-  c.lineWidth = 2;
-  c.strokeStyle = COL.green; c.beginPath(); c.moveTo(xs(p.in), y0); c.lineTo(xs(p.in), y0 + h); c.stroke();
-  c.strokeStyle = COL.white; c.beginPath(); c.moveTo(xs(p.out), y0); c.lineTo(xs(p.out), y0 + h); c.stroke();
-  // a line under it: kit, key, sound, play mode and direction
-  const kitName = UI.kit >= 0 ? DRUM_KITS[UI.kit].name : 'kit', sound = DRUMS[clamp(Math.floor(p.in / 1000), 0, 11)];
-  c.fillStyle = COL.dim; c.textAlign = 'left'; c.fillText(`${kitName} · key ${UI.dkey + 1} · ${sound}`, x0, VH * 0.45);
-  c.textAlign = 'right'; c.fillText(['to end', 'loop', 'once'][p.mode] + (p.rev ? ' · rev' : ''), x0 + w, VH * 0.45);
-  // 24 keys (two octaves), each drawing the waveform of its own part
-  const ky = VH * 0.53, kh = VH * 0.47, ww = w / 14, BL = [1, 3, 6, 8, 10], WI = [0, 2, 4, 5, 7, 9, 11];
-  const thumb = (q, bx, by, bw, bh, col) => {
-    const tk = q.in + ',' + q.out + ',' + q.rev; let th = e.thumbs.get(tk);
-    if (!th) {
-      const n = 24, a = Math.floor(q.in / 1000 * KIT_SR), b = Math.floor(q.out / 1000 * KIT_SR); th = new Float32Array(n);
-      for (let i = 0; i < n; i++) { let m = 0; const s0 = a + Math.floor((b - a) * i / n), s1 = a + Math.floor((b - a) * (i + 1) / n);
-        for (let k = s0; k < s1; k += 4) m = Math.max(m, Math.abs(e.data[k] || 0)); th[q.rev ? n - 1 - i : i] = m; }
-      if (e.thumbs.size > 400) e.thumbs.clear(); e.thumbs.set(tk, th);
-    }
-    c.fillStyle = col; c.beginPath();
-    const n = th.length, cy = by + bh / 2;
-    for (let i = 0; i < n; i++) c.lineTo(bx + bw * (i + 0.5) / n, cy - Math.min(1, th[i] * 1.4) * bh * 0.45);
-    for (let i = n - 1; i >= 0; i--) c.lineTo(bx + bw * (i + 0.5) / n, cy + Math.min(1, th[i] * 1.4) * bh * 0.45);
-    c.closePath(); c.fill();
-  };
-  const key = (j, bx, by, bw, bh, black) => {
-    const sel = j === UI.dkey, f = drumHits[j];
-    c.fillStyle = black ? '#000' : f > 0.05 ? `rgba(30,214,143,${f * 0.35})` : '#000';
-    c.fillRect(bx, by, bw, bh);
-    c.strokeStyle = sel ? COL.green : 'rgba(233,233,233,.35)'; c.lineWidth = sel ? 2 : 1; c.strokeRect(bx + 0.5, by + 0.5, bw - 1, bh - 1);
-    thumb(parts[j], bx + bw * 0.12, by + (black ? bh * 0.12 : bh * 0.55), bw * 0.76, black ? bh * 0.76 : bh * 0.4,
-      sel ? COL.green : f > 0.05 ? COL.white : 'rgba(233,233,233,.6)');
-  };
-  for (let o = 0; o < 2; o++) WI.forEach((s, i) => key(o * 12 + s, x0 + (o * 7 + i) * ww, ky, ww, kh, false));
-  for (let o = 0; o < 2; o++) BL.forEach(s => {
-    const wi = WI.indexOf(s - 1) + 1, bx = x0 + (o * 7 + wi) * ww - ww * 0.32;
-    key(o * 12 + s, bx, ky, ww * 0.64, kh * 0.5, true);
-  });
-}
-function drawTape(t) {   // two reels, then the four tracks with their notes and the playhead
-  const c = vizCtx(), x0 = VW * 0.08, x1 = VW * 0.92, L = loopTicks(), pos = tapeTick() / L;
-  const rr = Math.min(VH * 0.2, VW * 0.12), ry = VH * 0.22, spin = tape.playing ? t * 2.2 : 0;
-  for (const rx of [VW * 0.32, VW * 0.68]) {
-    c.strokeStyle = COL.white; c.lineWidth = 1.6; c.beginPath(); c.arc(rx, ry, rr, 0, TAU); c.stroke();
-    c.beginPath(); c.arc(rx, ry, rr * 0.22, 0, TAU); c.stroke();
-    for (let i = 0; i < 3; i++) { const a = spin + i * TAU / 3; c.beginPath(); c.moveTo(rx + Math.cos(a) * rr * 0.22, ry + Math.sin(a) * rr * 0.22); c.lineTo(rx + Math.cos(a) * rr * 0.85, ry + Math.sin(a) * rr * 0.85); c.stroke(); }
-  }
-  c.font = FONT(Math.max(12, VH * 0.07)); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = tape.recording ? COL.orange : COL.white;
-  const bt = Math.floor(tapeTick() / PPQ); c.fillText(`${Math.floor(bt / 4) + 1}.${bt % 4 + 1}`, VW * 0.5, ry);
-  const top = VH * 0.5, lh = VH * 0.12, cols = [COL.blue, COL.green, COL.white, COL.orange];
-  tape.tracks.forEach((tr, i) => {
-    const y = top + i * lh, sel = i === UI.track;
-    c.strokeStyle = sel ? cols[i] : COL.line; c.lineWidth = sel ? 1.4 : 1; c.globalAlpha = 1;
-    c.beginPath(); c.moveTo(x0, y + lh * 0.5); c.lineTo(x1, y + lh * 0.5); c.stroke();
-    const notes = tr.events; if (!notes.length) return;
-    let lo = 127, hi = 0; for (const e of notes) { lo = Math.min(lo, e[1]); hi = Math.max(hi, e[1]); }
-    c.strokeStyle = cols[i]; c.lineWidth = 2.2; c.globalAlpha = 0.55 + tape.hits[i] * 0.45;
-    for (const e of notes) {
-      if (e[0] >= L) continue;
-      const yy = y + lh * 0.85 - (hi > lo ? (e[1] - lo) / (hi - lo) : 0.5) * lh * 0.7;
-      c.beginPath(); c.moveTo(x0 + e[0] / L * (x1 - x0), yy); c.lineTo(x0 + Math.min(L, e[0] + e[3]) / L * (x1 - x0), yy); c.stroke();
-    }
-    c.globalAlpha = 1; tape.hits[i] *= 0.9;
-  });
-  const px = x0 + pos * (x1 - x0);
-  c.strokeStyle = tape.recording ? COL.orange : COL.white; c.lineWidth = 1.5;
-  c.beginPath(); c.moveTo(px, top - 4); c.lineTo(px, top + 4 * lh + 4); c.stroke();
-  for (let b = 0; b <= P.bars; b++) { const x = x0 + b / P.bars * (x1 - x0); c.fillStyle = COL.dim; c.fillRect(x - 0.5, top + 4 * lh + 6, 1, 5); }
-}
-function drawMixer(names) {   // one gauge per level, in the encoder colors
-  const c = vizCtx(), cols = [COL.blue, COL.green, COL.white, COL.orange], n = names.length;
-  const gw = VW * 0.84 / n, y0 = VH * 0.95, h = VH * 0.85;
-  if (analyser) analyser.getFloatTimeDomainData(wave); else wave.fill(0);
-  let rms = 0; for (let i = 0; i < wave.length; i++) rms += wave[i] * wave[i]; lvl += (Math.sqrt(rms / wave.length) - lvl) * 0.3;
-  names.forEach((nm, i) => {
-    const x = VW * 0.08 + (i + 0.5) * gw, v = P[nm] / 100, tr = /^m[1-4]$/.test(nm) ? tape.hits[+nm[1] - 1] : 0;
-    c.strokeStyle = COL.line; c.lineWidth = 1; c.strokeRect(x - gw * 0.18, y0 - h, gw * 0.36, h);
-    c.fillStyle = cols[i]; c.globalAlpha = 0.85; c.fillRect(x - gw * 0.18, y0 - h * v, gw * 0.36, h * v);
-    if (tr > 0.05) { c.globalAlpha = tr; c.fillStyle = '#fff'; c.fillRect(x - gw * 0.18, y0 - h * v - 4, gw * 0.36, 3); }
-    c.globalAlpha = 1;
-  });
-}
+const drawFx = t => drawArt(P.fx ? P.fxType : 'fxoff', t);
 function drawEnv(c, dec) {   // orange: amplitude decay, drawn along the floor
   const x0 = VW * 0.08, x1 = VW * 0.92, y0 = VH * 0.9, h = VH * 0.14, span = 3.3;
   c.strokeStyle = COL.line; c.lineWidth = 1; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y0); c.stroke();
@@ -1953,146 +1815,329 @@ function drawEnv(c, dec) {   // orange: amplitude decay, drawn along the floor
   c.stroke();
 }
 function polyline(c, n, fx, fy) { c.beginPath(); for (let i = 0; i <= n; i++) c[i ? 'lineTo' : 'moveTo'](fx(i / n), fy(i / n)); c.stroke(); }
-function drawSynth(t) {
-  const c = vizCtx(), v = P.syn[P.engine].map(x => x / 100), ex = excite;
-  const x0 = VW * 0.08, x1 = VW * 0.92, xs = u => x0 + u * (x1 - x0);
-  const dec = 0.12 + v[3] * v[3] * 3.2;
-  if (P.engine === 'digital') {
-    // faint scope grid
-    c.strokeStyle = COL.line; c.lineWidth = 1;
-    for (let i = 1; i < 8; i++) { const x = xs(i / 8); c.beginPath(); c.moveTo(x, VH * 0.12); c.lineTo(x, VH * 0.82); c.stroke(); }
-    for (let i = 1; i < 4; i++) { const y = VH * 0.12 + i / 4 * VH * 0.7; c.beginPath(); c.moveTo(x0, y); c.lineTo(x1, y); c.stroke(); }
-    const yc = VH * 0.47, A = VH * 0.3 * (0.85 + ex * 0.15), per = 240, n = 360, shift = Math.floor(t * 60) % per;
-    // green: oscillator B on its own (octave + detune drift), drawn behind
-    const oct = Math.round(v[1] * 4) - 2, rB = Math.pow(2, oct) * (1 + (P.digiRing ? v[2] * 0.5 : v[2] * 0.03));
-    c.strokeStyle = COL.green; c.globalAlpha = 0.55; c.lineWidth = 1.2;
-    polyline(c, 300, xs, u => yc - A * 0.55 * Math.sin(TAU * (u * 1.5 * rB + t * 0.3 * v[2])));
-    c.globalAlpha = 1;
-    // blue: the folded, crushed output
-    const gen = digiGen(1, per, P.syn.digital, P.digiRing), smp = [];
-    for (let i = 0; i < n + shift; i++) smp.push(gen());
-    const pts = smp.slice(shift);
-    c.strokeStyle = COL.blue; c.lineWidth = 2; c.beginPath();
-    pts.forEach((y, i) => { const x = xs(i / (n - 1)), yy = yc - y * A; i ? (c.lineTo(x, c._py), c.lineTo(x, yy)) : c.moveTo(x, yy); c._py = yy; });
-    c.stroke();
-    // orange: where digitalness samples the signal
-    const hold = 1 + Math.floor(v[3] * v[3] * 40);
-    if (hold > 2) {
-      c.fillStyle = COL.orange;
-      for (let i = (hold - shift % hold) % hold; i < n; i += hold) { c.beginPath(); c.arc(xs(i / (n - 1)), yc - pts[i] * A, 2.2, 0, TAU); c.fill(); }
-    }
-    // white: ring mod state
-    c.font = '400 13px Encode Sans Condensed, system-ui, sans-serif'; c.textAlign = 'right'; c.textBaseline = 'middle';
-    c.fillStyle = P.digiRing ? COL.white : COL.dim;
-    c.fillText(P.digiRing ? 'RING' : 'MIX', x1, VH * 0.07);
-    c.textAlign = 'left'; c.fillStyle = COL.green; c.fillText((oct > 0 ? '+' : '') + oct + ' OCT', x0, VH * 0.07);
-    c.fillStyle = COL.orange; c.fillText(Math.round(v[3] * 100) ? 'DIGITAL ' + Math.round(v[3] * 100) : 'CLEAN', x0, VH * 0.92);
-  } else if (P.engine === 'fm') {
-    const ri = Math.round(v[0] * (FM_RATIOS.length - 1)), ratio = FM_RATIOS[ri];
-    const my = VH * 0.24, mr = 7 + ri * 1.8, cr = 20;
-    const mxp = VW * 0.34, cxp = VW * 0.6;
-    c.lineWidth = 2; c.strokeStyle = COL.blue; c.beginPath(); c.arc(mxp, my, mr, 0, TAU); c.stroke();
-    c.fillStyle = COL.blue; c.font = `400 13px Encode Sans Condensed, system-ui, sans-serif`; c.textAlign = 'center';
-    c.fillText('×' + ratio, mxp, my + mr + 18);
-    c.strokeStyle = COL.white; c.beginPath(); c.arc(cxp, my, cr, 0, TAU); c.stroke();
-    c.strokeStyle = COL.green; c.lineWidth = 1 + v[1] * 7; c.beginPath(); c.moveTo(mxp + mr + 3, my); c.lineTo(cxp - cr - 3, my); c.stroke();
-    const I = v[1] * 9 * (0.25 + 0.75 * ex), yc = VH * 0.58, A = VH * 0.14;
-    c.strokeStyle = COL.white; c.lineWidth = 1.6;
-    polyline(c, 500, xs, u => yc - A * Math.sin(TAU * 3 * u + I * Math.sin(TAU * 3 * ratio * u + t)));
-    const modT = 0.04 + v[2] * v[2] * 2.5;
-    c.strokeStyle = COL.white; c.globalAlpha = 0.5; c.setLineDash([3, 4]); c.lineWidth = 1;
-    polyline(c, 60, u => xs(u * 0.5), u => VH * 0.78 - VH * 0.08 * Math.exp(-u * 3.3 * 5 / modT));
-    c.setLineDash([]); c.globalAlpha = 1;
-  } else if (P.engine === 'string') {
-    const yc = VH * 0.38, pl = 0.04 + v[2] * 0.46, K = 2 + Math.round(v[0] * 9);
-    c.fillStyle = COL.white;
-    c.fillRect(x0 - 3, yc - 14, 3, 28); c.fillRect(x1, yc - 14, 3, 28);
-    c.strokeStyle = COL.white; c.lineWidth = 1.6;
-    const A = VH * 0.22 * ex;
-    polyline(c, 200, xs, u => {
-      let y = 0;
-      for (let n = 1; n <= K; n++) y += Math.sin(n * Math.PI * pl) / (n * n) * Math.sin(n * Math.PI * u) * Math.cos(n * t * 22);
-      return yc - y * A;
-    });
-    c.beginPath(); c.arc(xs(pl), yc + 22, 3.5, 0, TAU); c.fill();
-    c.strokeStyle = COL.blue; c.lineWidth = 2;
-    for (let n = 1; n <= 11; n++) { const on = n <= K; c.globalAlpha = on ? 1 : 0.2; const x = VW * 0.12 + n * 9, hh = 26 / n + 4; c.beginPath(); c.moveTo(x, VH * 0.74); c.lineTo(x, VH * 0.74 - hh); c.stroke(); }
-    c.globalAlpha = 1;
-    c.strokeStyle = COL.orange; c.beginPath(); c.arc(VW * 0.62, VH * 0.66, 8 + v[3] * 22, 0, TAU); c.stroke();
-    c.strokeStyle = COL.green; c.lineWidth = 2;
-    const sus = 0.985 + v[1] * 0.0148, life = Math.min(1, Math.log(0.001) / Math.log(sus) / 3000);
-    c.beginPath(); c.moveTo(VW * 0.82, VH * 0.76); c.lineTo(VW * 0.82, VH * 0.76 - VH * 0.2 * life); c.stroke();
-  } else if (P.engine === 'pulse') {
-    const pw = 0.04 + v[0] * 0.46, yc = VH * 0.3, A = VH * 0.13;
-    c.strokeStyle = COL.blue; c.lineWidth = 2;
-    c.beginPath();
-    for (let k = 0; k < 4; k++) {
-      const a = xs(k / 4), b = xs((k + pw) / 4), e = xs((k + 1) / 4);
-      if (!k) c.moveTo(a, yc + A);
-      c.lineTo(a, yc - A); c.lineTo(b, yc - A); c.lineTo(b, yc + A); c.lineTo(e, yc + A);
-    }
-    c.stroke();
-    const fc = v[1], Q = 0.5 + v[2] * 16, yb = VH * 0.74;
-    c.strokeStyle = COL.green; c.lineWidth = 2;
-    let peakX = 0, peakY = 1e9;
-    polyline(c, 200, xs, u => {
-      const r = Math.pow(2, (u - fc) * 6.2), m = 1 / Math.sqrt(Math.pow(1 - r * r, 2) + Math.pow(r / Q, 2));
-      const y = yb - clamp(20 * Math.log10(m) + 24, 0, 60) / 60 * VH * 0.3;
-      if (y < peakY) { peakY = y; peakX = xs(u); }
-      return y;
-    });
-    c.fillStyle = COL.white; c.beginPath(); c.arc(peakX, peakY, 3 + v[2] * 3, 0, TAU); c.fill();
-  } else {
-    const n = 2 + Math.round(v[1] * 5), yc = VH * 0.45, A = VH * 0.12;
-    const fcut = v[2];
-    for (let i = 0; i < n; i++) {
-      const o = n === 1 ? 0 : (i / (n - 1) - 0.5) * 2, det = 1 + o * v[0] * 0.15;
-      c.strokeStyle = i % 2 ? COL.lav : COL.white; c.globalAlpha = 0.35 + 0.65 * (1 - Math.abs(o)); c.lineWidth = 1.4;
-      polyline(c, 300, xs, u => {
-        const ph = (u * 3 * det + t * 0.2 * o) % 1;
-        const saw = 2 * ph - 1, smooth = Math.sin(TAU * ph - Math.PI) * 0.8;
-        return yc + o * v[0] * VH * 0.12 - A * (saw * fcut + smooth * (1 - fcut));
-      });
-    }
-    c.globalAlpha = 1;
-  }
-  if (P.engine !== 'digital') drawEnv(c, dec);
-}
-function drawSpring(time) {
-  const c = vizCtx(), SW = VW, SH = VH;
-  if (analyser) analyser.getFloatTimeDomainData(wave); else wave.fill(0);
-  let rms = 0; for (let i = 0; i < wave.length; i++) rms += wave[i] * wave[i];
-  lvl += (Math.sqrt(rms / wave.length) - lvl) * 0.3;
-  const fs = clamp(SH * 0.07, 14, 20), font = s => `400 ${s}px Encode Sans Condensed, system-ui, sans-serif`;
-  c.font = font(fs); c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.fillStyle = COL.green; c.fillText('TURNS', SW * 0.5, SH * 0.1);
-  c.fillStyle = COL.white; c.fillText('DAMP', SW * 0.5, SH * 0.9);
-  c.fillStyle = COL.lav; c.font = font(fs * 1.8); c.fillText('T', SW * 0.07, SH * 0.5);
-  const x0 = SW * 0.16, x1 = SW * 0.8, cy = SH * 0.5;
-  const turns = 5 + Math.round(P.turns / 100 * 22);
-  const baseR = SH * (0.06 + P.width / 100 * 0.16), taper = P.taper / 100, damp = P.damp / 100;
-  c.strokeStyle = COL.lav; c.lineWidth = 1.5;
-  const ah = baseR * 1.3 + taper * SH * 0.06;
-  c.beginPath(); c.moveTo(x0 - 6, cy - ah); c.lineTo(x0 - 6, cy + ah); c.stroke();
-  const n = turns * 28, amp = SH * 0.7 * (1 - damp * 0.6);
-  c.strokeStyle = '#efefed'; c.lineWidth = 1.4; c.globalAlpha = 1 - damp * 0.35;
-  c.beginPath();
-  for (let i = 0; i <= n; i++) {
-    const u = i / n, ang = u * turns * TAU + time * 0.4;
-    const r = baseR * (1 - taper * 0.72 * u);
-    const wob = wave[Math.floor(u * (wave.length - 1))] * amp * Math.sin(u * Math.PI);
-    const x = x0 + u * (x1 - x0) + r * 0.35 * Math.cos(ang), y = cy + r * Math.sin(ang) + wob;
-    i ? c.lineTo(x, y) : c.moveTo(x, y);
-  }
-  c.stroke(); c.globalAlpha = 1;
-  const rx = SW * 0.9, top = SH * 0.24, bot = SH * 0.76;
-  c.strokeStyle = COL.orange; c.setLineDash([2, 4]); c.beginPath(); c.moveTo(rx, top); c.lineTo(rx, bot); c.stroke(); c.setLineDash([]);
-  c.beginPath(); c.moveTo(x1, cy); c.lineTo(rx, cy); c.globalAlpha = 0.35 + clamp(lvl * 8, 0, 0.65); c.stroke(); c.globalAlpha = 1;
-  c.fillStyle = COL.orange;
-  c.beginPath(); c.arc(rx, bot - (P.width / 100) * (bot - top), 4.5, 0, TAU); c.fill();
-}
 
 /* ---------- loop: the tombola keeps playing while you tweak sounds ---------- */
+/* ---------- screen art: the gallery drawings (Claude Design "Screens" boards), drawn live ----------
+   Each screen is drawn in its own art coordinates (the same numbers as the gallery SVGs) and fitted into the
+   middle band of the display. The four page values (0..1) and the time move the parts the encoders control. */
+const AB = '#5B7CFA', AG = '#1ED68F', AW = '#E9E9E9', AO = '#FF4D3D', APU = '#6E56E8', APK = '#FF4F8B', ACY = '#2EC4F2', AGR = '#8A8A8A', ADIM = '#2E2E52';
+function artKit(c) {
+  const dash = d => c.setLineDash(d ? String(d).split(/[ ,]+/).map(Number) : []);
+  const stroke = (col, w) => { c.strokeStyle = col; c.lineWidth = w; c.lineCap = 'round'; c.lineJoin = 'round'; };
+  const pts = p => typeof p === 'string' ? p.trim().split(/\s+/).map(q => q.split(',').map(Number)) : p;
+  const g = {
+    c,
+    ln(d, col = AW, w = 1.4, ds) { stroke(col, w); dash(ds); c.stroke(new Path2D(d)); dash(); },
+    circ(x, y, r, col = AW, fill = 'none', w = 1.4) { c.beginPath(); c.arc(x, y, Math.max(0.1, r), 0, TAU); if (fill !== 'none') { c.fillStyle = fill; c.fill(); } stroke(col, w); c.stroke(); },
+    dot(x, y, r, col) { c.beginPath(); c.arc(x, y, r, 0, TAU); c.fillStyle = col; c.fill(); },
+    ell(x, y, rx, ry, col = AW, w = 1.6) { c.beginPath(); c.ellipse(x, y, rx, ry, 0, 0, TAU); stroke(col, w); c.stroke(); },
+    rect(x, y, w, h, col = AW, fill = 'none', sw = 1.4, rx = 0, ds) {
+      c.beginPath(); if (rx && c.roundRect) c.roundRect(x, y, w, h, rx); else c.rect(x, y, w, h);
+      if (fill !== 'none') { c.fillStyle = fill; c.fill(); }
+      if (col) { stroke(col, sw); dash(ds); c.stroke(); dash(); }
+    },
+    t(x, y, s, col = AW, sz = 10, a = 'start', w = 400) {
+      c.font = `${w} ${sz}px "Encode Sans Condensed", system-ui, sans-serif`; c.fillStyle = col; c.textBaseline = 'alphabetic';
+      c.textAlign = a === 'middle' ? 'center' : a === 'end' ? 'right' : 'left'; c.fillText(s, x, y);
+    },
+    num(x, y, s, col = AW, sz = 30, a = 'start') { g.t(x, y, s, col, sz, a, 200); },
+    poly(p, col = AW, fill = 'none', w = 1.4) {
+      p = pts(p); c.beginPath(); p.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.closePath();
+      if (fill !== 'none') { c.fillStyle = fill; c.fill(); } stroke(col, w); c.stroke();
+    },
+    pline(p, col = AW, w = 1.4) { p = pts(p); c.beginPath(); p.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); stroke(col, w); c.stroke(); },
+    hexp(cx, cy, r, rot = 0) { return Array.from({length:6}, (_, i) => [cx + r * Math.cos((60 * i + rot) * Math.PI / 180), cy + r * Math.sin((60 * i + rot) * Math.PI / 180)]); },
+    dial(x, y, r, ang, col, tick = true) {
+      const a = (ang - 90) * Math.PI / 180;
+      g.circ(x, y, r, col); g.ln(`M${x} ${y} L${x + r * 0.85 * Math.cos(a)} ${y + r * 0.85 * Math.sin(a)}`, col, 1.6); g.dot(x, y, 1.8, col);
+      if (tick) for (let k = -135; k <= 135; k += 45) { const b = (k - 90) * Math.PI / 180; g.ln(`M${x + (r + 3) * Math.cos(b)} ${y + (r + 3) * Math.sin(b)} L${x + (r + 6) * Math.cos(b)} ${y + (r + 6) * Math.sin(b)}`, col, 1); }
+    },
+    sine(x0, y0, w, amp, cycles, col, sw = 1.6, n = 60, ph = 0) {
+      const p = []; for (let i = 0; i <= n; i++) p.push([x0 + w * i / n, y0 - amp * Math.sin(TAU * cycles * i / n + ph)]); g.pline(p, col, sw);
+    },
+    wave(x0, y0, w, h, seed, col, sw = 1.4, n = 90, peaks = []) {
+      const r = rng(seed * 7919 + 1), p = [];
+      for (let i = 0; i <= n; i++) {
+        let base = 0.08 + 0.12 * r();
+        for (const [px, ph] of peaks) { const d = Math.abs(i / n - px); base += ph * Math.max(0, 1 - d * 14) * (0.6 + 0.4 * r()); }
+        p.push([x0 + w * i / n, y0 - h * Math.min(base, 1)]);
+      }
+      g.pline(p, col, sw);
+    },
+    clip(x, y, w, h) { c.beginPath(); c.rect(x, y, w, h); c.clip(); },
+  };
+  return g;
+}
+const angOf = v => -135 + 270 * v;
+const pv = () => pageParams().map(n => (P[n] - SPEC[n].min) / (SPEC[n].max - SPEC[n].min));
+const two = n => String(Math.round(n)).padStart(2, '0');
+/* fit a w x h drawing into the middle band (the corners hold the four readouts) */
+function drawArt(id, t, opts = {}) {
+  const a = ART[id], c = vizCtx(), g = artKit(c), v = opts.v || pv();
+  const bx = VW * (opts.full ? 0.04 : 0.05), bw = VW * (opts.full ? 0.92 : 0.9), by = opts.full ? -VH * 0.28 : 0, bh = opts.full ? VH * 1.5 : VH;
+  const s = Math.min(bw / a.w, bh / a.h);
+  c.save(); c.translate(bx + (bw - a.w * s) / 2, by + (bh - a.h * s) / 2); c.scale(s, s);
+  a.draw(g, v, t); c.restore();
+}
+function reel(g, x, y, r, spin = 0, col = AW) {
+  g.circ(x, y, r, col, 'none', 1.6); g.circ(x, y, r * 0.28, col); g.circ(x, y, 3, col);
+  for (const k of [-90, 30, 150]) { const a = (k * Math.PI / 180) + spin; g.ln(`M${x + r * 0.3 * Math.cos(a)} ${y + r * 0.3 * Math.sin(a)} L${x + r * 0.85 * Math.cos(a)} ${y + r * 0.85 * Math.sin(a)}`, col, 1.4); }
+}
+const tri = (g, x, y, s, col, label) => { g.poly([[x, y], [x + s, y + s / 2], [x, y + s]], col, 'none', 1.6); g.num(x + 6, y + s / 2 + 9, label, col, 24); };
+const swv = (g, x, y, col, k = 1) => { const c = g.c; c.save(); c.translate(x, y); c.scale(k, k); g.ln('M0 12 V4 a2.5 2.5 0 0 1 5 0 v6 a2.5 2.5 0 0 0 5 0 V4 a2.5 2.5 0 0 1 5 0 v6 a2.5 2.5 0 0 0 5 0 V0', col, 1.6 / k); c.restore(); };
+
+const ART = {
+  /* ----- synth engines ----- */
+  cluster: {w:300, h:108, draw(g, v, t) {
+    [[AB, 0], [AG, 1], [AW, 2], [AO, 3]].forEach(([col, k]) => g.dial(45 + 70 * k, 16, 8, angOf(v[k]), col));
+    const paths = [[ACY, 'M0 70 C40 70 60 69 90 66 S150 52 170 64 S230 80 260 66 S290 64 300 64'], [APU, 'M0 80 C50 80 90 76 120 62 S180 52 210 72 S260 82 300 78'],
+      [APK, 'M0 94 C30 94 40 78 60 80 S80 36 120 36 S160 82 200 86 S260 90 300 88'], [AO, 'M0 100 C40 100 80 98 120 97 S220 96 300 96'], [AB, 'M0 66 C60 66 100 66 140 64 S200 70 300 70']];
+    const n = 2 + Math.round(v[0] * 5), c = g.c;
+    paths.forEach(([col, d], k) => {
+      if (k >= n) return;
+      c.save(); c.translate(0, 80 + (k - 2) * v[2] * 9 + Math.sin(t * 1.3 + k) * excite * 4); c.scale(1, 0.45 + v[1] * 1.1); c.translate(0, -80);
+      g.ln(d, k === 3 ? col : col, 1.6 / (0.45 + v[1] * 1.1)); c.restore();
+    });
+    g.ln(`M0 ${104 - v[3] * 10} H${60 + v[3] * 240}`, AO, 1.2, '2 3');
+  }},
+  digital: {w:222, h:98, draw(g, v, t) {
+    const q = 1 + Math.round(v[3] * 18), sn = ([x, y]) => [Math.round(x / q) * q, Math.round(y / q) * q];
+    const wob = excite * 3 * Math.sin(t * 30);
+    const A = sn([30, 12 + (1 - v[0]) * 30 + wob]), B = sn([220, 62]), C = sn([50, 92]), D = sn([22 + v[2] * 40, 44]), E = sn([0, 80]), F = sn([196, 34 - (v[1] - 0.5) * 50]);
+    g.poly([A, B, C, D], APU, 'none', 1.6); g.pline([E, B, F], APU, 1.6);
+    g.dot(...A, 3.5, AW); g.dot(...D, 3.5, AB); g.dot(...E, 3.5, AB); g.dot(...C, 3.5, AB); g.dot(...F, 3.5, AG); g.dot(...B, 3.5, AO);
+    if (P.digiRing) g.t(222, 96, 'RING', AW, 10, 'end', 600);
+  }},
+  string: {w:300, h:114, draw(g, v, t) {
+    g.t(0, 12, 'MAX', APU, 10, 'start', 600); g.t(0, 98, 'MIN', APU, 10, 'start', 600);
+    const rungs = 2 + Math.round(v[1] * 8); for (let k = 0; k < 10; k++) g.ln(`M24 ${10 + k * 9} H38`, k < rungs ? AG : '#173b2e', 1.6);
+    const cols = [AB, AB, AB, AB, ACY, ACY, AG, AG, AG, AW, AW, AW, AW, APK, APK, APK, AO, AO, AO];
+    cols.forEach((col, k) => {
+      const x = 60 + k * 7, b = 4 + v[0] * 20, j = excite * 4 * Math.sin(t * 40 + k);
+      g.ln(`M${x} 6 C${x + b} ${40 + j} ${x + 10} 70 ${x + 40} 84 L${x + 96} 92`, col, 1.3);
+    });
+    g.ln(`M60 10 C64 40 64 70 110 106 L160 110`, AB, 1.2, '3 3');
+    g.ln(`M120 104 L280 ${88 - v[2] * 20} M160 112 L300 ${96 - v[2] * 20}`, APU, 1);
+    const ix = 150 + v[3] * 108; g.dot(ix, 108 - v[3] * 26, 3, AW); g.ln(`M${ix} ${108 - v[3] * 26} L${ix + 14} ${114 - v[3] * 26}`, AW);
+    g.ln('M280 6 V60', APK, 1);
+  }},
+  pulse: {w:262, h:114, draw(g, v, t) {
+    g.t(0, 14, 'F', AB, 16); g.circ(22, 9, 6, AB); g.circ(32, 9, 6, AB);
+    const per = 6 + (1 - v[3]) * 10; let d = 'M46 14'; for (let x = 46, up = 0; x < 130; x += per / 2, up ^= 1) d += ` H${Math.min(130, x + per / 2)} V${up ? 14 : 4}`;
+    g.ln(d, ACY); g.t(146, 14, 'M', AO, 16); g.ln('M164 6 H192 M164 12 H172 V16 H184 V12 H192', AO);
+    const pw = 4 + v[2] * 16, amp = 30 + v[1] * 60, xs = [54, 98, 170, 222], hs = [1, 0.55, 1, 0.55];
+    let w = 'M0 112'; xs.forEach((x, i) => { const top = 112 - amp * hs[i]; w += ` H${x} V${top} H${x + pw} V112`; }); w += ' H260';
+    g.ln(w, AW, 1.6);
+    const fy = 112 - v[0] * 86; g.ln(`M24 ${fy} V112 M54 ${fy + 40} H110 M118 ${fy + 14} H220`, ACY, 1, '2 3');
+    g.t(14, fy + 44, 'H', ACY, 14); g.t(76, fy + 36, 'T', ACY, 14); g.t(124, fy + 12, 'L', ACY, 12);
+  }},
+  fm: {w:156, h:118, draw(g, v, t) {
+    const topo = Math.min(3, Math.floor(v[0] * 4));
+    [[30, 30], [110, 50], [66, 92], [130, 96]].forEach(([x, y]) => g.poly(g.hexp(x, y, 22, 30), ADIM));
+    const links = [[[30, 30, 74, 50]], [[30, 30, 74, 50], [74, 50, 130, 72]], [[30, 30, 70, 104], [74, 50, 70, 104]], [[30, 30, 130, 72], [74, 50, 130, 72], [70, 104, 130, 72]]][topo];
+    links.forEach(([a, b, c2, d]) => g.ln(`M${a} ${b} L${c2} ${d}`, '#22306E', 1.2, '3 3'));
+    const pulse = 1 + excite * 0.12;
+    g.poly(g.hexp(30, 30, 20 * pulse, 30), '#22306E'); g.num(30, 40, two(topo + 1), AB, 26, 'middle');
+    g.poly(g.hexp(74, 50, 24 * pulse, 30), AG); g.num(74, 60, two(v[1] * 99), AG, 26, 'middle');
+    g.num(130, 72, two(v[2] * 99), AO, 26, 'middle'); g.num(70, 104, two(v[3] * 99), AW, 26, 'middle');
+  }},
+  /* ----- synth pages ----- */
+  envelope: {w:290, h:106, draw(g, v) {
+    const ax = 10 + 14 + v[0] * 70, dx = ax + 14 + v[1] * 70, sy = 100 - v[2] * 94, rx = Math.min(282, 220 + 10 + v[3] * 52);
+    g.ln(`M10 100 Q${10 + (ax - 10) * 0.3} 10 ${ax} 6`, AB, 2); g.ln(`M${ax} 6 Q${ax + (dx - ax) * 0.25} ${sy - 2} ${dx} ${sy}`, AG, 2);
+    g.ln(`M${dx} ${sy} H220`, AW, 2); g.ln(`M220 ${sy} Q${220 + (rx - 220) * 0.45} 98 ${rx} 100`, AO, 2);
+    g.ln(`M${ax} 6 V100 M${dx} ${sy} V100 M220 ${sy} V100`, '#2A2A2A', 1, '3 3'); g.ln('M10 100 H280', '#3A3A3A', 1.2);
+    g.dot(10, 100, 3.5, AB); g.dot(ax, 6, 3.5, AG); g.dot(dx, sy, 3.5, AW); g.dot(220, sy, 3.5, AO); g.dot(rx, 100, 3.5, AB);
+  }},
+  fxoff: {w:260, h:80, draw(g) {
+    const L = FX_TYPES[P.fxType].labels;
+    g.t(0, 24, L[0].toUpperCase(), '#3a5aa0', 14); g.t(0, 74, String(P.taper), '#3a5aa0', 30, 'start', 200);
+    g.t(210, 24, L[2].toUpperCase(), '#555', 14); g.t(210, 74, String(P.damp), '#555', 30, 'start', 200);
+    g.rect(84, 34, 34, 22, AB, 'none', 1.6); g.t(101, 51, 'FX', AB, 16, 'middle'); g.num(128, 56, 'OFF', AW, 34);
+  }},
+  /* ----- effects (blue taper, green turns, white damp, orange width are the four effect slots) ----- */
+  spring: {w:290, h:104, draw(g, v, t) {
+    g.t(0, 70, 'T', AB, 64, 'start', 200);
+    const turns = 6 + Math.round(v[1] * 14), c = g.c; let d = 'M0 60 h14';
+    for (let k = 0; k < turns; k++) { const h = (40 - k * 1.6 * (0.3 + v[2] * 1.7) * 14 / turns) * (0.85 + 0.15 * Math.sin(t * 9 + k) * excite); d += ` c-5 -${Math.max(4, h)} 17 -${Math.max(4, h)} 12 0`; }
+    d += ' h30';
+    c.save(); c.translate(46, 0); c.scale(Math.min(1.2, 14 / turns), 1); g.ln(d, AW, 1.6 / Math.min(1.2, 14 / turns)); c.restore();
+    const top = 100 - v[3] * 80; g.ln(`M284 ${top} V100`, AO, 1.6, '2 5'); g.dot(284, top, 3, AO); g.dot(284, 100, 3, AO);
+  }},
+  delay: {w:170, h:114, draw(g, v, t) {
+    const c = g.c; c.save(); g.clip(60, 4, 106, 106);
+    g.t(66, 16, 'R', APU, 10);
+    const sz = 0.6 + v[0] * 0.8, sp = 0.3 + v[1] * 2;
+    for (let k = 0; k < 6; k++) {
+      const ph = (k + t * sp) % 6, r = (14 + ph * 12) * sz;
+      c.globalAlpha = Math.max(0, (1 - ph / 6)) * (k === 0 ? 1 : 0.35 + v[2] * 0.65);
+      g.circ(110, 57, r, ph < 2 ? AB : '#3c4fa0');
+    }
+    c.globalAlpha = 1; c.restore(); g.rect(60, 4, 106, 106, APU, 'none', 1.2);
+    c.globalAlpha = 0.35 + v[3] * 0.65; g.ln('M0 57 H112', AO, 1.6); g.t(0, 52, 'INPUT', AO, 10, 'start', 600); g.dot(112, 57, 2.5, AO); c.globalAlpha = 1;
+  }},
+  grid: {w:214, h:114, draw(g, v, t) {
+    const c = g.c; c.globalAlpha = 0.3 + v[3] * 0.7;
+    g.poly('10,70 120,30 210,62 100,104', AB, 'none', 1.6); g.poly('10,70 10,78 100,112 100,104', AB); g.poly('100,112 210,70 210,62 100,104', AB);
+    for (let k = 1; k < 10; k++) { g.ln(`M${10 + k * 11} ${70 - k * 4} L${100 + k * 11} ${104 - k * 4.2}`, '#33449a', 0.8); g.ln(`M${10 + k * 9} ${70 + k * 3.4} L${120 + k * 9} ${30 + k * 3.2}`, '#33449a', 0.8); }
+    c.globalAlpha = 1;
+    const cx = 105, cy = 50, sx = 0.5 + v[0], sy = 0.5 + v[1], hz = 4 + v[2] * 22, bob = Math.sin(t * P.tempo / 60 * Math.PI) * 2;
+    const p = (x, y) => [cx + (x - cx) * sx, cy + (y - cy) * sy + bob];
+    const top = [p(70, 52), p(110, 38), p(140, 48), p(100, 62)], dn = q => [q[0], q[1] + hz];
+    g.poly(top, AG, 'none', 1.6); g.poly([top[0], dn(top[0]), dn(top[3]), top[3]], AG); g.poly([dn(top[3]), dn(top[2]), top[2], top[3]], AG);
+  }},
+  nitro: {w:362, h:110, draw(g, v, t) {
+    g.ln('M0 8 Q90 18 180 18 Q270 18 360 8', AB, 2);
+    for (let k = 0; k < 6; k++) { const y = 40 + k * (6 + v[1] * 8); g.ln(`M${150 - k * 22} ${y} H${210 + k * 22}`, AG, 1.2, '6 4'); }
+    let d = ''; for (let k = 0; k < 7; k++) { const h = 4 + (0.3 + v[2] * 0.7) * 14 * (0.5 + 0.5 * Math.sin(t * (2 + v[0] * 10) + k * 1.7)); d += `M${150 + k * 10} 30 V${30 - h} `; }
+    g.ln(d, AB, 1.2);
+    g.rect(170, 52, 20, 18, AW, 'none', 1.4, 4); g.t(180, 66, 'R', AW, 12, 'middle', 600); g.ln('M180 70 V96 M168 96 H192 L196 104 H164 Z', AW);
+    g.ln(`M20 104 H${60 + v[0] * 60} L${90 + v[0] * 60} 82 M240 104 H${280 + v[3] * 60} L${300 + v[3] * 60} 84`, AB, 1.6);
+  }},
+  phone: {w:190, h:108, draw(g, v, t) {
+    const c = g.c; c.save(); c.translate(100, 56); c.rotate((v[0] - 0.5) * 0.35); c.translate(-100, -56);
+    g.ln('M20 64 Q30 34 70 30 L150 18 Q178 16 182 34 L184 50 Q182 64 160 70 L80 92 Q40 100 26 84 Z', AW, 1.6);
+    g.ln('M60 46 L120 34 M70 58 L132 46 M80 70 L140 58', AW, 1.2); c.restore();
+    const n = Math.round(v[3] * 9); for (let k = 0; k < n; k++) g.dot(100 + (k % 3) * 10, 66 + Math.floor(k / 3) * 6, 1.6, AW);
+    const a = 4 + v[1] * 10, ph = t * 6; g.ln(`M4 96 C10 ${96 - a + Math.sin(ph) * 2} 20 ${96 + a} 26 94 C30 ${96 - a} 40 ${96 + a + Math.sin(ph) * 2} 46 92`, AG, 1.4);
+    const ra = v[2] * TAU; g.circ(170, 32, 8, AO, 'none', 1.6); g.ln(`M170 32 L${170 + 8 * Math.sin(ra)} ${32 - 8 * Math.cos(ra)}`, AO, 1);
+  }},
+  punch: {w:170, h:104, draw(g, v, t) {
+    const k = 1 + excite * (0.1 + v[3] * 0.3);
+    g.ln('M60 30 Q60 10 80 10 Q100 10 100 30 Q100 46 80 48 Q60 46 60 30 Z', AG, 1.6); g.ln('M70 26 H90 M72 36 Q80 40 88 36', AG, 1.2);
+    g.ln('M40 96 Q50 60 80 56 Q110 60 120 96', AG, 1.6);
+    const c = g.c; const blob = (x, y, d, col) => { c.save(); c.translate(x, y); c.scale(k * (0.7 + v[2] * 0.6), k * (0.7 + v[2] * 0.6)); c.translate(-x, -y); g.ln(d, col, 1.6); c.restore(); };
+    blob(30, 58, 'M30 70 Q14 66 18 52 Q24 40 40 46 Q50 52 44 66 Z', AO); blob(130, 58, 'M130 70 Q146 66 142 52 Q136 40 120 46 Q110 52 116 66 Z', AB);
+    const r = 1 + Math.round(v[1] * 4); let d = ''; for (let i = 0; i < r; i++) d += `M${150 + i * 6} ${20 + (i % 2) * 4 - v[0] * 6} V${40 + (i % 2) * 4} `; g.ln(d, AW, 1.2);
+    g.rect(146, 84, 20, 12, APU, 'none', 1.2); g.t(156, 94, 'FX', APU, 9, 'middle');
+  }},
+  /* ----- LFOs ----- */
+  tremolo: {w:208, h:106, draw(g, v, t) {
+    g.rect(0, 26, 52, 52, APU); const a = t * lfoHz() * TAU;
+    g.ln(`M26 52 L${26 + 14 * Math.sin(a)} ${52 - 14 * Math.cos(a)}`, AB, 1.6); g.dot(26, 52, 3, AB);
+    for (let k = 0; k < 360; k += 45) { const r = k * Math.PI / 180; g.ln(`M${26 + 20 * Math.cos(r)} ${52 + 20 * Math.sin(r)} l${3 * Math.cos(r)} ${3 * Math.sin(r)}`, AB, 1); }
+    g.ln('M52 52 H70 V20 H80 M70 52 V84 H80', APU); tri(g, 80, 0, 44, AG, two(P.lpit)); tri(g, 80, 62, 44, AW, two(P.lvol)); g.ln('M124 22 H140 V52 M124 84 H140 V52 H160', APU);
+    g.rect(160, 30, 46, 46, APU); const e = 66 - v[3] * 30; g.ln(`M168 66 L198 ${e}`, AO, 1.6); g.dot(168, 66, 3, AO);
+    if (!P.lfoOn) g.t(104, 104, 'LFO OFF', AW, 12, 'middle', 600);
+  }},
+  random: {w:284, h:96, draw(g, v, t) {
+    g.poly('0,10 70,46 0,82', APU, 'none', 1.6); g.num(8, 56, two(P.lamt), APU, 26);
+    const hz = lfoHz(), step = Math.floor(t * hz), r = rng(step * 31 + 7); let d = 'M70 46 H96';
+    for (let k = 0; k < 6; k++) { const y = 34 + r() * 24; d += ` L${96 + k * 12} ${y} H${108 + k * 12}`; } d += ' L170 46';
+    g.ln(d, AG, 1.6); g.dot(100, 46, 3, AG);
+    g.rect(180, 4, 40, 34, AW, 'none', 1.6); g.ln('M186 30 Q196 10 204 22 T214 26', AG, 1.4); g.ln('M170 46 H250', APU);
+    g.rect(180, 58, 40, 34, APU); g.ln(`M186 86 L214 ${86 - 6 - v[3] * 20}`, AO, 1.6); g.dot(186, 86, 3, AO);
+    const dst = P.ldst; [[260, 40, AB], [270, 32, AG], [270, 48, AW], [280, 40, AO]].forEach(([x, y, col], i) => g.dot(x, y, i === 0 || (dst === 0 && i === 1) || (dst === 1 && i === 2) || dst === 2 ? 3 : 1.6, col));
+    if (!P.lfoOn) g.t(142, 96, 'LFO OFF', AW, 12, 'middle', 600);
+  }},
+  /* ----- drum ----- */
+  dynenv: {w:300, h:86, draw(g, v) {
+    const ya = 40 + (1 - v[0]) * 40 - 0, rx = 30 + v[3] * 200, ym = 8 + (1 - v[1]) * 72, yr = 8 + (1 - v[2]) * 32;
+    g.ln('M10 40 H290', '#1A5A5A', 1.2, '6 4');
+    g.ln(`M10 40 Q60 ${ya} ${rx * 0.5 + 10} ${ya} V40 H${rx} V${ym} Q${rx + 20} ${(ym + yr) / 2} 290 ${yr}`, AG, 1.8);
+    [[10, 40], [rx * 0.5 + 10, ya], [rx * 0.5 + 10, 40], [rx, 40], [rx, ym], [290, yr]].forEach(([x, y]) => g.dot(x, y, 3.5, AG));
+  }},
+  /* ----- mixer ----- */
+  mixer: {w:290, h:108, draw(g, v) {
+    [[AB], [AG], [AW], [AO]].forEach(([col], k) => {
+      const x = 30 + k * 72, lv = P['m' + (k + 1)] / 100, a = (-90 + lv * 180) * Math.PI / 180, hit = tape.hits[k] || 0;
+      g.ln(`M${x - 26} 30 A26 26 0 0 1 ${x + 26} 30`, ADIM, 1.6); g.ln(`M${x} 30 L${x + 26 * Math.sin(a)} ${30 - 26 * Math.cos(a)}`, AW, 1.6);
+      g.dot(x + 16, 16, 2.5, hit > 0.05 ? AO : '#3a1410'); g.t(x, 26, String(k + 1), ADIM, 18, 'middle', 200);
+      g.circ(x, 50, 8, AW); g.ln(`M${x} 50 V42`, AW); g.t(x - 18, 54, 'L', AGR, 10); g.t(x + 12, 54, 'R', AGR, 10); g.num(x, 104, two(P['m' + (k + 1)]), col, 46, 'middle');
+    });
+  }},
+  eq: {w:290, h:100, draw(g, v) {
+    const s = k => 0.4 + v[k] * 1.2, c = g.c;
+    c.save(); c.translate(20, 62); c.scale(1, s(0)); c.translate(-20, -62);
+    g.ell(20, 30, 16, 6, AB, 1.6 / s(0)); g.ln('M4 30 V62 A16 6 0 0 0 36 62 V30', AB, 1.6 / s(0)); c.restore();
+    c.save(); c.translate(90, 72); c.scale(1, s(1)); c.translate(-90, -72);
+    g.poly('74,18 90,8 106,18 106,62 90,72 74,62', AG, 'none', 1.6 / s(1)); g.ln('M90 8 V72 M74 18 L90 28 L106 18', AG, 1.2 / s(1)); c.restore();
+    c.save(); c.translate(150, 64); c.scale(1, s(2)); c.translate(-150, -64);
+    g.poly('150,6 166,64 134,64', AW, 'none', 1.6 / s(2)); g.ln('M150 6 L150 64', AW, 1 / s(2)); c.restore();
+    g.t(20, 92, 'LOW', AB, 18, 'middle', 200); g.t(90, 92, 'MID', AG, 18, 'middle', 200); g.t(150, 92, 'HIGH', AW, 18, 'middle', 200);
+    g.ln('M196 16 H218 M212 10 L218 16 L212 22', AO, 1.4);
+    g.rect(224, 6, 62, 20, AO, v[3] > 0.5 ? AO : 'none'); g.t(255, 21, 'MAX EQ', v[3] > 0.5 ? '#000' : AO, 13, 'middle');
+    g.rect(224, 78, 62, 20, AB, v[3] <= 0.5 ? AB : 'none'); g.t(255, 93, 'CLEAN', v[3] <= 0.5 ? '#000' : AB, 13, 'middle');
+  }},
+  out: {w:270, h:132, draw(g, v) {
+    if (analyser) analyser.getFloatTimeDomainData(wave); else wave.fill(0);
+    let l = 0, r = 0; for (let i = 0; i < wave.length; i += 2) { l = Math.max(l, Math.abs(wave[i])); r = Math.max(r, Math.abs(wave[i + 1] || 0)); }
+    const m = Math.pow(P.master / 100, 1.5) * 1.4, Ln = Math.min(14, Math.round(l * m * 14 * 3)), Rn = Math.min(14, Math.round(r * m * 14 * 3));
+    for (const [x, n, col] of [[0, Ln, AB], [22, Ln, AB], [48, Rn, AG], [70, Rn, AG]]) for (let k = 0; k < 14; k++) g.ln(`M${x} ${102 - k * 7} H${x + 16}`, k < n ? col : '#3a3a5a', 1.2);
+    g.rect(0, 112, 18, 18, AGR); g.t(9, 126, 'L', AGR, 12, 'middle'); g.rect(48, 112, 18, 18, AGR); g.t(57, 126, 'R', AGR, 12, 'middle');
+    const y1 = 104 - v[0] * 94, y2 = 104 - v[1] * 94;
+    g.ln('M128 10 V104 M160 10 V104', AGR, 1.2); g.ln(`M120 ${y1} H136`, AB, 1.6); g.ln(`M152 ${y2} H168`, AG, 1.6);
+    g.t(116, y1 + 4, two(P.master), AB, 18, 'end', 200); g.t(172, y2 + 4, two(P.live), AG, 18, 'start', 200);
+    g.rect(118, 112, 18, 18, AB); g.t(127, 126, 'L', AB, 12, 'middle'); g.rect(150, 112, 18, 18, AG); g.t(159, 126, 'R', AG, 12, 'middle');
+    g.t(206, 16, 'FX SEND', '#9A9AAA', 18, 'start', 200); g.num(206, 62, two(P.fxsend), AW, 44); g.t(206, 82, 'CLICK', AO, 18, 'start', 200); g.num(206, 126, P.click ? two(P.click) : 'OFF', AO, 44);
+  }},
+};
+
+function keysStrip(g, e, parts, x0, y0, w, h) {   // the 24 keys (two octaves), each drawing its part's waveform
+  const ww = w / 14, BL = [1, 3, 6, 8, 10], WI = [0, 2, 4, 5, 7, 9, 11], c = g.c;
+  const thumb = (q, bx, by, bw, bh, col) => {
+    const tk = q.in + ',' + q.out + ',' + q.rev; let th = e.thumbs.get(tk);
+    if (!th) {
+      const n = 20, a = Math.floor(q.in / 1000 * KIT_SR), b = Math.floor(q.out / 1000 * KIT_SR); th = new Float32Array(n);
+      for (let i = 0; i < n; i++) { let m = 0; const s0 = a + Math.floor((b - a) * i / n), s1 = a + Math.floor((b - a) * (i + 1) / n);
+        for (let k = s0; k < s1; k += 4) m = Math.max(m, Math.abs(e.data[k] || 0)); th[q.rev ? n - 1 - i : i] = m; }
+      if (e.thumbs.size > 400) e.thumbs.clear(); e.thumbs.set(tk, th);
+    }
+    const n = th.length, cy = by + bh / 2; c.beginPath();
+    for (let i = 0; i < n; i++) c.lineTo(bx + bw * (i + 0.5) / n, cy - Math.min(1, th[i] * 1.4) * bh * 0.45);
+    for (let i = n - 1; i >= 0; i--) c.lineTo(bx + bw * (i + 0.5) / n, cy + Math.min(1, th[i] * 1.4) * bh * 0.45);
+    c.closePath(); c.fillStyle = col; c.fill();
+  };
+  const key = (j, bx, by, bw, bh, black) => {
+    const sel = j === UI.dkey, f = drumHits[j];
+    g.rect(bx, by, bw, bh, sel ? AG : 'rgba(233,233,233,.3)', black ? '#000' : f > 0.05 ? `rgba(30,214,143,${f * 0.35})` : '#000', sel ? 1.6 : 0.8);
+    thumb(parts[j], bx + bw * 0.12, by + (black ? bh * 0.12 : bh * 0.55), bw * 0.76, black ? bh * 0.76 : bh * 0.4, sel ? AG : f > 0.05 ? AW : 'rgba(233,233,233,.6)');
+  };
+  for (let o = 0; o < 2; o++) WI.forEach((s, i) => key(o * 12 + s, x0 + (o * 7 + i) * ww, y0, ww, h, false));
+  for (let o = 0; o < 2; o++) BL.forEach(s => key(o * 12 + s, x0 + (o * 7 + WI.indexOf(s - 1) + 1) * ww - ww * 0.32, y0, ww * 0.64, h * 0.5, true));
+}
+const NOTE_NAMES = ['C','C♯','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
+Object.assign(ART, {
+  tape: {w:292, h:136, draw(g, v, t) {
+    const L = loopTicks(), pos = tapeTick() / L, spin = tape.playing ? t * 2.2 : 0, tc = [AB, AG, AW, AO];
+    g.rect(0, 4, 24, 24, tc[UI.track]); g.t(12, 23, String(UI.track + 1), tc[UI.track], 18, 'middle', 200);
+    reel(g, 80, 52, 40, spin); reel(g, 210, 52, 40, spin * 1.25);
+    const bt = Math.floor(tapeTick() / PPQ); g.t(145, 22, `${Math.floor(bt / 4) + 1}:${bt % 4 + 1}`, tape.recording ? AO : AW, 22, 'middle', 200);
+    g.ln('M132 36 h22 a6 6 0 0 0 0 -12 M140 30 l-6 6 l6 6', AW, 1.2);
+    g.ln('M48 76 L100 104 H190 L242 76', AGR, 1.2); g.circ(100, 104, 4, AW); g.circ(118, 100, 4, AW); g.rect(140, 96, 12, 10, AW); g.circ(170, 100, 4, AW); g.circ(190, 104, 4, AW);
+    tape.tracks.forEach((tr, i) => {
+      const y = 113 + i * 6; g.ln(`M10 ${y} H270`, '#1c1c1c', 1);
+      for (const e of tr.events) { if (e[0] >= L) continue; const a = 10 + e[0] / L * 260, b = 10 + Math.min(L, e[0] + e[3]) / L * 260; g.ln(`M${a} ${y} H${Math.max(a + 1.5, b)}`, tc[i], i === UI.track ? 2.4 : 1.6); }
+    });
+    const px = 10 + pos * 260; g.ln(`M${px} 107 V135`, tape.recording ? AO : AG, 1.4);
+    const lv = P['m' + (UI.track + 1)] / 100; g.ln('M286 30 V110', AO, 1.6); g.dot(286, 110 - lv * 80, 3, AO);
+  }},
+  sampler: {w:292, h:158, draw(g, v, t) {
+    const e = getKit(UI.drum.kit);
+    if (!e.ready) { g.t(146, 80, 'LOADING KIT', AGR, 14, 'middle'); return; }
+    const parts = UI.drum.parts || e.def, p = parts[UI.dkey], midi = 60 + UI.dkey + UI.oct * 12;
+    g.t(0, 26, NOTE_NAMES[UI.dkey % 12] + (Math.floor(midi / 12) - 1), AW, 30, 'start', 200);
+    g.t(56, 26, '♩' + (p.pitch > 0 ? '+' : '') + p.pitch, AG, 24, 'start', 200);
+    const NP = e.peaks.length / 2, ox = 112, ow = 140, xs = ms => ox + ms / KIT_MS * ow;
+    g.rect(xs(p.in), 4, Math.max(1, xs(p.out) - xs(p.in)), 20, null, 'rgba(30,214,143,.22)');
+    let d = ''; for (let i = 0; i < ow; i++) { const ci = Math.floor(i / ow * NP), hi = Math.max(-e.peaks[ci * 2], e.peaks[ci * 2 + 1]); d += `M${ox + i} 22 V${22 - Math.min(1, hi) * 16} `; }
+    g.ln(d, '#1A8A6A', 1);
+    if (p.mode === 1) g.ln('M262 18 h22 a8 8 0 0 0 0 -14 h-16 M272 0 l-6 4 l6 4', AO, 1.6);
+    else if (p.mode === 0) g.ln('M262 12 H284 M278 6 L284 12 L278 18 M289 4 V20', AO, 1.6);
+    else g.ln('M262 12 H284 M278 6 L284 12 L278 18', AO, 1.6);
+    if (p.rev) g.t(292, 40, 'REV', AO, 10, 'end', 600);
+    const a = Math.floor(p.in / 1000 * KIT_SR), b = Math.floor(p.out / 1000 * KIT_SR), N = 140; d = '';
+    for (let i = 0; i <= N; i++) {
+      let m = 0; const s0 = a + Math.floor((b - a) * i / N), s1 = a + Math.floor((b - a) * (i + 1) / N);
+      for (let k = s0; k < s1; k += 3) m = Math.max(m, Math.abs(e.data[k] || 0));
+      d += `${i ? 'L' : 'M'}${10 + (p.rev ? N - i : i) / N * 280} ${112 - Math.min(1, m * 1.3) * 74}`;
+    }
+    g.ln(d, AG, 1.4); g.ln('M10 112 H290', '#1A6A5A', 1);
+    g.dot(10, 112, 3.5, AG); g.circ(290, 112, 4.5, AW, 'none', 1.6); g.dot(290, 112, 1.6, AW);
+    keysStrip(g, e, parts, 0, 122, 292, 36);
+  }},
+});
+
 let last = performance.now();
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000) || 0.016; last = now;
