@@ -513,11 +513,12 @@ function onParam(name) {
   if (name === 'mass') peek('#mPeek', '#mIcon', P.mass);
   if (name === 'shape') peek('#shPeek', '#shIcon', P.shape);
   if (DPART[name]) writePart(name);
-  if (['taper','turns','damp','width'].includes(name)) scheduleReverb();
+  if (/^(s[0-3]|atk|dcy|sus|rel|dpit|din|dinf|dout|doutf|ddir|dmode|dlvl|dyatk|dymid|dyrel|dyreg)$/.test(name)) liveUpdate(name);
+  if (['taper','turns','damp','width'].includes(name)) fxLive();
   if (['lspd','lpit','lvol','lwav','lamt','lrsp','ldst'].includes(name)) updateLfo();
   if (['master','live','fxsend','click','m1','m2','m3','m4','pan1','pan2','pan3','pan4','mleft','mright','eqlo','eqmid','eqhi','eqamt'].includes(name)) updateGains();
-  if (MFXP.includes(name)) scheduleMasterFx();
-  if (name === 'tempo' || name === 'tspeed') { retime(); updateLfo(); }
+  if (MFXP.includes(name)) mfxLive();
+  if (name === 'tempo' || name === 'tspeed') { retime(); updateLfo(); fxLive(); mfxLive(); }
   if (name === 'scrub') scrubTo(P.scrub / 100 * loopTicks());
   if (['drive','mrel'].includes(name)) updateGains();
   renderShell(); markDirty();
@@ -737,11 +738,12 @@ menuEl.addEventListener('click', e => {
 });
 function previewInst() { const dm = instMode() === 'drum'; playInst(dm ? curDrum() : curSynth(), dm ? 38 : 60, 0.8, 0, dm ? {bus:liveBus} : {gate:0.45, bus:liveBus}); }
 function pickEngine(id, slot) {
-  P.engine = id; loadEngineParams();
+  P.engine = id; loadEngineParams(); liveUpdate('engine');
   if (slot !== null) UI.presets.synth[slot] = curSynth();
   previewInst(); showHint(id + (slot !== null ? ' on sound ' + (slot + 1) : '')); markDirty();
 }
 function pickKit(i, slot) {
+  setTimeout(() => liveUpdate('preset'), 0);
   UI.drum = {kit:DRUM_KITS[i].kit.slice(), parts:null}; UI.kit = i; whenKit(syncPart);
   if (slot !== null) UI.presets.drum[slot] = curDrum();
   previewInst(); showHint(DRUM_KITS[i].name + (slot !== null ? ' on sound ' + (slot + 1) : '')); markDirty();
@@ -799,6 +801,7 @@ $('#speaker .grill').innerHTML = '<i></i>'.repeat(88);
 /* sound keys 1-8: tap recalls a synth sound (or drum kit), hold stores the current one,
    SHIFT + key opens the engine (or kit) menu and puts the choice on that key */
 function applyPreset(pm, pr) {
+  setTimeout(() => liveUpdate('preset'), 0);
   if (pm === 'drum') {
     UI.drum = {kit:pr.kit.slice(), parts:Array.isArray(pr.parts) ? pr.parts.map(p => Object.assign({}, p)) : null};
     UI.kit = DRUM_KITS.findIndex(k => k.kit.join() === pr.kit.join()); whenKit(syncPart);
@@ -924,9 +927,23 @@ function noteOn(n, vel) {
   firstGesture(); noteOff(n);
   if (UI.mode === 'drum') selectPart(partOf(n));
   lfoEnvKick();
-  const v = playInst(liveInst(), n, vel, 0, {gate:Infinity, bus:liveBus});
+  const v = playInst(liveInst(), n, vel, 0, {gate:Infinity, bus:liveBus, live:true}); if (v) v.vel = vel;
   heldNotes.set(n, v); keyLight(n, true);
   if (tape.recording) tape.pending.set(n, {tick:tapeTick(), vel});
+}
+let rePend = new Set(), reT = 0;
+function liveUpdate(name) {   // an encoder moved: held notes follow it now; the ones that cannot are started again, at most every 90 ms
+  const force = name === 'engine' || name === 'preset';   // a different sound: always play it again
+  for (const [n, v] of [...heldNotes]) if (v && (force || (v.update && v.update(name) === false))) rePend.add(n);
+  if (rePend.size && !reT) reT = setTimeout(() => { reT = 0; retriggerHeld(); }, 90);
+}
+function retriggerHeld() {
+  for (const n of [...rePend]) {
+    const old = heldNotes.get(n); if (!old) continue;
+    const v = playInst(liveInst(), n, old.vel || 0.8, 0, {gate:Infinity, bus:liveBus, live:true}); if (!v) continue;
+    v.vel = old.vel; if (old.fade) old.fade(); heldNotes.set(n, v);
+  }
+  rePend.clear();
 }
 function noteOff(n) {
   if (!heldNotes.has(n)) return;
@@ -1299,26 +1316,39 @@ function playNote(midi, vel, pan, o = {}) {
   const dec = 0.12 + Math.pow(inst.engine === 'pulse' ? sv(1) : 0.62, 2) * 3.2;
   const srcs = [];
   let len = dec, sustains = false;
+  const live = !!o.live, cur = () => live ? curSynth().vals.map(x => x / 100) : v;   // a held key reads the encoders again whenever they move
+  let upd = null;
   switch (inst.engine) {
     case 'digital': {
       const s = AC.createBufferSource(); s.buffer = digiBuffer(midi, inst.vals, inst.ring); s.connect(out);
-      len = s.buffer.duration; out.gain.setValueAtTime(peak * 0.8, t); srcs.push(s); break;
+      len = s.buffer.duration; out.gain.setValueAtTime(peak * 0.8, t); srcs.push(s); upd = () => false; break;   // a rendered buffer: start it again
     }
     case 'fm': {   // topology: how the operators connect; freq: the ratio; then FM amount and detune
-      const topo = Math.min(3, Math.floor(sv(0) * 4)), ratio = FM_RATIOS[Math.round(sv(1) * (FM_RATIOS.length - 1))];
+      const topoAt = w => Math.min(3, Math.floor(w[0] * 4)), ratioAt = w => FM_RATIOS[Math.round(w[1] * (FM_RATIOS.length - 1))];
+      const depthAt = w => f * ratioAt(w) * w[2] * 9 * (0.35 + 0.65 * vel), topo = topoAt(v);
       const car = AC.createOscillator(), mod = AC.createOscillator(), mg = AC.createGain();
-      car.frequency.value = f; car.detune.value = sv(3) * 18; mod.frequency.value = f * ratio;
-      const depth = f * ratio * sv(2) * 9 * (0.35 + 0.65 * vel), modT = 0.25 + topo * 0.35;
-      mg.gain.setValueAtTime(depth + 0.01, t); mg.gain.exponentialRampToValueAtTime(depth * 0.05 + 0.01, t + modT);
+      car.frequency.value = f; car.detune.value = sv(3) * 18; mod.frequency.value = f * ratioAt(v);
+      const depth = depthAt(v), modT = 0.25 + topo * 0.35;
+      mg.gain.setValueAtTime(depth + 0.01, t); mg.gain.exponentialRampToValueAtTime(depth * 0.25 + 0.01, t + modT);
       mod.connect(mg); mg.connect(car.frequency); car.connect(out); srcs.push(car, mod);
+      let m2 = null, g2 = null, c2 = null;
       if (topo === 1 || topo === 2) {   // a second modulator, in series (1) or side by side (2)
-        const m2 = AC.createOscillator(), g2 = AC.createGain(); m2.frequency.value = f * ratio * 2; g2.gain.value = depth * 0.5;
+        m2 = AC.createOscillator(); g2 = AC.createGain(); m2.frequency.value = f * ratioAt(v) * 2; g2.gain.value = depth * 0.5;
         m2.connect(g2); g2.connect(topo === 1 ? mod.frequency : car.frequency); srcs.push(m2);
       }
-      if (topo === 3 || sv(3) > 0.02) {   // detune: a second carrier against the first
-        const c2 = AC.createOscillator(); c2.frequency.value = f; c2.detune.value = -sv(3) * 18 - 4; mg.connect(c2.frequency); c2.connect(out); srcs.push(c2);
+      const twoCarriers = w => topoAt(w) === 3 || w[3] > 0.02, two = twoCarriers(v);
+      if (two) {   // detune: a second carrier against the first
+        c2 = AC.createOscillator(); c2.frequency.value = f; c2.detune.value = -sv(3) * 18 - 4; mg.connect(c2.frequency); c2.connect(out); srcs.push(c2);
       }
       if (held) { out.gain.setValueAtTime(peak * 0.7, t); sustains = true; } else ampEnv(out, t, peak * 0.85, dec);
+      upd = () => {
+        const w = cur(), now = AC.currentTime;
+        if (topoAt(w) !== topo || twoCarriers(w) !== two) return false;   // a different wiring: start the note again
+        car.detune.setTargetAtTime(w[3] * 18, now, 0.02); mod.frequency.setTargetAtTime(f * ratioAt(w), now, 0.02);
+        const d = depthAt(w); mg.gain.cancelScheduledValues(now); mg.gain.setTargetAtTime(d * 0.25 + 0.01, now, 0.05);
+        if (g2) g2.gain.setTargetAtTime(d * 0.5, now, 0.05); if (m2) m2.frequency.setTargetAtTime(f * ratioAt(w) * 2, now, 0.02);
+        if (c2) c2.detune.setTargetAtTime(-w[3] * 18 - 4, now, 0.02);
+      };
       break;
     }
     case 'string': {
@@ -1329,38 +1359,48 @@ function playNote(midi, vel, pan, o = {}) {
         const s2 = AC.createBufferSource(); s2.buffer = s.buffer; s2.playbackRate.value = Math.pow(2, sv(2) * 30 / 1200); s2.connect(body); srcs.push(s2);
       }
       len = s.buffer.duration; out.gain.setValueAtTime(peak * 1.4, t); out.gain.setTargetAtTime(0, t + len - 0.3, 0.08);
-      srcs.push(s); break;
+      srcs.push(s); upd = () => false; break;   // plucked from a rendered buffer: pluck it again
     }
     case 'pulse': {   // filter; amplitude (envelope); a 2nd pulse an octave down; modulation sweeps the pulse width
-      const lpf = AC.createBiquadFilter(), fc = 180 * Math.pow(2, sv(0) * 6.2);
+      const fcAt = w => 180 * Math.pow(2, w[0] * 6.2), fc = fcAt(v), lpf = AC.createBiquadFilter();
       lpf.type = 'lowpass'; lpf.Q.value = 2;
       lpf.frequency.setValueAtTime(Math.min(18000, fc * (1.5 + vel * 3)), t); lpf.frequency.exponentialRampToValueAtTime(fc, t + 0.25);
       lpf.connect(out);
-      const pwm = AC.createOscillator(), pg = AC.createGain(); pwm.frequency.value = 0.5 + sv(3) * 5; pwm.connect(pg); srcs.push(pwm);
-      const pair = (freq, lvl) => {   // a pulse is a saw minus a delayed copy of itself; the delay sets the width
-        const o = AC.createOscillator(), dl = AC.createDelay(0.1), inv = AC.createGain(), g = AC.createGain();
-        o.type = 'sawtooth'; o.frequency.value = freq; dl.delayTime.value = 0.35 / freq; inv.gain.value = -1; g.gain.value = lvl;
-        const pd = AC.createGain(); pd.gain.value = 0.25 / freq * sv(3); pg.connect(pd); pd.connect(dl.delayTime);
-        o.connect(g); o.connect(dl); dl.connect(inv); inv.connect(g); g.connect(lpf); srcs.push(o);
+      const pwm = AC.createOscillator(), pg = AC.createGain(), pds = [], lvl = []; pwm.frequency.value = 0.5 + sv(3) * 5; pwm.connect(pg); srcs.push(pwm);
+      const pair = (freq, level) => {   // a pulse is a saw minus a delayed copy of itself; the delay sets the width
+        const o2 = AC.createOscillator(), dl = AC.createDelay(0.1), inv = AC.createGain(), g = AC.createGain();
+        o2.type = 'sawtooth'; o2.frequency.value = freq; dl.delayTime.value = 0.35 / freq; inv.gain.value = -1; g.gain.value = level;
+        const pd = AC.createGain(); pd.gain.value = 0.25 / freq * sv(3); pg.connect(pd); pd.connect(dl.delayTime); pds.push([pd, freq]); lvl.push(g);
+        o2.connect(g); o2.connect(dl); dl.connect(inv); inv.connect(g); g.connect(lpf); srcs.push(o2);
       };
-      pair(f, 0.5); if (sv(2) > 0.02) pair(f / 2 * 1.004, sv(2) * 0.5);
+      const second = sv(2) > 0.02; pair(f, 0.5); if (second) pair(f / 2 * 1.004, sv(2) * 0.5);
       if (held) { out.gain.setValueAtTime(peak * 0.6, t); sustains = true; } else ampEnv(out, t, peak * 0.6, dec);
+      upd = () => {
+        const w = cur(), now = AC.currentTime; if ((w[2] > 0.02) !== second) return false;
+        lpf.frequency.cancelScheduledValues(now); lpf.frequency.setTargetAtTime(fcAt(w), now, 0.03); pwm.frequency.setTargetAtTime(0.5 + w[3] * 5, now, 0.03);
+        pds.forEach(([pd, fr]) => pd.gain.setTargetAtTime(0.25 / fr * w[3], now, 0.03)); if (second) lvl[1].gain.setTargetAtTime(w[2] * 0.5, now, 0.03);
+      };
       break;
     }
     case 'cluster': {
-      const n = 2 + Math.round(sv(0) * 5), lpf = AC.createBiquadFilter();
+      const n = 2 + Math.round(sv(0) * 5), lpf = AC.createBiquadFilter(), oscs = [], pns = [];
       lpf.type = 'lowpass'; lpf.Q.value = 0.8;   // wave env: the filter opens and closes with each note
       lpf.frequency.setValueAtTime(300 * Math.pow(2, 1.5 + sv(1) * 4.5), t); lpf.frequency.setTargetAtTime(300 * Math.pow(2, 0.5 + sv(1) * 2), t + 0.02, 0.25);
       lpf.connect(out);
       for (let i = 0; i < n; i++) {
         const osc = AC.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = f;
         osc.detune.value = n === 1 ? 0 : (i / (n - 1) - 0.5) * 2 * sv(2) * 38;
-        if (AC.createStereoPanner) { const pn = AC.createStereoPanner(); pn.pan.value = n === 1 ? 0 : (i / (n - 1) - 0.5) * 2 * sv(3); osc.connect(pn); pn.connect(lpf); }
+        if (AC.createStereoPanner) { const pn = AC.createStereoPanner(); pn.pan.value = n === 1 ? 0 : (i / (n - 1) - 0.5) * 2 * sv(3); osc.connect(pn); pn.connect(lpf); pns.push(pn); }
         else osc.connect(lpf);
-        srcs.push(osc);
+        srcs.push(osc); oscs.push(osc);
       }
       out.gain.setValueAtTime(0, t); out.gain.linearRampToValueAtTime(peak * 0.7 / Math.sqrt(n), t + 0.012);
       if (held) sustains = true; else out.gain.exponentialRampToValueAtTime(0.0001, t + dec);
+      upd = () => {
+        const w = cur(), now = AC.currentTime; if (2 + Math.round(w[0] * 5) !== n) return false;   // a different number of waves: start again
+        lpf.frequency.cancelScheduledValues(now); lpf.frequency.setTargetAtTime(300 * Math.pow(2, 0.5 + w[1] * 2), now, 0.05);
+        oscs.forEach((x, i) => { x.detune.setTargetAtTime(n === 1 ? 0 : (i / (n - 1) - 0.5) * 2 * w[2] * 38, now, 0.03); if (pns[i]) pns[i].pan.setTargetAtTime(n === 1 ? 0 : (i / (n - 1) - 0.5) * 2 * w[3], now, 0.03); });
+      };
       break;
     }
   }
@@ -1371,14 +1411,15 @@ function playNote(midi, vel, pan, o = {}) {
     env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(1, t + A);
     env.gain.setTargetAtTime(S, t + A, D / 3);
   }
-  const lp = lfoTargets().cents > 0 && lfoPitch;
+  const lp = lfoPitch;   // always patched in, so the pitch LFO can be turned up while a key is held
   srcs.forEach(n => { n.start(t); if (lp && n.detune) lfoPitch.connect(n.detune); });
   let stopped = false;
-  const stopAt = tr => {
+  const stopAt = (tr, rr) => {
     if (stopped) return; stopped = true;
+    const Rr = rr || (live ? 0.02 + Math.pow(P.rel / 100, 2) * 3 : R);   // the release is read when you let go
     env.gain.cancelScheduledValues(tr);
-    env.gain.setValueAtTime(env.gain.value, tr); env.gain.setTargetAtTime(0, tr, R / 4);
-    srcs.forEach(n => { try { n.stop(tr + R + 0.05); } catch (e) {} });
+    env.gain.setValueAtTime(env.gain.value, tr); env.gain.setTargetAtTime(0, tr, Rr / 4);
+    srcs.forEach(n => { try { n.stop(tr + Rr + 0.05); } catch (e) {} });
   };
   if (!held) srcs.forEach(n => n.stop(t + len + 0.05));
   else if (!sustains) srcs.forEach(n => n.stop(t + len + 0.05));
@@ -1389,7 +1430,14 @@ function playNote(midi, vel, pan, o = {}) {
     try { if (lp) srcs.forEach(n => n.detune && lfoPitch.disconnect(n.detune)); } catch (e) {}
     try { tail.disconnect(); env.disconnect(); out.disconnect(); } catch (e) {}
   };
-  return {release() { if (AC) stopAt(Math.max(AC.currentTime, t + A * 0.5)); }};
+  return {release() { if (AC) stopAt(Math.max(AC.currentTime, t + A * 0.5)); },
+    fade() { if (AC) stopAt(AC.currentTime, 0.03); },
+    update(name) {   // an encoder moved: true when the sounding note followed it, false when it has to be started again
+      if (stopped || !live) return true;
+      const now = AC.currentTime;
+      if (/^(atk|dcy|sus|rel)$/.test(name)) { if (held && now > t + A + 0.01) env.gain.setTargetAtTime(P.sus / 100, now, 0.06); return true; }
+      return upd ? upd() !== false : true;
+    }};
 }
 
 /* drum kit: twelve synthesized sounds, one per semitone (C kick ... B high tom) */
@@ -1495,19 +1543,28 @@ function playDrum(midi, vel, pan, inst, o = {}) {
   const G = (0.15 + 0.85 * vel) * p.level / 100 * 1.25, dur = (b - a) / rate;   // T2 dynamic envelope: attack, mid and release levels
   g.gain.setValueAtTime(G * P.dyatk / 100, t); g.gain.linearRampToValueAtTime(G * P.dymid / 100, t + dur * (0.05 + P.dyreg / 100 * 0.9));
   g.gain.linearRampToValueAtTime(G * P.dyrel / 100, t + dur);
-  let tail = g;
-  if (AC.createStereoPanner) { const pn = AC.createStereoPanner(); pn.pan.value = clamp(pan, -1, 1); g.connect(pn); tail = pn; }
+  const lv = AC.createGain(); g.connect(lv); let tail = lv;   // lv follows the level encoder while the sound plays
+  if (AC.createStereoPanner) { const pn = AC.createStereoPanner(); pn.pan.value = clamp(pan, -1, 1); lv.connect(pn); tail = pn; }
   src.connect(g); tail.connect(o.bus || liveBus);
   if (p.mode === 1) { src.loop = true; src.loopStart = a; src.loopEnd = b; src.start(t, a); }
   else src.start(t, a, b - a);
   voices++; let gone = false;
-  const free = () => { if (gone) return; gone = true; voices--; try { tail.disconnect(); g.disconnect(); } catch (err) {} };
+  const free = () => { if (gone) return; gone = true; voices--; try { tail.disconnect(); lv.disconnect(); g.disconnect(); } catch (err) {} };
   src.onended = free;
   if (o.gate !== undefined && o.gate !== Infinity && p.mode !== 0) { try { src.stop(t + o.gate + 0.02); } catch (err) {} }
   setTimeout(() => { drumHits[j] = 1; excite = Math.min(1, excite + 0.5); }, Math.max(0, (t - AC.currentTime) * 1000));
   return {release() {
     if (p.mode === 0) return;   // "to end" plays the whole part
     const now = AC.currentTime; g.gain.setTargetAtTime(0, now, 0.012); try { src.stop(now + 0.08); } catch (err) {}
+  }, fade() { const now = AC.currentTime; lv.gain.setTargetAtTime(0, now, 0.01); try { src.stop(now + 0.06); } catch (err) {} },
+  update(name) {   // pitch, level and loop points follow the encoders; anything else plays the part again
+    if (!o.live) return true;
+    if (gone) return false;   // the hit has finished: play it again at the new setting
+    const now = AC.currentTime, pj = (UI.drum.parts || e.def)[j];
+    if (name === 'dpit') { src.playbackRate.setTargetAtTime(Math.pow(2, pj.pitch / 12), now, 0.01); return true; }
+    if (name === 'dlvl') { lv.gain.setTargetAtTime(pj.level / Math.max(1, p.level), now, 0.02); return true; }
+    if (/^d(in|out)f?$/.test(name) && p.mode === 1 && !pj.rev) { src.loopStart = pj.in / 1000; src.loopEnd = pj.out / 1000; return true; }
+    return false;
   }};
 }
 function playClick(at, accent) {
@@ -1557,53 +1614,71 @@ function curve(k) { const n = 256, c = new Float32Array(n); for (let i = 0; i < 
 function makeFx(type, v = [P.taper, P.turns, P.damp, P.width]) {
   const T = v[0] / 100, R = v[1] / 100, D = v[2] / 100, W = v[3] / 100;
   const inp = AC.createGain(), out = AC.createGain(), nodes = [inp, out], srcs = [];
-  const add = n => (nodes.push(n), n);
+  const add = n => (nodes.push(n), n), at = (p, x) => p.setTargetAtTime(x, AC.currentTime, 0.02);
+  let upd = null;   // upd(T, R, D, W) moves the nodes to new values without rebuilding; it returns false when only a rebuild will do
   switch (type) {
     case 'delay': {   // size: delay time; speed: a slow wobble on the time; feedback; mix
-      const tm = 0.04 + T * 0.7, wob = AC.createOscillator(), wg = add(AC.createGain());
-      wob.frequency.value = 0.15 + R * 5; wg.gain.value = tm * 0.012 * (0.2 + R); wob.connect(wg); wob.start(); srcs.push(wob);
-      const tap = (time, pan) => {
+      const wob = AC.createOscillator(), wg = add(AC.createGain()), dls = [], fbs = [];
+      wob.connect(wg); wob.start(); srcs.push(wob);
+      const tap = (k, pan) => {
         const dl = add(AC.createDelay(2)), lp = add(AC.createBiquadFilter()), fb = add(AC.createGain());
-        dl.delayTime.value = time; wg.connect(dl.delayTime); lp.type = 'lowpass'; lp.frequency.value = 3200; fb.gain.value = D * 0.88;
-        inp.connect(dl); dl.connect(lp); lp.connect(fb); fb.connect(dl);
+        wg.connect(dl.delayTime); lp.type = 'lowpass'; lp.frequency.value = 3200;
+        inp.connect(dl); dl.connect(lp); lp.connect(fb); fb.connect(dl); dls.push([dl, k]); fbs.push(fb);
         if (AC.createStereoPanner) { const p = add(AC.createStereoPanner()); p.pan.value = pan; lp.connect(p); p.connect(out); } else lp.connect(out);
       };
-      tap(tm, -0.5); tap(tm * 1.27, 0.5); out.gain.value = W * 1.5; break;
+      tap(1, -0.5); tap(1.27, 0.5);
+      upd = (T, R, D, W) => {
+        const tm = 0.04 + T * 0.7; dls.forEach(([dl, k]) => at(dl.delayTime, tm * k)); fbs.forEach(fb => at(fb.gain, D * 0.88));
+        at(wob.frequency, 0.15 + R * 5); at(wg.gain, tm * 0.012 * (0.2 + R)); at(out.gain, W * 1.5);
+      };
+      dls.forEach(([dl, k]) => { dl.delayTime.value = (0.04 + T * 0.7) * k; }); wob.frequency.value = 0.15 + R * 5; wg.gain.value = (0.04 + T * 0.7) * 0.012 * (0.2 + R);
+      fbs.forEach(fb => { fb.gain.value = D * 0.88; }); out.gain.value = W * 1.5; break;
     }
     case 'grid': {   // rhythmic gate locked to the tempo
       const g = add(AC.createGain()), lp = add(AC.createBiquadFilter()), o = AC.createOscillator(), og = add(AC.createGain());
-      lp.type = 'lowpass'; lp.frequency.value = 6000;
-      o.type = 'square'; o.frequency.value = P.tempo / 60 * Math.pow(2, Math.floor(T * 3.99)) / 2;
-      g.gain.value = 1 - R / 2; og.gain.value = R / 2; o.connect(og); og.connect(g.gain); o.start(); srcs.push(o);
-      inp.connect(lp); lp.connect(g); g.connect(out); out.gain.value = 0.3 + W * 0.7;
-      const zd = add(AC.createDelay(2)), zf = add(AC.createGain()); zd.delayTime.value = 60 / P.tempo / 2; zf.gain.value = D * 0.7;   // z fdb: echoes of the gate
-      g.connect(zd); zd.connect(zf); zf.connect(zd); zd.connect(out); break;
+      lp.type = 'lowpass'; lp.frequency.value = 6000; o.type = 'square'; o.connect(og); og.connect(g.gain); o.start(); srcs.push(o);
+      inp.connect(lp); lp.connect(g); g.connect(out);
+      const zd = add(AC.createDelay(2)), zf = add(AC.createGain());   // z fdb: echoes of the gate
+      g.connect(zd); zd.connect(zf); zf.connect(zd); zd.connect(out);
+      upd = (T, R, D, W) => {
+        at(o.frequency, P.tempo / 60 * Math.pow(2, Math.floor(T * 3.99)) / 2); at(g.gain, 1 - R / 2); at(og.gain, R / 2);
+        at(out.gain, 0.3 + W * 0.7); at(zd.delayTime, 60 / P.tempo / 2); at(zf.gain, D * 0.7);
+      };
+      o.frequency.value = P.tempo / 60 * Math.pow(2, Math.floor(T * 3.99)) / 2; g.gain.value = 1 - R / 2; og.gain.value = R / 2;
+      out.gain.value = 0.3 + W * 0.7; zd.delayTime.value = 60 / P.tempo / 2; zf.gain.value = D * 0.7; break;
     }
     case 'nitro': {   // freq: low-pass cutoff; ff: drive; res: resonance; freq: a high-pass in front
       const hp = add(AC.createBiquadFilter()), f = add(AC.createBiquadFilter()), sh = add(AC.createWaveShaper());
-      hp.type = 'highpass'; hp.frequency.value = 20 * Math.pow(2, W * 8);
-      f.type = 'lowpass'; f.frequency.value = Math.min(16000, 100 * Math.pow(2, T * 7)); f.Q.value = 0.5 + D * 14;
-      sh.curve = curve(R); inp.connect(hp); hp.connect(f); f.connect(sh); sh.connect(out); out.gain.value = 0.8; break;
+      hp.type = 'highpass'; f.type = 'lowpass'; inp.connect(hp); hp.connect(f); f.connect(sh); sh.connect(out); out.gain.value = 0.8;
+      let k = -1;
+      upd = (T, R, D, W) => { at(hp.frequency, 20 * Math.pow(2, W * 8)); at(f.frequency, Math.min(16000, 100 * Math.pow(2, T * 7))); at(f.Q, 0.5 + D * 14); const kk = Math.round(R * 50); if (kk !== k) { k = kk; sh.curve = curve(R); } };
+      upd(T, R, D, W); hp.frequency.value = 20 * Math.pow(2, W * 8); f.frequency.value = Math.min(16000, 100 * Math.pow(2, T * 7)); f.Q.value = 0.5 + D * 14; break;
     }
     case 'phone': {
       const hp = add(AC.createBiquadFilter()), lp = add(AC.createBiquadFilter()), sh = add(AC.createWaveShaper());
-      hp.type = 'highpass'; hp.frequency.value = 200 + T * 700; lp.type = 'lowpass'; lp.frequency.value = 1800 + T * 3400;
-      sh.curve = curve(R); inp.connect(hp); hp.connect(lp); lp.connect(sh); sh.connect(out); out.gain.value = 0.3 + W * 0.9;
-      const ns = AC.createBufferSource(), ng = add(AC.createGain()); ns.buffer = noise(); ns.loop = true; ng.gain.value = D * 0.06;
-      ns.connect(ng); ng.connect(out); ns.start(); srcs.push(ns); break;
+      hp.type = 'highpass'; lp.type = 'lowpass'; inp.connect(hp); hp.connect(lp); lp.connect(sh); sh.connect(out);
+      const ns = AC.createBufferSource(), ng = add(AC.createGain()); ns.buffer = noise(); ns.loop = true;
+      ns.connect(ng); ng.connect(out); ns.start(); srcs.push(ns);
+      let k = -1;
+      upd = (T, R, D, W) => { at(hp.frequency, 200 + T * 700); at(lp.frequency, 1800 + T * 3400); at(ng.gain, D * 0.06); at(out.gain, 0.3 + W * 0.9); const kk = Math.round(R * 50); if (kk !== k) { k = kk; sh.curve = curve(R); } };
+      upd(T, R, D, W); hp.frequency.value = 200 + T * 700; lp.frequency.value = 1800 + T * 3400; ng.gain.value = D * 0.06; out.gain.value = 0.3 + W * 0.9; break;
     }
     case 'punch': {   // freq: a low shelf boost; rounds: attack; punch: how hard it squeezes; power: output
       const ls = add(AC.createBiquadFilter()), c = add(AC.createDynamicsCompressor());
-      ls.type = 'lowshelf'; ls.frequency.value = 40 * Math.pow(2, T * 4); ls.gain.value = 9;
-      c.threshold.value = -8 - D * 40; c.ratio.value = 4 + D * 16; c.attack.value = 0.001 + R * 0.05; c.release.value = 0.2;
-      inp.connect(ls); ls.connect(c); c.connect(out); out.gain.value = 0.6 + W * 2.2; break;
+      ls.type = 'lowshelf'; ls.gain.value = 9; c.release.value = 0.2; inp.connect(ls); ls.connect(c); c.connect(out);
+      upd = (T, R, D, W) => { at(ls.frequency, 40 * Math.pow(2, T * 4)); at(c.threshold, -8 - D * 40); at(c.ratio, 4 + D * 16); at(c.attack, 0.001 + R * 0.05); at(out.gain, 0.6 + W * 2.2); };
+      upd(T, R, D, W); ls.frequency.value = 40 * Math.pow(2, T * 4); c.threshold.value = -8 - D * 40; c.ratio.value = 4 + D * 16; c.attack.value = 0.001 + R * 0.05; out.gain.value = 0.6 + W * 2.2; break;
     }
-    default: {   // spring
+    default: {   // spring: the mix moves live; tone, turns and damping need a new impulse response
       const c = add(AC.createConvolver()); c.normalize = true; c.buffer = springIR(v); inp.connect(c); c.connect(out); out.gain.value = 0.15 + W * 1.4;
+      let key = [T, R, D].map(x => Math.round(x * 100)).join();
+      upd = (T, R, D, W) => { at(out.gain, 0.15 + W * 1.4); const k2 = [T, R, D].map(x => Math.round(x * 100)).join(); if (k2 !== key) { key = k2; return false; } return true; };
     }
   }
-  return {inp, out, nodes, srcs};
+  return {inp, out, nodes, srcs, upd};
 }
+function fxLive() { if (AC && fxCur && fxCur.f.upd && fxCur.f.upd(P.taper / 100, P.turns / 100, P.damp / 100, P.width / 100) === false) scheduleReverb(); }
+function mfxLive() { if (AC && mfxCur && mfxCur.f.upd && mfxCur.f.upd(P.mf0 / 100, P.mf1 / 100, P.mf2 / 100, P.mf3 / 100) === false) scheduleMasterFx(); }
 let fxCur = null;
 function rebuildReverb() {
   if (!AC) return;
@@ -1637,8 +1712,8 @@ function rebuildMasterFx() {   // the master effect: stereo, after the EQ (sprin
   }
   mfxCur = {f, cg}; updateGains();
 }
-function scheduleMasterFx() { clearTimeout(mfxT); mfxT = setTimeout(rebuildMasterFx, 140); }
-function scheduleReverb() { clearTimeout(revT); revT = setTimeout(rebuildReverb, 140); }
+function scheduleMasterFx() { clearTimeout(mfxT); mfxT = setTimeout(rebuildMasterFx, 90); }
+function scheduleReverb() { clearTimeout(revT); revT = setTimeout(rebuildReverb, 90); }
 
 /* ---------- tilt ---------- */
 let tiltState = 'off', tiltAsked = false, gdir = {x:0, y:1}, tiltOpen = 0, tiltHandler = null;
