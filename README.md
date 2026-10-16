@@ -42,6 +42,10 @@ Each page shows its four parameters in the screen's corners, in the encoder colo
 
 You can also play from a computer keyboard: `a w s e d f t g y h u j k` play C to C, and `z` / `x` change the octave.
 
+## Full screen on a phone
+
+Open the site in Safari (iPhone) or Chrome (Android), then add it to the home screen: Share → Add to Home Screen on iPhone, or the menu → Install app on Android. It then opens full screen with no browser bars, and swiping up from the bottom edge returns to the home screen. The page blocks pinch zoom and the rubber-band bounce so a held key and a turning encoder can't trigger a zoom.
+
 ## Saving songs (Firebase)
 
 Tap the song name at the top of the screen (or the album key on iPad) to open the song sheet.

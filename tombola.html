@@ -13,7 +13,7 @@
   --f-ui:"Encode Sans Condensed","Avenir Next Condensed",system-ui,sans-serif;
   --u:44px; --gap:1px; color-scheme:light;
 }
-html{height:100%;box-sizing:border-box;background:var(--bg)}
+html{height:100%;box-sizing:border-box;background:var(--bg);position:fixed;inset:0;width:100%;overflow:hidden;overscroll-behavior:none;touch-action:none;-webkit-text-size-adjust:100%}
 @supports (height:100dvh){html{height:100dvh}}
 *,*::before,*::after{box-sizing:inherit}
 body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-weight:300;
@@ -156,7 +156,7 @@ body.land #keys{grid-area:5/1/8/16}
 #menu button:not(.cur):hover{color:#fff}
 
 /* song sheet (album) */
-#sheet{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.94);color:#E9E9E9;display:flex;justify-content:center;align-items:flex-start;
+#sheet{touch-action:pan-y;overscroll-behavior:contain;position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.94);color:#E9E9E9;display:flex;justify-content:center;align-items:flex-start;
   padding:max(24px,env(safe-area-inset-top)) 16px 24px;overflow:auto;font-size:15px;letter-spacing:.02em}
 #sheet[hidden]{display:none}
 #sheet .box{width:100%;max-width:480px;display:flex;flex-direction:column;gap:18px}
@@ -275,6 +275,10 @@ body.land #keys{grid-area:5/1/8/16}
 </section>
 
 <script>
+/* a phone is an instrument here: no pinch zoom, no double-tap zoom, no rubber band, even with a key held down and a second finger on an encoder */
+['gesturestart', 'gesturechange', 'gestureend'].forEach(t => document.addEventListener(t, e => e.preventDefault(), {passive:false}));
+document.addEventListener('touchmove', e => { if (e.touches.length > 1 || (e.scale && e.scale !== 1)) e.preventDefault(); }, {passive:false});
+document.addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, {passive:false});
 (() => {
 const $ = s => document.querySelector(s);
 const capture = (el, e) => { try { el.setPointerCapture(e.pointerId); } catch (err) {} };

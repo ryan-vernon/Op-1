@@ -1,0 +1,2 @@
+{"name":"OP-1 Tombola","short_name":"OP-1","description":"A web instrument after the teenage engineering OP-1","start_url":"./","scope":"./","display":"fullscreen","display_override":["fullscreen","standalone"],"orientation":"any","background_color":"#84817E","theme_color":"#5e5b58",
+ "icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},{"src":"icon-512.png","sizes":"512x512","type":"image/png","purpose":"any"}]}
