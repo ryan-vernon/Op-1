@@ -102,7 +102,6 @@ body.pad #rec{grid-area:6/1} body.pad #play{grid-area:6/2} body.pad #stop{grid-a
 body.pad #shift{grid-area:6/5/7/7}
 body.pad #t0{grid-area:6/7/7/9} body.pad #t1{grid-area:6/9/7/11} body.pad #t2{grid-area:6/11/7/13} body.pad #t3{grid-area:6/13/7/15}
 body.pad .knob{--ks:calc(var(--u) * 1.5)}
-.knob::before{content:"";position:absolute;inset:-2.9%;border-radius:50%;background:#9B8884;z-index:-1;pointer-events:none}
 body.pad #k0{grid-area:1/15/3/17} body.pad #k1{grid-area:1/17/3/19} body.pad #k2{grid-area:3/15/5/17} body.pad #k3{grid-area:3/17/5/19}
 body.pad .snd{grid-row:5}body.pad #snd4,body.pad #snd5,body.pad #snd6,body.pad #snd7{grid-row:6}
 body.pad #keys{grid-area:7/1/13/19;grid-template-rows:calc(var(--u) * 2 + var(--gap)) minmax(0,1fr)}
@@ -111,8 +110,8 @@ body.pad #snd4{grid-area:6/15}body.pad #snd5{grid-area:6/16}body.pad #snd6{grid-
 #speaker .grill{display:grid;grid-template-columns:repeat(8,5px);gap:6px 5px}
 #speaker .grill i{width:5px;height:5px;border-radius:50%;background:#2A2A2A}
 .knob{--ks:calc(var(--u) * .86);position:relative;width:var(--ks);height:var(--ks);border-radius:50%;background:linear-gradient(135deg,#F0EDEC,#F6F3F2);
-  box-shadow:inset 0 1px 1px #fff,0 calc(var(--ks) * .06) calc(var(--ks) * .1) rgba(40,25,20,.22),0 calc(var(--ks) * .3) calc(var(--ks) * .6) calc(var(--ks) * .04) rgba(60,40,34,.26);display:flex;align-items:center;justify-content:center;touch-action:none;cursor:ns-resize}
-.cap{width:calc(var(--k) * 64);height:calc(var(--k) * 64);flex:none;border-radius:50%;display:flex;justify-content:center;box-shadow:0 0 0 calc(var(--ks) * .057) #F6F3F2}
+  box-shadow:calc(var(--k) * 5) calc(var(--k) * 5) calc(var(--k) * 10) #B2A8A5,inset calc(var(--k) * -1) calc(var(--k) * -1) 0 rgba(178,168,165,.5),inset calc(var(--k) * 1.5) calc(var(--k) * 1.5) 0 #fff;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:ns-resize}
+.cap{width:calc(var(--k) * 64);height:calc(var(--k) * 64);flex:none;border-radius:50%;display:flex;justify-content:center;}
 /* the cap turns, the light does not: gloss and shading sit on a layer that stays put, and the knob's shadow always falls straight down onto the button below */
 .knob::after{content:"";position:absolute;left:50%;top:50%;width:calc(var(--k) * 64);height:calc(var(--k) * 64);margin:calc(var(--k) * -32) 0 0 calc(var(--k) * -32);border-radius:50%;background:radial-gradient(circle at 34% 26%,rgba(255,255,255,.38),rgba(255,255,255,0) 52%),radial-gradient(circle at 62% 86%,rgba(0,0,0,.2),rgba(0,0,0,0) 58%);pointer-events:none}
 .tile.enc{z-index:3}   /* the knobs are taller than the buttons: their shadow reaches over the row below */
@@ -307,6 +306,8 @@ const SPEC = {
   gravity:{min:0, max:100, v:45, col:'green', label:'gravity'},
   shape:  {min:0, max:100, v:0,  col:'white', label:'shape'},
   mass:   {min:0, max:100, v:62, col:'orange', label:'mass'},
+  plen:{min:2, max:16, v:16, col:'blue', label:'length', span:14}, prate:{min:0, max:3, v:2, col:'white', label:'rate', span:4},
+  pgate:{min:10, max:100, v:60, col:'orange', label:'gate'}, epat:{min:0, max:3, v:0, col:'white', label:'order', span:4}, ehold:{min:0, max:1, v:0, col:'orange', label:'hold', span:2},
   taper:  {min:0, max:100, v:35, col:'blue', label:'taper'},
   turns:  {min:0, max:100, v:45, col:'green', label:'turns'},
   damp:   {min:0, max:100, v:40, col:'white', label:'damp'},
@@ -360,7 +361,7 @@ const SPEC = {
 };
 const P = {}; for (const k in SPEC) P[k] = SPEC[k].v;
 P.fxType = 'spring'; P.lfoType = 'tremolo'; P.lfoOn = true; P.mfxType = 'spring'; P.mfx = false;
-P.engine = 'fm'; P.fx = true; P.digiRing = false; P.key = 0; P.scale = 'major';
+P.engine = 'cluster'; P.fx = true; P.digiRing = false; P.key = 0; P.scale = 'major';
 P.syn = {}; for (const e of ENGINE_ORDER) P.syn[e] = ENGINES[e].def.slice();
 const loadEngineParams = () => P.syn[P.engine].forEach((v, i) => P['s' + i] = v);
 loadEngineParams();
@@ -373,7 +374,7 @@ const SCALES = {major:[0,2,4,7,9], minor:[0,3,5,7,10]};
 const FX_TYPES = {
   spring:{labels:['tone','turns','damp','send']}, delay:{labels:['size','speed','feedback','mix'], cols:[0, 0, '#6E56E8', 0]},
   grid:{labels:['x size','y size','z fdb','mix']}, nitro:{labels:['freq','ff','res','freq']},
-  phone:{labels:['tone','phonic','baud','telematic']}, punch:{labels:['freq','rounds','punch','power'], cols:['#6E56E8', 0, '#1ED68F', 0]}};
+  phone:{labels:['tone','phonic','baud','telematic']}, cow:{labels:['freq','delay','feedback','sideband'], cols:[0, 0, 0, '#FF4F8B']}, punch:{labels:['freq','rounds','punch','power'], cols:['#6E56E8', 0, '#1ED68F', 0]}};
 const LFO_TYPES = {tremolo:{}, random:{}};
 const FXP = ['taper','turns','damp','width'], MFXP = ['mf0','mf1','mf2','mf3'];
 /* eight synth sounds and eight drum kits ship as the sound buttons 1-8; hold a button to store your own */
@@ -511,6 +512,7 @@ function renderCorners() {
 renderCorners();
 
 function onParam(name) {
+  if (name === 'ehold' && !P.ehold) seqS.latch = new Set(seqS.keys);
   if (['speed','gravity','mass','shape'].includes(name)) renderCorners();
   if (name === 'gravity') peek('#gPeek', '#gIcon', P.gravity);
   if (name === 'mass') peek('#mPeek', '#mIcon', P.mass);
@@ -545,7 +547,7 @@ const GLYPHS = {
 /* synth and drum have pages T1–T4 plus the tombola sequencer (SEQ); tape uses T1–T4 to pick a track;
    mixer has levels (T1) and master (T2). Each page puts four parameters in the screen's corners,
    colored like the OP-1's encoders: blue, green, white, orange. */
-const UI = {mode:'synth', page:{synth:0, drum:0, mixer:0}, seqOn:true, seqView:true, seqMode:'synth',
+const UI = {mode:'synth', page:{synth:0, drum:0, mixer:0}, seqOn:false, seqView:false, seqMode:'synth', seqType:'tombola',
   shift:false, shiftUsed:false, oct:0, track:0, title:'untitled', dirty:false, presets:factoryPresets(), lastInst:'synth', kit:0, drum:{kit:DRUM_KITS[0].kit.slice(), parts:null}, dkey:0, mute:[false, false, false, false]};
 const WAVES = ['sine', 'triangle', 'square', 'sawtooth'];
 const PAGES = {
@@ -570,10 +572,16 @@ const UTIL = {   // screens that sit over a mode: tempo, erase tape, help
   tempo:{name:'tempo', params:['tempo','tsig','swing','click'], draw:t => drawArt('tempo', t)},
   erase:{name:'erase', bare:true, params:() => TAPE_PAGE.params(), draw:t => drawArt('erase', t)},
   help:{name:'help', bare:true, params:() => PAGES.synth[0].params, draw:t => drawArt('help', t)}};
+const SEQ_TYPES = ['tombola', 'pattern', 'finger', 'endless'];
+const seqS = {next:0, step:0, lastStep:0, lastT:0, flash:new Float32Array(16), play:-1, pat:Array.from({length:16}, () => new Set()), fin:new Array(16).fill(null), arpIdx:0, arpDir:1, keys:new Set(), latch:new Set(), cur:-1};
 const inSeqView = () => !UI.util && UI.seqOn && UI.seqView && (UI.mode === 'synth' || UI.mode === 'drum');
-const curPage = () => UI.util ? UTIL[UI.util] : UI.mode === 'tape' ? TAPE_PAGE : PAGES[UI.mode][UI.page[UI.mode]];
+const tombView = () => inSeqView() && UI.seqType === 'tombola', seqScreen = () => inSeqView() && UI.seqType !== 'tombola';
+const SEQ_PAGES = {pattern:{name:'pattern', bare:false, params:['plen','swing','prate','pgate'], draw:t => seqRender(t)},
+  finger:{name:'finger', params:['plen','swing','prate','pgate'], draw:t => seqRender(t)},
+  endless:{name:'endless', params:['prate','pgate','epat','ehold'], draw:t => seqRender(t)}};
+const curPage = () => UI.util ? UTIL[UI.util] : UI.mode === 'tape' ? TAPE_PAGE : seqScreen() ? SEQ_PAGES[UI.seqType] : PAGES[UI.mode][UI.page[UI.mode]];
 function pageParams() {
-  if (inSeqView()) return ['speed','gravity','shape','mass'];
+  if (tombView()) return ['speed','gravity','shape','mass'];
   const p = curPage(); return typeof p.params === 'function' ? p.params() : p.params;
 }
 const secs = v => (v / 1000).toFixed(3);
@@ -581,6 +589,7 @@ const clock = sec => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).pad
 const LFO_DIVS = [['2/1', 8], ['1/1', 4], ['1/2', 2], ['1/4', 1], ['1/8', 0.5], ['1/16', 0.25], ['1/32', 0.125]];
 const lfoHz = () => P.lfoType === 'random' ? 0.25 * Math.pow(2, P.lrsp / 100 * 6) : P.tempo / 60 / LFO_DIVS[clamp(P.lspd, 0, 6)][1];
 const valueText = name => /^pan\d$/.test(name) ? (P[name] === 50 ? 'C' : P[name] < 50 ? 'L' + (50 - P[name]) * 2 : 'R' + (P[name] - 50) * 2)
+  : name === 'prate' ? ['1/4','1/8','1/16','1/32'][clamp(P.prate, 0, 3)] : name === 'epat' ? ['up','down','up-down','random'][clamp(P.epat, 0, 3)] : name === 'ehold' ? (P.ehold ? 'on' : 'off') : name === 'pgate' ? P.pgate + '%' : name === 'swing' ? P.swing + '%'
   : name === 'lspd' ? LFO_DIVS[clamp(P.lspd, 0, 6)][0] : name === 'ldst' ? ['pitch', 'volume', 'all'][P.ldst]
   : name === 'lwav' ? (P.lwav ? '+' + P.lwav : 'off') : name === 'tspeed' ? (P.tspeed / 100).toFixed(1) : name === 'tsig' ? P.tsig + '/4'
   : name === 'scrub' ? clock(P.scrub / 100 * loopTicks() * spt()) : name === 'click' && !P.click ? 'off' : name === 'eqamt' ? (P.eqamt > 50 ? 'max' : 'clean') + ' ' + P.eqamt : name === 'dmode' ? ['to end','loop','once'][P.dmode] : name === 'ddir' ? (P.ddir ? 'rev' : 'fwd')
@@ -628,7 +637,7 @@ function renderTag() {
   if (t.textContent !== txt) t.textContent = txt;
 }
 function renderShell() {
-  const seqv = inSeqView(), names = pageParams();
+  const seqv = tombView(), names = pageParams();
   tombUI.hidden = !seqv; pageUI.hidden = seqv;
   if (!seqv) pcs.forEach((b, i) => {
     const n = names[i], lab = labelOf(n), val = valueText(n);
@@ -649,7 +658,7 @@ function renderShell() {
     const b = $('#t' + i);
     const off = UI.mode !== 'tape' && !PAGES[UI.mode][i];
     b.classList.toggle('off', off);
-    b.setAttribute('aria-current', UI.mode === 'tape' ? UI.track === i : (!seqv && UI.page[UI.mode] === i && !off));
+    b.setAttribute('aria-current', UI.mode === 'tape' ? UI.track === i : (!inSeqView() && UI.page[UI.mode] === i && !off));
     b.setAttribute('aria-label', UI.mode === 'tape' ? 'Track ' + (i + 1) : 'T' + (i + 1) + (PAGES[UI.mode][i] ? ' ' + PAGES[UI.mode][i].name : ''));
   }
   const seqOk = UI.mode === 'synth' || UI.mode === 'drum';
@@ -682,7 +691,7 @@ function tPress(i) {
     if (shift) { tape.tracks[i] = {inst:null, events:[]}; markDirty(); }
     UI.track = i;
   } else if (shift && i === 1 && inSeqView()) {
-    dots.length = 0; showHint('cleared'); markDirty();
+    if (UI.seqType === 'tombola') dots.length = 0; else seqClear(); showHint('cleared'); markDirty();
   } else {
     const pages = PAGES[UI.mode]; if (!pages[i]) return;
     if (shift && (UI.mode === 'synth' || UI.mode === 'drum') && (i === 0 || i === 2 || i === 3)) {
@@ -717,6 +726,8 @@ const MENU_DEF = {
     applyPreset('synth', UI.presets.synth[slot]); previewInst(); showHint(x.name + ' on sound ' + (slot + 1)); markDirty();
   }},
   mfx:{title:'master effect', col:'var(--green)', cols:1, items:() => Object.keys(FX_TYPES).map(k => [k, k]), cur:() => P.mfxType, pick:id => { P.mfxType = id; P.mfx = true; scheduleMasterFx(); showHint('master ' + id); markDirty(); }},
+  seq:{title:'sequencer', col:'var(--orange)', cols:1, items:() => SEQ_TYPES.map(k => [k, k]), cur:() => UI.seqType, pick:id => {
+    UI.seqType = id; UI.seqOn = true; UI.seqView = true; UI.seqMode = UI.mode === 'drum' ? 'drum' : 'synth'; seqS.next = 0; showHint(id); markDirty(); }},
   lfo:{title:'lfo', col:'var(--orange)', cols:1, items:() => Object.keys(LFO_TYPES).map(k => [k, k]), cur:() => P.lfoType, pick:id => pickLfo(id)}};
 function openMenu(kind, slot = null) {
   const d = MENU_DEF[kind]; menuKind = kind; menuSlot = slot; const cur = d.cur();
@@ -766,7 +777,7 @@ document.querySelectorAll('.mk').forEach(b => b.addEventListener('click', () => 
 $('#seq').addEventListener('click', () => {
   if (!(UI.mode === 'synth' || UI.mode === 'drum')) return;
   firstGesture(); closeRing(); closeMenu();
-  if (useShift()) { layRun(); markDirty(); renderShell(); return; }
+  if (useShift()) { openMenu('seq'); renderShell(); return; }
   if (!UI.seqOn) { UI.seqOn = true; UI.seqView = true; UI.seqMode = UI.mode; }
   else if (!UI.seqView || UI.seqMode !== UI.mode) { UI.seqView = true; UI.seqMode = UI.mode; }
   else { UI.seqOn = false; UI.seqView = false; }
@@ -928,6 +939,8 @@ window.addEventListener('keyup', e => {
 const heldNotes = new Map();
 function noteOn(n, vel) {
   firstGesture(); noteOff(n);
+  if (UI.seqOn && UI.seqType === 'endless' && (UI.mode === 'synth' || UI.mode === 'drum')) { arpPress(n); heldNotes.set(n, null); keyLight(n, true); return; }   // endless plays the held keys round
+  if (UI.seqOn && UI.seqType === 'finger') fingerWrite(n, vel);
   if (UI.mode === 'drum') selectPart(partOf(n));
   lfoEnvKick();
   const v = playInst(liveInst(), n, vel, 0, {gate:Infinity, bus:liveBus, live:true}); if (v) v.vel = vel;
@@ -950,13 +963,13 @@ function retriggerHeld() {
 }
 function noteOff(n) {
   if (!heldNotes.has(n)) return;
-  const v = heldNotes.get(n); heldNotes.delete(n); if (v) v.release(); keyLight(n, false);
+  const v = heldNotes.get(n); heldNotes.delete(n); if (v) v.release(); keyLight(n, false); arpRelease(n);
   const p = tape.pending.get(n);
   if (p) { tape.pending.delete(n); recNote(n, p.vel, p.tick, tapeTick()); }
 }
 /* the tombola plays whichever mode turned it on */
 function seqNote(midi, vel, pan) {
-  if (!UI.seqOn) return;
+  if (!UI.seqOn || UI.seqType !== 'tombola') return;
   playInst(UI.seqMode === 'drum' ? curDrum() : curSynth(), midi, vel, pan, {bus:liveBus});
   if (tape.recording) { const t = tapeTick(); recNote(midi, vel, t, t + PPQ / 4); }
 }
@@ -1042,8 +1055,9 @@ function songState() {
     title: UI.title, tempo: P.tempo,
     settings: {engine:P.engine, syn:P.syn, digiRing:P.digiRing, fx:P.fx, key:P.key, scale:P.scale, oct:UI.oct,
       presets:UI.presets, drum:UI.drum, mfxType:P.mfxType, mfx:P.mfx, mute:UI.mute, fxType:P.fxType, lfoType:P.lfoType, lfoOn:P.lfoOn, params:Object.fromEntries(PERSIST.map(k => [k, P[k]]))},
-    patterns: [{kind:'tombola', data:{seqOn:UI.seqOn, seqMode:UI.seqMode, theta:+theta.toFixed(3),
+    patterns: [{kind:'tombola', data:{seqOn:UI.seqOn, seqMode:UI.seqMode, seqType:UI.seqType, theta:+theta.toFixed(3),
       dots:dots.filter(d => !d.out).map(d => [+d.x.toFixed(3), +d.y.toFixed(3), d.idx])}}],
+    pattern: {steps:seqS.pat.map(c => [...c]), fin:seqS.fin.slice()},
     recordings: tape.tracks.map((tr, i) => ({track:i + 1, instrument:tr.inst, ppq:PPQ, lengthTicks:loopTicks(), events:tr.events})),
   };
 }
@@ -1071,10 +1085,13 @@ function loadSong(s) {
   dots.length = 0;
   const tp = (s.patterns || []).find(p => p.kind === 'tombola');
   if (tp && tp.data) {
-    UI.seqOn = tp.data.seqOn !== false; UI.seqMode = tp.data.seqMode === 'drum' ? 'drum' : 'synth';
+    UI.seqOn = false; UI.seqView = false; UI.seqMode = tp.data.seqMode === 'drum' ? 'drum' : 'synth';   // a song always opens with the sequencers off
+    UI.seqType = SEQ_TYPES.includes(tp.data.seqType) ? tp.data.seqType : 'tombola';
     if (typeof tp.data.theta === 'number') theta = tp.data.theta;
     for (const [x, y, idx] of (tp.data.dots || []).slice(0, MAX_DOTS)) addDot(x, y, idx | 0);
   }
+  seqClear(); if (s.pattern) { (s.pattern.steps || []).slice(0, 16).forEach((c, i) => (c || []).forEach(r => { if ((r | 0) >= 0 && (r | 0) < 12) seqS.pat[i].add(r | 0); }));
+    (s.pattern.fin || []).slice(0, 16).forEach((m, i) => { seqS.fin[i] = typeof m === 'number' ? m : null; }); }
   tape.tracks = [0, 1, 2, 3].map(() => ({inst:null, events:[]}));
   for (const r of s.recordings || []) {
     const i = (r.track | 0) - 1; if (i < 0 || i > 3 || !Array.isArray(r.events)) continue;
@@ -1087,7 +1104,7 @@ function loadSong(s) {
 function newSong() {
   loadSong({title:'untitled', settings:{}, patterns:[{kind:'tombola', data:{dots:[[-0.16, 0.45, 0], [0.06, 0.6, 1], [0.24, 0.5, 7]]}}], recordings:[]});
   for (const e of ENGINE_ORDER) P.syn[e] = ENGINES[e].def.slice();
-  P.engine = 'fm'; loadEngineParams(); renderShell();
+  P.engine = 'cluster'; loadEngineParams(); renderShell();
 }
 window.Tombola = {songState, loadSong, newSong,
   setTitle(t) { UI.title = t || 'untitled'; markDirty(); renderShell(); },
@@ -1736,6 +1753,17 @@ function makeFx(type, v = [P.taper, P.turns, P.damp, P.width]) {
       upd = (T, R, D, W) => { at(hp.frequency, 200 + T * 700); at(lp.frequency, 1800 + T * 3400); at(ng.gain, D * 0.06); at(out.gain, 0.3 + W * 0.9); const kk = Math.round(R * 50); if (kk !== k) { k = kk; sh.curve = curve(R); } };
       upd(T, R, D, W); hp.frequency.value = 200 + T * 700; lp.frequency.value = 1800 + T * 3400; ng.gain.value = D * 0.06; out.gain.value = 0.3 + W * 0.9; break;
     }
+    case 'cow': {   // a ring modulator: freq is the carrier, delay and feedback send the ring round again, sideband lets the loudness of the input sweep the carrier (a sidechain that shifts the pitch)
+      const sum = add(AC.createGain()), ring = add(AC.createGain()), car = AC.createOscillator(), dl = add(AC.createDelay(1)), fb = add(AC.createGain()), lp = add(AC.createBiquadFilter());
+      const rect = add(AC.createWaveShaper()), env = add(AC.createBiquadFilter()), sb = add(AC.createGain());
+      ring.gain.value = 0; car.connect(ring.gain); car.start(); srcs.push(car);
+      inp.connect(sum); sum.connect(ring); ring.connect(out); ring.connect(dl); dl.connect(lp); lp.connect(fb); fb.connect(sum);
+      lp.type = 'lowpass'; lp.frequency.value = 5000;
+      const rc = new Float32Array(256); for (let i = 0; i < 256; i++) rc[i] = Math.abs(i / 127.5 - 1); rect.curve = rc;
+      env.type = 'lowpass'; env.frequency.value = 14; inp.connect(rect); rect.connect(env); env.connect(sb); sb.connect(car.frequency);
+      upd = (T, R, D, W) => { at(car.frequency, 25 * Math.pow(2, T * 6.3)); at(dl.delayTime, 0.004 + R * R * 0.4); at(fb.gain, D * 0.82); at(sb.gain, W * 3000); at(out.gain, 1.3); };
+      upd(T, R, D, W); car.frequency.value = 25 * Math.pow(2, T * 6.3); dl.delayTime.value = 0.004 + R * R * 0.4; fb.gain.value = D * 0.82; sb.gain.value = W * 3000; out.gain.value = 1.3; break;
+    }
     case 'punch': {   // freq: a low shelf boost; rounds: attack; punch: how hard it squeezes; power: output
       const ls = add(AC.createBiquadFilter()), c = add(AC.createDynamicsCompressor());
       ls.type = 'lowshelf'; ls.gain.value = 9; c.release.value = 0.2; inp.connect(ls); ls.connect(c); c.connect(out);
@@ -1976,12 +2004,92 @@ function step(dt) {
   }
 }
 
+
+/* ---------- the other sequencers (SHIFT + SEQ): pattern, finger, endless. They share one clock that runs ahead of time. ---------- */
+const arpNotes = () => [...(P.ehold ? seqS.latch : seqS.keys)].sort((a, b) => a - b);
+function arpPress(n) { if (P.ehold && !seqS.keys.size) seqS.latch.clear(); seqS.keys.add(n); seqS.latch.add(n); }
+function arpRelease(n) { seqS.keys.delete(n); if (!P.ehold) seqS.latch.delete(n); }
+function seqClear() { seqS.pat.forEach(c => c.clear()); seqS.fin.fill(null); seqS.latch.clear(); }
+const seqStepDur = () => 60 / P.tempo * [1, 0.5, 0.25, 0.125][clamp(P.prate, 0, 3)];
+function seqHit(midi, vel, when, gate) {
+  const inst = UI.seqMode === 'drum' ? curDrum() : curSynth();
+  playInst(inst, midi, vel, 0, {bus:liveBus, when, gate, live:false});
+  if (tape.recording) { const t = tapeTick(); recNote(midi, vel, t, t + Math.max(6, gate * P.tempo / 60 * PPQ)); }
+}
+function seqStep(t, n) {
+  const d = seqStepDur(), g = Math.max(0.03, d * P.pgate / 100), len = clamp(P.plen, 2, 16), col = n % len;
+  seqS.lastStep = col; seqS.lastT = t;
+  setTimeout(() => { seqS.play = col; seqS.flash[col] = 1; }, Math.max(0, (t - AC.currentTime) * 1000));
+  if (UI.seqType === 'pattern') seqS.pat[col].forEach(r => seqHit(noteMidi(11 - r), 0.7, t, g));
+  else if (UI.seqType === 'finger') { const m = seqS.fin[col]; if (m !== null) seqHit(m, 0.75, t, g); }
+  else if (UI.seqType === 'endless') {
+    const ns = arpNotes(); if (!ns.length) return;
+    const k = ns.length; let i;
+    if (P.epat === 0) i = seqS.arpIdx++ % k;
+    else if (P.epat === 1) i = k - 1 - (seqS.arpIdx++ % k);
+    else if (P.epat === 2) { const per = Math.max(1, 2 * k - 2), j = seqS.arpIdx++ % per; i = j < k ? j : per - j; }
+    else i = Math.floor(Math.random() * k);
+    seqS.cur = ns[i]; seqHit(ns[i], 0.75, t, g);
+  }
+}
+function seqClock() {
+  if (!AC || AC.state !== 'running' || !UI.seqOn || UI.seqType === 'tombola') { seqS.next = 0; seqS.play = -1; return; }
+  const now = AC.currentTime;
+  if (!seqS.next || seqS.next < now - 0.3) { seqS.next = now + 0.05; seqS.step = 0; seqS.arpIdx = 0; }
+  while (seqS.next < now + 0.12) {
+    seqStep(seqS.next, seqS.step);
+    const sw = P.swing / 150, d = seqStepDur(); seqS.next += d * (seqS.step % 2 ? 1 - sw : 1 + sw); seqS.step++;
+  }
+}
+setInterval(seqClock, 25);
+function fingerWrite(n, vel) {   // a key played while the loop runs goes into the step it lands on
+  if (!seqS.next) return;
+  const len = clamp(P.plen, 2, 16), d = seqStepDur(), late = AC.currentTime - seqS.lastT > d / 2;
+  const col = (seqS.lastStep + (late ? 1 : 0)) % len; seqS.fin[col] = n; seqS.flash[col] = 1; markDirty();
+}
+/* the screen: the middle band, laid out in screen pixels */
+function seqRect() { return {x:VW * 0.05, y:VH * 0.04, w:VW * 0.9, h:VH * 0.84}; }
+function seqRender(t) {
+  const c = vizCtx(), g = artKit(c), r = seqRect(), len = clamp(P.plen, 2, 16), type = UI.seqType;
+  for (let i = 0; i < 16; i++) seqS.flash[i] *= 0.9;
+  g.rect(r.x, r.y - VH * 0.04, 46, 14, null, '#22305A'); g.t(r.x + 23, r.y - VH * 0.04 + 10.5, 'ERASE', AW, 9, 'middle');
+  if (type === 'endless') {
+    const ns = arpNotes(), big = ns.length ? String(ns.length) : '–';
+    g.t(r.x + r.w, r.y - VH * 0.04 + 11, ['1/4','1/8','1/16','1/32'][P.prate], AB, 18, 'end', 200);
+    if (P.ehold) { g.rect(r.x + r.w - 40, r.y + 10, 40, 14, null, AO); g.t(r.x + r.w - 20, r.y + 20.5, 'HOLD', '#fff', 9, 'middle', 600); }
+    g.num(r.x + r.w * 0.5, r.y + r.h * 0.62, big, AW, Math.min(r.h * 0.7, 90), 'middle');
+    const cw = r.w / 12;   // twelve pitch classes: the ones you hold light up, the one playing is bright
+    for (let k = 0; k < 12; k++) { const on = ns.some(m => ((m % 12) + 12) % 12 === k), cur = seqS.cur >= 0 && ((seqS.cur % 12) + 12) % 12 === k && seqS.flash[seqS.play < 0 ? 0 : seqS.play] > 0.2;
+      g.dot(r.x + cw * (k + 0.5), r.y + r.h - 8, cur ? 5 : on ? 3.4 : 2, cur ? AG : on ? AB : '#3A3D4A'); }
+    return;
+  }
+  const cw = r.w / 16, rh = r.h / 12, x0 = r.x, y0 = r.y;
+  for (let k = 0; k <= 16; k++) g.ln(`M${x0 + k * cw} ${y0} V${y0 + r.h}`, k > len ? '#5A2A40' : k % 4 === 0 ? AW : '#2B3550', k % 4 === 0 ? 1 : 0.8);
+  for (let k = 0; k <= 12; k++) g.ln(`M${x0} ${y0 + k * rh} H${x0 + r.w}`, '#2B3550', 0.8);
+  if (seqS.play >= 0 && seqS.play < len) g.ln(`M${x0 + (seqS.play + 0.5) * cw} ${y0} V${y0 + r.h}`, AB, 1.4);
+  for (let col = 0; col < 16; col++) {
+    if (type === 'pattern') seqS.pat[col].forEach(row => g.dot(x0 + (col + 0.5) * cw, y0 + (row + 0.5) * rh, Math.min(cw, rh) * (0.3 + 0.12 * seqS.flash[col]), col < len ? AG : '#6A4A55'));
+    else if (seqS.fin[col] !== null) { const row = 11 - ((seqS.fin[col] % 12) + 12) % 12; g.dot(x0 + (col + 0.5) * cw, y0 + (row + 0.5) * rh, Math.min(cw, rh) * (0.3 + 0.12 * seqS.flash[col]), col < len ? AW : '#6A4A55'); }
+  }
+}
+function seqTouch(p) {
+  const r = seqRect(), y = p.y - H * 0.2;
+  if (y < r.y - 2 && p.x < r.x + 56) { seqClear(); showHint('cleared'); markDirty(); return; }
+  if (UI.seqType !== 'pattern') return;
+  const col = Math.floor((p.x - r.x) / (r.w / 16)), row = Math.floor((y - r.y) / (r.h / 12));
+  if (col < 0 || col > 15 || row < 0 || row > 11) return;
+  const set = seqS.pat[col];
+  if (set.has(row)) set.delete(row); else { set.add(row); seqS.next = seqS.next || 0; if (AC && AC.state === 'running') seqHit(noteMidi(11 - row), 0.7, AC.currentTime, 0.25); }
+  markDirty();
+}
+
 /* ---------- touch on the screen ---------- */
 const ptrs = new Map(); let spinPtr = null;
 const local = e => { const r = cv.getBoundingClientRect(); return {x: e.clientX - r.left, y: e.clientY - r.top}; };
 cv.addEventListener('pointerdown', e => {
   firstGesture();
   if (ringName) { closeRing(); return; }   // a tap on the screen just puts the encoder away
+  if (seqScreen()) { seqTouch(local(e)); return; }
   capture(cv, e);
   const p = local(e);
   ptrs.set(e.pointerId, {x0:p.x, y0:p.y, t0:performance.now(), moved:false, a:Math.atan2(p.y - CY, p.x - CX), hist:[]});
@@ -2259,6 +2367,18 @@ const ART = {
     const ra = v[2] * Math.PI / 2, cs = 8 * Math.cos(ra), sn = 8 * Math.sin(ra); g.circ(170, 32, 8, AO, 'none', 1.6);
     g.ln(`M${170 - sn} ${32 - cs} L${170 + sn} ${32 + cs} M${170 - cs} ${32 + sn} L${170 + cs} ${32 - sn}`, AO, 1);
   }},
+  cow: {w:240, h:136, draw(g, v, t) {   // a cow with its workings showing: ring modulator (carrier), delay loop, and the sideband sidechain
+    const CY = '#2EC4F2', c = g.c;
+    g.ln('M50 34 Q46 24 38 26 L30 20 L32 28 Q20 32 16 42 L12 50 Q10 58 18 60 L26 58 Q32 54 36 50 L48 54 Q58 32 92 30 L172 26 Q200 24 208 40 Q216 34 220 44 L216 76 Q216 92 208 100 L204 128 L194 128 L194 102 Q162 108 122 104 L112 128 L102 128 L100 102 Q76 98 68 84 L64 128 L54 128 L54 80 Q50 66 50 54 Z', CY, 1.5);
+    g.ln('M28 34 Q34 30 40 32', AW, 1.2); g.dot(26, 40, 1.8, AW); g.ln('M216 44 Q228 50 226 66', CY, 1.2);
+    g.ln('M58 50 Q74 46 90 54 L104 60', AB, 1.2, '3 2'); g.ln('M100 56 L106 60 L100 64', AB, 1.2);
+    const ang = t * (1 + v[0] * 9) * 2; g.circ(118, 56, 9, AG, 'none', 1.4); g.ln(`M${118 - 5 * Math.cos(ang)} ${56 - 5 * Math.sin(ang)} L${118 + 5 * Math.cos(ang)} ${56 + 5 * Math.sin(ang)}`, AW, 1.6);
+    g.circ(120, 82, 9, AB, 'none', 1.4); const fbk = 0.4 + v[2] * 0.6; c.globalAlpha = fbk; g.dot(116, 80, 2, AG); g.dot(124, 80, 2, APK); g.dot(120, 86, 2, AW); c.globalAlpha = 1;
+    g.circ(152, 68, 20, APU, 'none', 1.4); for (let k = 0; k < 5; k++) { const h = 3 + 11 * (0.5 + 0.5 * Math.sin(t * (2 + v[0] * 14) + k * 1.3)); g.ln(`M${142 + k * 5} ${68 - h / 2} V${68 + h / 2}`, [AW, AG, APK][k % 3], 1.4); }
+    g.circ(190, 70, 9, AO, 'none', 1.2); for (let k = 0; k < 3; k++) g.ln(`M183 ${66 + k * 3} H197`, AO, 0.9);
+    const sw = 4 + v[3] * 14 * (0.4 + excite); g.ln(`M172 52 H180 V${52 - sw} H186 V52 H192 V${52 - sw} H198 V52 H204 V${52 - sw} H210`, APK, 1.6);
+    for (let k = 0; k < 21; k++) g.ln(`M${4 + k * 11} 134 V${130 - (Math.sin(t * 3 + k) * 0.5 + 0.5) * 4 * (1 + v[1] * 3)}`, AG, 1);
+  }},
   punch: {w:170, h:104, draw(g, v, t) {
     const k = 1 + excite * (0.1 + v[3] * 0.3);
     g.ln('M60 30 Q60 10 80 10 Q100 10 100 30 Q100 46 80 48 Q60 46 60 30 Z', AG, 1.6); g.ln('M70 26 H90 M72 36 Q80 40 88 36', AG, 1.2);
@@ -2431,15 +2551,15 @@ function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000) || 0.016; last = now;
   if (needSize) size();
   if (needSize) { last = now; requestAnimationFrame(frame); return; }
-  if (ringName && inSeqView()) placeRing();
+  if (ringName && tombView()) placeRing();
   step(dt);
   excite *= Math.exp(-dt * 2.2);
   for (let k = 0; k < NPART; k++) drumHits[k] *= Math.exp(-dt * 6);
-  if (!inSeqView()) {   // some screens show their values in the drawing, with no corner readouts
+  if (!tombView()) {   // some screens show their values in the drawing, with no corner readouts
     const cp = curPage(), bare = cp.bare || (cp.name === 'effect' && !P.fx) ? 'hidden' : '';
     if (pageUI.style.visibility !== bare) pageUI.style.visibility = bare;
   }
-  if (inSeqView()) render(dt); else curPage().draw(now / 1000);
+  if (tombView()) render(dt); else curPage().draw(now / 1000);
   updateHint(now);
   requestAnimationFrame(frame);
 }
@@ -2447,9 +2567,12 @@ function updateHint(now) {
   let msg = '', show = true;
   if (now < hintUntil) msg = hintMsg;
   else if (UI.shift && UI.mode === 'drum' && !inSeqView() && UI.page.drum === 0) msg = 'shift · encoders: direction · fine in · fine out · level';
-  else if (UI.shift) msg = 'shift · T1 synth · T3 effect · T4 lfo · 1-8 pick' + (inSeqView() ? ' · T2 clear · SEQ lay 5 · ‹ key · › scale' : '');
-  else if (!AC || AC.state !== 'running') msg = inSeqView() ? 'tap to turn on sound · drag to spin' : 'tap a key to turn on sound';
-  else if (inSeqView() && UI.seqOn && !dots.length) msg = 'tap inside the tombola to add notes';
+  else if (UI.shift) msg = 'shift · T1 synth · T3 effect · T4 lfo · SEQ sequencers · 1-8 pick' + (inSeqView() ? ' · T2 clear · ‹ key · › scale' : '');
+  else if (!AC || AC.state !== 'running') msg = tombView() ? 'tap to turn on sound · drag to spin' : 'tap a key to turn on sound';
+  else if (tombView() && !dots.length) msg = 'tap inside the tombola to add notes';
+  else if (seqScreen() && UI.seqType === 'pattern' && !seqS.pat.some(c => c.size)) msg = 'tap the grid to place notes';
+  else if (seqScreen() && UI.seqType === 'finger' && !seqS.fin.some(m => m !== null)) msg = 'play keys: they are written into the loop';
+  else if (seqScreen() && UI.seqType === 'endless' && !arpNotes().length) msg = 'hold keys: endless plays them round';
   else { msg = hint.textContent; show = false; }
   if (hint.textContent !== msg) hint.textContent = msg;
   hint.style.opacity = show ? 1 : 0;
