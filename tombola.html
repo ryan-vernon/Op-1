@@ -307,7 +307,7 @@ const SPEC = {
   shape:  {min:0, max:100, v:0,  col:'white', label:'shape'},
   mass:   {min:0, max:100, v:62, col:'orange', label:'mass'},
   plen:{min:2, max:16, v:16, col:'blue', label:'length', span:14}, prate:{min:0, max:3, v:2, col:'white', label:'rate', span:4},
-  pgate:{min:10, max:100, v:60, col:'orange', label:'gate'}, epat:{min:0, max:3, v:0, col:'white', label:'order', span:4}, ehold:{min:0, max:1, v:0, col:'orange', label:'hold', span:2},
+  pgate:{min:10, max:100, v:60, col:'white', label:'gate'}, fplay:{min:0, max:2, v:0, col:'orange', label:'player', span:3}, epat:{min:0, max:3, v:0, col:'white', label:'order', span:4}, ehold:{min:0, max:1, v:0, col:'orange', label:'hold', span:2},
   taper:  {min:0, max:100, v:35, col:'blue', label:'taper'},
   turns:  {min:0, max:100, v:45, col:'green', label:'turns'},
   damp:   {min:0, max:100, v:40, col:'white', label:'damp'},
@@ -573,11 +573,11 @@ const UTIL = {   // screens that sit over a mode: tempo, erase tape, help
   erase:{name:'erase', bare:true, params:() => TAPE_PAGE.params(), draw:t => drawArt('erase', t)},
   help:{name:'help', bare:true, params:() => PAGES.synth[0].params, draw:t => drawArt('help', t)}};
 const SEQ_TYPES = ['tombola', 'pattern', 'finger', 'endless'];
-const seqS = {next:0, step:0, lastStep:0, lastT:0, flash:new Float32Array(16), play:-1, pat:Array.from({length:16}, () => new Set()), fin:new Array(16).fill(null), arpIdx:0, arpDir:1, keys:new Set(), latch:new Set(), cur:-1};
+const seqS = {next:0, step:0, lastStep:0, lastT:0, flash:new Float32Array(16), play:-1, fplayRow:0, pat:Array.from({length:16}, () => new Set()), fpat:[new Array(16).fill(0), new Array(16).fill(0)], arpIdx:0, arpDir:1, keys:new Set(), latch:new Set(), cur:-1};
 const inSeqView = () => !UI.util && UI.seqOn && UI.seqView && (UI.mode === 'synth' || UI.mode === 'drum');
 const tombView = () => inSeqView() && UI.seqType === 'tombola', seqScreen = () => inSeqView() && UI.seqType !== 'tombola';
 const SEQ_PAGES = {pattern:{name:'pattern', bare:false, params:['plen','swing','prate','pgate'], draw:t => seqRender(t)},
-  finger:{name:'finger', params:['plen','swing','prate','pgate'], draw:t => seqRender(t)},
+  finger:{name:'finger', params:['plen','prate','pgate','fplay'], draw:t => seqRender(t)},
   endless:{name:'endless', params:['prate','pgate','epat','ehold'], draw:t => seqRender(t)}};
 const curPage = () => UI.util ? UTIL[UI.util] : UI.mode === 'tape' ? TAPE_PAGE : seqScreen() ? SEQ_PAGES[UI.seqType] : PAGES[UI.mode][UI.page[UI.mode]];
 function pageParams() {
@@ -589,7 +589,7 @@ const clock = sec => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).pad
 const LFO_DIVS = [['2/1', 8], ['1/1', 4], ['1/2', 2], ['1/4', 1], ['1/8', 0.5], ['1/16', 0.25], ['1/32', 0.125]];
 const lfoHz = () => P.lfoType === 'random' ? 0.25 * Math.pow(2, P.lrsp / 100 * 6) : P.tempo / 60 / LFO_DIVS[clamp(P.lspd, 0, 6)][1];
 const valueText = name => /^pan\d$/.test(name) ? (P[name] === 50 ? 'C' : P[name] < 50 ? 'L' + (50 - P[name]) * 2 : 'R' + (P[name] - 50) * 2)
-  : name === 'prate' ? ['1/4','1/8','1/16','1/32'][clamp(P.prate, 0, 3)] : name === 'epat' ? ['up','down','up-down','random'][clamp(P.epat, 0, 3)] : name === 'ehold' ? (P.ehold ? 'on' : 'off') : name === 'pgate' ? P.pgate + '%' : name === 'swing' ? P.swing + '%'
+  : name === 'prate' ? ['1/4','1/8','1/16','1/32'][clamp(P.prate, 0, 3)] : name === 'epat' ? ['up','down','up-down','random'][clamp(P.epat, 0, 3)] : name === 'ehold' ? (P.ehold ? 'on' : 'off') : name === 'fplay' ? ['A','B','A+B'][clamp(P.fplay, 0, 2)] : name === 'pgate' ? P.pgate + '%' : name === 'swing' ? P.swing + '%'
   : name === 'lspd' ? LFO_DIVS[clamp(P.lspd, 0, 6)][0] : name === 'ldst' ? ['pitch', 'volume', 'all'][P.ldst]
   : name === 'lwav' ? (P.lwav ? '+' + P.lwav : 'off') : name === 'tspeed' ? (P.tspeed / 100).toFixed(1) : name === 'tsig' ? P.tsig + '/4'
   : name === 'scrub' ? clock(P.scrub / 100 * loopTicks() * spt()) : name === 'click' && !P.click ? 'off' : name === 'eqamt' ? (P.eqamt > 50 ? 'max' : 'clean') + ' ' + P.eqamt : name === 'dmode' ? ['to end','loop','once'][P.dmode] : name === 'ddir' ? (P.ddir ? 'rev' : 'fwd')
@@ -939,8 +939,7 @@ window.addEventListener('keyup', e => {
 const heldNotes = new Map();
 function noteOn(n, vel) {
   firstGesture(); noteOff(n);
-  if (UI.seqOn && UI.seqType === 'endless' && (UI.mode === 'synth' || UI.mode === 'drum')) { arpPress(n); heldNotes.set(n, null); keyLight(n, true); return; }   // endless plays the held keys round
-  if (UI.seqOn && UI.seqType === 'finger') fingerWrite(n, vel);
+  if (UI.seqOn && (UI.seqType === 'endless' || UI.seqType === 'finger') && (UI.mode === 'synth' || UI.mode === 'drum')) { arpPress(n); heldNotes.set(n, null); keyLight(n, true); return; }   // endless plays the held keys round
   if (UI.mode === 'drum') selectPart(partOf(n));
   lfoEnvKick();
   const v = playInst(liveInst(), n, vel, 0, {gate:Infinity, bus:liveBus, live:true}); if (v) v.vel = vel;
@@ -1057,7 +1056,7 @@ function songState() {
       presets:UI.presets, drum:UI.drum, mfxType:P.mfxType, mfx:P.mfx, mute:UI.mute, fxType:P.fxType, lfoType:P.lfoType, lfoOn:P.lfoOn, params:Object.fromEntries(PERSIST.map(k => [k, P[k]]))},
     patterns: [{kind:'tombola', data:{seqOn:UI.seqOn, seqMode:UI.seqMode, seqType:UI.seqType, theta:+theta.toFixed(3),
       dots:dots.filter(d => !d.out).map(d => [+d.x.toFixed(3), +d.y.toFixed(3), d.idx])}}],
-    pattern: {steps:seqS.pat.map(c => [...c]), fin:seqS.fin.slice()},
+    pattern: {steps:seqS.pat.map(c => [...c]), fing:seqS.fpat.map(a => a.slice())},
     recordings: tape.tracks.map((tr, i) => ({track:i + 1, instrument:tr.inst, ppq:PPQ, lengthTicks:loopTicks(), events:tr.events})),
   };
 }
@@ -1091,7 +1090,7 @@ function loadSong(s) {
     for (const [x, y, idx] of (tp.data.dots || []).slice(0, MAX_DOTS)) addDot(x, y, idx | 0);
   }
   seqClear(); if (s.pattern) { (s.pattern.steps || []).slice(0, 16).forEach((c, i) => (c || []).forEach(r => { if ((r | 0) >= 0 && (r | 0) < 12) seqS.pat[i].add(r | 0); }));
-    (s.pattern.fin || []).slice(0, 16).forEach((m, i) => { seqS.fin[i] = typeof m === 'number' ? m : null; }); }
+    (s.pattern.fing || []).slice(0, 2).forEach((a, k) => (a || []).slice(0, 16).forEach((v, i) => { seqS.fpat[k][i] = clamp(v | 0, 0, 2); })); }
   tape.tracks = [0, 1, 2, 3].map(() => ({inst:null, events:[]}));
   for (const r of s.recordings || []) {
     const i = (r.track | 0) - 1; if (i < 0 || i > 3 || !Array.isArray(r.events)) continue;
@@ -2009,7 +2008,7 @@ function step(dt) {
 const arpNotes = () => [...(P.ehold ? seqS.latch : seqS.keys)].sort((a, b) => a - b);
 function arpPress(n) { if (P.ehold && !seqS.keys.size) seqS.latch.clear(); seqS.keys.add(n); seqS.latch.add(n); }
 function arpRelease(n) { seqS.keys.delete(n); if (!P.ehold) seqS.latch.delete(n); }
-function seqClear() { seqS.pat.forEach(c => c.clear()); seqS.fin.fill(null); seqS.latch.clear(); }
+function seqClear() { seqS.pat.forEach(c => c.clear()); seqS.fpat.forEach(a => a.fill(0)); seqS.latch.clear(); }
 const seqStepDur = () => 60 / P.tempo * [1, 0.5, 0.25, 0.125][clamp(P.prate, 0, 3)];
 function seqHit(midi, vel, when, gate) {
   const inst = UI.seqMode === 'drum' ? curDrum() : curSynth();
@@ -2019,9 +2018,12 @@ function seqHit(midi, vel, when, gate) {
 function seqStep(t, n) {
   const d = seqStepDur(), g = Math.max(0.03, d * P.pgate / 100), len = clamp(P.plen, 2, 16), col = n % len;
   seqS.lastStep = col; seqS.lastT = t;
-  setTimeout(() => { seqS.play = col; seqS.flash[col] = 1; }, Math.max(0, (t - AC.currentTime) * 1000));
+  if (UI.seqType !== 'finger') setTimeout(() => { seqS.play = col; seqS.flash[col] = 1; }, Math.max(0, (t - AC.currentTime) * 1000));
   if (UI.seqType === 'pattern') seqS.pat[col].forEach(r => seqHit(noteMidi(11 - r), 0.7, t, g));
-  else if (UI.seqType === 'finger') { const m = seqS.fin[col]; if (m !== null) seqHit(m, 0.75, t, g); }
+  else if (UI.seqType === 'finger') {   // the rhythm plays at the pitch of every key you hold
+    const join = P.fplay === 2, idx = n % (join ? len * 2 : len), pc = join ? (idx < len ? 0 : 1) : P.fplay, c2 = idx % len, v = seqS.fpat[pc][c2];
+    seqS.play = idx; seqS.fplayRow = pc; if (v) [...seqS.keys].forEach(m => seqHit(m, v === 2 ? 1 : 0.65, t, g)); return;
+  }
   else if (UI.seqType === 'endless') {
     const ns = arpNotes(); if (!ns.length) return;
     const k = ns.length; let i;
@@ -2042,11 +2044,6 @@ function seqClock() {
   }
 }
 setInterval(seqClock, 25);
-function fingerWrite(n, vel) {   // a key played while the loop runs goes into the step it lands on
-  if (!seqS.next) return;
-  const len = clamp(P.plen, 2, 16), d = seqStepDur(), late = AC.currentTime - seqS.lastT > d / 2;
-  const col = (seqS.lastStep + (late ? 1 : 0)) % len; seqS.fin[col] = n; seqS.flash[col] = 1; markDirty();
-}
 /* the screen: the middle band, laid out in screen pixels */
 function seqRect() { return {x:VW * 0.05, y:VH * 0.04, w:VW * 0.9, h:VH * 0.84}; }
 function seqRender(t) {
@@ -2063,18 +2060,38 @@ function seqRender(t) {
       g.dot(r.x + cw * (k + 0.5), r.y + r.h - 8, cur ? 5 : on ? 3.4 : 2, cur ? AG : on ? AB : '#3A3D4A'); }
     return;
   }
+  if (type === 'finger') {
+    const cw = r.w / 16, rowH = r.h * 0.4, rows = [r.y + r.h * 0.04, r.y + r.h * 0.56], cols = [AB, AG], names = ['A', 'B'];
+    for (let k = 0; k < 2; k++) {
+      const on = P.fplay === 2 || P.fplay === k, y = rows[k];
+      g.t(r.x - 2, y - 3, names[k], on ? cols[k] : '#555', 12, 'start', 600);
+      for (let i = 0; i < 16; i++) {
+        const v = seqS.fpat[k][i], inLen = i < len, x = r.x + i * cw, cur = on && seqS.next && seqS.play >= 0 && seqS.fplayRow === k && seqS.play % len === i;
+        g.rect(x + 1.5, y + 2, cw - 3, rowH - 4, i % 4 === 0 ? '#4A5580' : '#2B3550', v ? (inLen && on ? cols[k] : '#6A4A55') : cur ? '#1A2A5A' : 'none', 0.9, 2);
+        if (v === 2) g.rect(x + 3.5, y + 4, cw - 7, rowH - 8, '#fff', 'none', 1.2, 1);
+        if (cur) g.rect(x + 1.5, y + 2, cw - 3, rowH - 4, AW, 'none', 1.6, 2);
+      }
+    }
+    const ks = [...seqS.keys].sort((a, b) => a - b);
+    g.t(r.x + r.w / 2, r.y + r.h - 2, ks.length ? ks.map(m => NOTE_NAMES[((m % 12) + 12) % 12]).join(' ') : 'hold a key', ks.length ? AG : AGR, 12, 'middle', 400);
+    return;
+  }
   const cw = r.w / 16, rh = r.h / 12, x0 = r.x, y0 = r.y;
   for (let k = 0; k <= 16; k++) g.ln(`M${x0 + k * cw} ${y0} V${y0 + r.h}`, k > len ? '#5A2A40' : k % 4 === 0 ? AW : '#2B3550', k % 4 === 0 ? 1 : 0.8);
   for (let k = 0; k <= 12; k++) g.ln(`M${x0} ${y0 + k * rh} H${x0 + r.w}`, '#2B3550', 0.8);
   if (seqS.play >= 0 && seqS.play < len) g.ln(`M${x0 + (seqS.play + 0.5) * cw} ${y0} V${y0 + r.h}`, AB, 1.4);
   for (let col = 0; col < 16; col++) {
     if (type === 'pattern') seqS.pat[col].forEach(row => g.dot(x0 + (col + 0.5) * cw, y0 + (row + 0.5) * rh, Math.min(cw, rh) * (0.3 + 0.12 * seqS.flash[col]), col < len ? AG : '#6A4A55'));
-    else if (seqS.fin[col] !== null) { const row = 11 - ((seqS.fin[col] % 12) + 12) % 12; g.dot(x0 + (col + 0.5) * cw, y0 + (row + 0.5) * rh, Math.min(cw, rh) * (0.3 + 0.12 * seqS.flash[col]), col < len ? AW : '#6A4A55'); }
   }
 }
 function seqTouch(p) {
   const r = seqRect(), y = p.y - H * 0.2;
   if (y < r.y - 2 && p.x < r.x + 56) { seqClear(); showHint('cleared'); markDirty(); return; }
+  if (UI.seqType === 'finger') {
+    const col = Math.floor((p.x - r.x) / (r.w / 16)), k = y > r.y + r.h * 0.5 ? 1 : 0, ry = y - (k ? r.y + r.h * 0.56 : r.y + r.h * 0.04);
+    if (col < 0 || col > 15 || ry < 0 || ry > r.h * 0.4) return;
+    seqS.fpat[k][col] = (seqS.fpat[k][col] + 1) % 3; markDirty(); return;   // off, on, accent
+  }
   if (UI.seqType !== 'pattern') return;
   const col = Math.floor((p.x - r.x) / (r.w / 16)), row = Math.floor((y - r.y) / (r.h / 12));
   if (col < 0 || col > 15 || row < 0 || row > 11) return;
@@ -2571,7 +2588,7 @@ function updateHint(now) {
   else if (!AC || AC.state !== 'running') msg = tombView() ? 'tap to turn on sound · drag to spin' : 'tap a key to turn on sound';
   else if (tombView() && !dots.length) msg = 'tap inside the tombola to add notes';
   else if (seqScreen() && UI.seqType === 'pattern' && !seqS.pat.some(c => c.size)) msg = 'tap the grid to place notes';
-  else if (seqScreen() && UI.seqType === 'finger' && !seqS.fin.some(m => m !== null)) msg = 'play keys: they are written into the loop';
+  else if (seqScreen() && UI.seqType === 'finger' && !seqS.fpat.some(a => a.some(v => v))) msg = 'tap steps to draw the rhythm · hold a key to play it';
   else if (seqScreen() && UI.seqType === 'endless' && !arpNotes().length) msg = 'hold keys: endless plays them round';
   else { msg = hint.textContent; show = false; }
   if (hint.textContent !== msg) hint.textContent = msg;
