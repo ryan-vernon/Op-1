@@ -111,8 +111,11 @@ body.pad #snd4{grid-area:6/15}body.pad #snd5{grid-area:6/16}body.pad #snd6{grid-
 #speaker .grill{display:grid;grid-template-columns:repeat(8,5px);gap:6px 5px}
 #speaker .grill i{width:5px;height:5px;border-radius:50%;background:#2A2A2A}
 .knob{--ks:calc(var(--u) * .86);position:relative;width:var(--ks);height:var(--ks);border-radius:50%;background:linear-gradient(135deg,#F0EDEC,#F6F3F2);
-  box-shadow:inset 1px 1px 1px #fff,calc(var(--ks) * .16) calc(var(--ks) * .2) calc(var(--ks) * .3) rgba(60,30,24,.3);display:flex;align-items:center;justify-content:center;touch-action:none;cursor:ns-resize}
-.cap{width:calc(var(--k) * 64);height:calc(var(--k) * 64);flex:none;border-radius:50%;display:flex;justify-content:center;box-shadow:0 0 0 calc(var(--ks) * .057) #F6F3F2,inset -1px -1px 2px rgba(0,0,0,.45),calc(var(--ks) * .05) calc(var(--ks) * .05) calc(var(--ks) * .1) calc(var(--ks) * .057) rgba(61,38,32,.45)}
+  box-shadow:inset 0 1px 1px #fff,0 calc(var(--ks) * .06) calc(var(--ks) * .1) rgba(40,25,20,.22),0 calc(var(--ks) * .3) calc(var(--ks) * .6) calc(var(--ks) * .04) rgba(60,40,34,.26);display:flex;align-items:center;justify-content:center;touch-action:none;cursor:ns-resize}
+.cap{width:calc(var(--k) * 64);height:calc(var(--k) * 64);flex:none;border-radius:50%;display:flex;justify-content:center;box-shadow:0 0 0 calc(var(--ks) * .057) #F6F3F2}
+/* the cap turns, the light does not: gloss and shading sit on a layer that stays put, and the knob's shadow always falls straight down onto the button below */
+.knob::after{content:"";position:absolute;left:50%;top:50%;width:calc(var(--k) * 64);height:calc(var(--k) * 64);margin:calc(var(--k) * -32) 0 0 calc(var(--k) * -32);border-radius:50%;background:radial-gradient(circle at 34% 26%,rgba(255,255,255,.38),rgba(255,255,255,0) 52%),radial-gradient(circle at 62% 86%,rgba(0,0,0,.2),rgba(0,0,0,0) 58%);pointer-events:none}
+.tile.enc{z-index:3}   /* the knobs are taller than the buttons: their shadow reaches over the row below */
 .cap i{display:block;width:9%;height:38%;margin-top:8%;border-radius:3px;background:rgba(255,255,255,.85)}
 #k2 .cap i{background:#2A2A2A}
 
@@ -1118,6 +1121,62 @@ function layout() {
 addEventListener('resize', layout); layout();
 
 /* ---------- audio ---------- */
+const WORKLET_SRC = `
+class Digi extends AudioWorkletProcessor {   // digital: two sine oscillators, wave shaper, bit crush; all four values can move while it plays
+  static get parameterDescriptors() { return [{name:'detune', defaultValue:0, automationRate:'k-rate'}]; }
+  constructor() { super(); this.p = {f:261, sh:.3, oc:.75, dt:.25, dg:.35, ring:false}; this.pa = 0; this.pb = 0; this.held = 0; this.i = 0; this.on = false; this.t = 0;
+    this.port.onmessage = e => Object.assign(this.p, e.data); }
+  process(inputs, outputs, parameters) {
+    const out = outputs[0][0], gate = inputs[0] && inputs[0][0], dc = parameters.detune[0], k = dc ? Math.pow(2, dc / 1200) : 1;
+    const {f, sh, oc, dt, dg, ring} = this.p, oct = Math.round(oc * 4) - 2, fold = 1 + sh * 7, hold = 1 + Math.floor(dg * dg * 40);
+    const levels = Math.pow(2, Math.round(12 - dg * 10)), fb = Math.pow(2, oct) * Math.pow(2, (ring ? dt * 700 : dt * 45) / 1200), sr = sampleRate;
+    for (let i = 0; i < out.length; i++) {
+      const g = gate ? gate[i] > 0.5 : false;
+      if (g && !this.on) { this.t = 0; this.pa = 0; this.pb = 0; }
+      this.on = g;
+      if (!g) { out[i] = 0; continue; }
+      this.pa = (this.pa + f * k / sr) % 1; this.pb = (this.pb + f * k * fb / sr) % 1;
+      const a = Math.sin(6.283185307 * this.pa), b = Math.sin(6.283185307 * this.pb);
+      const x = Math.sin((ring ? a * b : (a + b) * 0.5) * fold * Math.PI / 2);
+      if (this.i++ % hold === 0) this.held = Math.round(x * levels / 2) / (levels / 2);
+      const tt = this.t++ / sr;
+      out[i] = this.held * Math.min(1, tt / 0.002) * (0.45 + 0.55 * Math.exp(-tt / 0.42)) * 0.7;
+    }
+    return true;
+  }
+}
+class KS extends AudioWorkletProcessor {   // string: two waveguide strings; tone, decay and detune move live, the impulse type is read at each pluck
+  static get parameterDescriptors() { return [{name:'detune', defaultValue:0, automationRate:'k-rate'}]; }
+  constructor() { super(); this.p = {f:261, tone:.6, sus:.6, det:.25, kind:1}; this.size = 8192; this.b = [new Float32Array(8192), new Float32Array(8192)];
+    this.w = 0; this.lp = [0, 0]; this.prev = [0, 0]; this.on = false; this.port.onmessage = e => Object.assign(this.p, e.data); }
+  pluck(L, a, kind) {
+    const N = Math.max(2, Math.round(L)), raw = new Float32Array(N); let lp = 0;
+    for (let i = 0; i < N; i++) { const x = kind === 2 ? (i < 3 ? 1 - i / 3 : 0) : kind === 3 ? 1 - 2 * i / N : Math.random() * 2 - 1; lp += (kind === 1 ? a * 0.25 : a) * (x - lp); raw[i] = kind >= 2 ? x * 0.6 + lp * 0.4 : lp; }
+    const off = Math.max(1, Math.round(N * 0.132));
+    for (const b of this.b) for (let i = 0; i < N; i++) b[(this.w - N + i + this.size) % this.size] = raw[i] - raw[(i + off) % N] * 0.9;
+  }
+  process(inputs, outputs, parameters) {
+    const out = outputs[0][0], gate = inputs[0] && inputs[0][0], dc = parameters.detune[0], kk = dc ? Math.pow(2, dc / 1200) : 1, sr = sampleRate;
+    const {f, tone, sus, det, kind} = this.p, s = 0.05 + (1 - tone) * 0.45, dec = 0.985 + sus * 0.0148;
+    const L1 = Math.max(2, sr / (f * kk) - s), L2 = Math.max(2, sr / (f * kk * Math.pow(2, det * 30 / 1200)) - s), lvl2 = Math.min(1, det * 8);
+    for (let i = 0; i < out.length; i++) {
+      const g = gate ? gate[i] > 0.5 : false;
+      if (g && !this.on) { this.pluck(Math.max(L1, L2), 0.5, Math.min(3, Math.floor(kind * 4))); this.prev[0] = this.prev[1] = 0; }
+      this.on = g;
+      if (!g) { out[i] = 0; continue; }
+      let mix = 0;
+      for (let n = 0; n < 2; n++) {
+        const b = this.b[n], L = n ? L2 : L1, r = this.w - L, i0 = Math.floor(r), fr = r - i0;
+        const x = b[(i0 + this.size) % this.size] * (1 - fr) + b[(i0 + 1 + this.size) % this.size] * fr;
+        b[this.w] = ((1 - s) * x + s * this.prev[n]) * dec; this.prev[n] = x; mix += n ? x * lvl2 : x;
+      }
+      this.w = (this.w + 1) % this.size; out[i] = mix * 0.9;
+    }
+    return true;
+  }
+}
+registerProcessor('digi', Digi); registerProcessor('ks', KS);`;
+let workletOK = false;
 let eqL, eqM, eqH, drv, mcomp, mkup, mfxDry, mfxSum, mfxWet, gL, gR, anL, anR, trackPan = [], drvK = -1;
 let AC = null, master, voiceBus, wetGain, analyser, conv = null, convGain = null, voices = 0, excite = 0;
 /* signal path: live notes (keys, MIDI, tombola) and the four tape tracks each have a level,
@@ -1128,6 +1187,7 @@ function ensureAudio() {
   const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
   try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
   AC = new C();
+  try { AC.audioWorklet.addModule(URL.createObjectURL(new Blob([WORKLET_SRC], {type:'text/javascript'}))).then(() => { workletOK = true; }).catch(() => {}); } catch (e) {}
   master = AC.createGain();   // the volume knob
   eqL = AC.createBiquadFilter(); eqM = AC.createBiquadFilter(); eqH = AC.createBiquadFilter();
   eqL.type = 'lowshelf'; eqL.frequency.value = 220; eqM.type = 'peaking'; eqM.frequency.value = 1200; eqM.Q.value = 0.8; eqH.type = 'highshelf'; eqH.frequency.value = 4500;
@@ -1314,12 +1374,18 @@ function playNote(midi, vel, pan, o = {}) {
   tail.connect(o.bus || liveBus);
   const peak = 0.04 + 0.34 * Math.pow(vel, 0.8);
   const dec = 0.12 + Math.pow(inst.engine === 'pulse' ? sv(1) : 0.62, 2) * 3.2;
-  const srcs = [];
+  const srcs = [], extraClean = [];
   let len = dec, sustains = false;
   const live = !!o.live, cur = () => live ? curSynth().vals.map(x => x / 100) : v;   // a held key reads the encoders again whenever they move
   let upd = null;
   switch (inst.engine) {
     case 'digital': {
+      if (workletOK) {   // a running synth: no re-trigger when an encoder moves
+        const gate = AC.createConstantSource(), wn = new AudioWorkletNode(AC, 'digi', {numberOfInputs:1, numberOfOutputs:1, outputChannelCount:[1]});
+        const send = w => wn.port.postMessage({f, sh:w[0], oc:w[1], dt:w[2], dg:w[3], ring:live ? P.digiRing : inst.ring});
+        send(v); gate.connect(wn); wn.connect(out); gate.detune = wn.parameters.get('detune'); srcs.push(gate); extraClean.push(() => { try { wn.disconnect(); } catch (e) {} });
+        out.gain.setValueAtTime(peak * 0.8, t); sustains = true; len = 1.4; upd = () => { send(cur()); return true; }; break;
+      }
       const s = AC.createBufferSource(); s.buffer = digiBuffer(midi, inst.vals, inst.ring); s.connect(out);
       len = s.buffer.duration; out.gain.setValueAtTime(peak * 0.8, t); srcs.push(s); upd = () => false; break;   // a rendered buffer: start it again
     }
@@ -1352,8 +1418,14 @@ function playNote(midi, vel, pan, o = {}) {
       break;
     }
     case 'string': {
-      const s = AC.createBufferSource(); s.buffer = ksBuffer(f, inst.vals);
       const body = AC.createBiquadFilter(); body.type = 'peaking'; body.frequency.value = 210; body.Q.value = 1.3; body.gain.value = 4;
+      if (workletOK) {   // a running string: tension, decay and detune follow the encoders
+        const gate = AC.createConstantSource(), wn = new AudioWorkletNode(AC, 'ks', {numberOfInputs:1, numberOfOutputs:1, outputChannelCount:[1]});
+        const send = w => wn.port.postMessage({f, tone:w[0], sus:w[1], det:w[2], kind:w[3]});
+        send(v); gate.connect(wn); wn.connect(body); body.connect(out); gate.detune = wn.parameters.get('detune'); srcs.push(gate); extraClean.push(() => { try { wn.disconnect(); body.disconnect(); } catch (e) {} });
+        out.gain.setValueAtTime(peak * 1.4, t); sustains = true; len = 2.6; upd = () => { send(cur()); return true; }; break;
+      }
+      const s = AC.createBufferSource(); s.buffer = ksBuffer(f, inst.vals);
       s.connect(body); body.connect(out);
       if (sv(2) > 0.02) {   // detune: a second string, slightly sharp
         const s2 = AC.createBufferSource(); s2.buffer = s.buffer; s2.playbackRate.value = Math.pow(2, sv(2) * 30 / 1200); s2.connect(body); srcs.push(s2);
@@ -1429,6 +1501,7 @@ function playNote(midi, vel, pan, o = {}) {
     voices--;
     try { if (lp) srcs.forEach(n => n.detune && lfoPitch.disconnect(n.detune)); } catch (e) {}
     try { tail.disconnect(); env.disconnect(); out.disconnect(); } catch (e) {}
+    extraClean.forEach(f => f());
   };
   return {release() { if (AC) stopAt(Math.max(AC.currentTime, t + A * 0.5)); },
     fade() { if (AC) stopAt(AC.currentTime, 0.03); },
