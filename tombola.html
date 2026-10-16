@@ -339,8 +339,11 @@ const SPEC = {
   scrub:{min:0, max:100, v:0, col:'blue', label:'scrub'}, tspeed:{min:50, max:200, v:100, col:'white', label:'speed', span:150},
   tsig:{min:2, max:7, v:4, col:'green', label:'mode', span:8}, swing:{min:0, max:75, v:0, col:'white', label:'swing'},
   drive:{min:0, max:100, v:0, col:'white', label:'drive'}, mrel:{min:0, max:100, v:30, col:'orange', label:'release'},
-  mfreq:{min:0, max:100, v:50, col:'blue', label:'freq'}, mrnd:{min:0, max:100, v:0, col:'green', label:'rounds'},
-  mpunch:{min:0, max:100, v:0, col:'white', label:'punch'}, mpow:{min:0, max:100, v:0, col:'orange', label:'power'},
+  mleft:{min:0, max:100, v:80, col:'blue', label:'left'}, mright:{min:0, max:100, v:80, col:'green', label:'right'},
+  pan1:{min:0, max:100, v:50, col:'blue', label:'pan 1'}, pan2:{min:0, max:100, v:50, col:'green', label:'pan 2'},
+  pan3:{min:0, max:100, v:50, col:'white', label:'pan 3'}, pan4:{min:0, max:100, v:50, col:'orange', label:'pan 4'},
+  mf0:{min:0, max:100, v:45, col:'blue', label:'master fx'}, mf1:{min:0, max:100, v:45, col:'green', label:'master fx'},
+  mf2:{min:0, max:100, v:45, col:'white', label:'master fx'}, mf3:{min:0, max:100, v:45, col:'orange', label:'master fx'},
   click:{min:0, max:100, v:0, col:'orange', label:'metronome'},
   // mixer
   m1:{min:0, max:100, v:80, col:'blue', label:'track 1'}, m2:{min:0, max:100, v:80, col:'green', label:'track 2'},
@@ -349,7 +352,7 @@ const SPEC = {
   fxsend:{min:0, max:100, v:55, col:'white', label:'fx send'},
 };
 const P = {}; for (const k in SPEC) P[k] = SPEC[k].v;
-P.fxType = 'spring'; P.lfoType = 'tremolo'; P.lfoOn = true;
+P.fxType = 'spring'; P.lfoType = 'tremolo'; P.lfoOn = true; P.mfxType = 'spring'; P.mfx = false;
 P.engine = 'fm'; P.fx = true; P.digiRing = false; P.key = 0; P.scale = 'major';
 P.syn = {}; for (const e of ENGINE_ORDER) P.syn[e] = ENGINES[e].def.slice();
 const loadEngineParams = () => P.syn[P.engine].forEach((v, i) => P['s' + i] = v);
@@ -365,7 +368,7 @@ const FX_TYPES = {
   grid:{labels:['x size','y size','z fdb','mix']}, nitro:{labels:['freq','ff','res','freq']},
   phone:{labels:['tone','phonic','baud','telematic']}, punch:{labels:['freq','rounds','punch','power'], cols:['#6E56E8', 0, '#1ED68F', 0]}};
 const LFO_TYPES = {tremolo:{}, random:{}};
-const FXP = ['taper','turns','damp','width'];
+const FXP = ['taper','turns','damp','width'], MFXP = ['mf0','mf1','mf2','mf3'];
 /* eight synth sounds and eight drum kits ship as the sound buttons 1-8; hold a button to store your own */
 const SYNTH_PRESETS = [
   {name:'fm bell', engine:'fm', vals:[30,62,55,20], env:[2,55,30,55]},
@@ -389,6 +392,7 @@ const labelOf = name => {
   }
   if (UI.mode === 'tape' && !UI.util && /^m[1-4]$/.test(name)) return 'level';   // the tape page's orange encoder: this track's level
   const fi = FXP.indexOf(name); if (fi >= 0) return FX_TYPES[P.fxType].labels[fi];
+  const mi = MFXP.indexOf(name); if (mi >= 0) return FX_TYPES[P.mfxType].labels[mi];
   return SPEC[name].label;
 };
 
@@ -397,6 +401,7 @@ function setParam(name, v) {
   const s = SPEC[name];
   v = Math.round(clamp(v, s.min, s.max));
   if (v === P[name]) return;
+  if ((name === 'mleft' || name === 'mright') && UI.shift) P[name === 'mleft' ? 'mright' : 'mleft'] = v;   // SHIFT turns both together
   P[name] = v;
   if (name[0] === 's' && name.length === 2) P.syn[P.engine][+name[1]] = v;
   (knobViews[name] || []).forEach(f => f(true));
@@ -506,10 +511,11 @@ function onParam(name) {
   if (DPART[name]) writePart(name);
   if (['taper','turns','damp','width'].includes(name)) scheduleReverb();
   if (['lspd','lpit','lvol','lwav','lamt','lrsp','ldst'].includes(name)) updateLfo();
-  if (['master','live','fxsend','click','m1','m2','m3','m4','eqlo','eqmid','eqhi','eqamt'].includes(name)) updateGains();
+  if (['master','live','fxsend','click','m1','m2','m3','m4','pan1','pan2','pan3','pan4','mleft','mright','eqlo','eqmid','eqhi','eqamt'].includes(name)) updateGains();
+  if (MFXP.includes(name)) scheduleMasterFx();
   if (name === 'tempo' || name === 'tspeed') { retime(); updateLfo(); }
   if (name === 'scrub') scrubTo(P.scrub / 100 * loopTicks());
-  if (['drive','mrel','mfreq','mrnd','mpunch','mpow'].includes(name)) updateGains();
+  if (['drive','mrel'].includes(name)) updateGains();
   renderShell(); markDirty();
 }
 
@@ -532,7 +538,7 @@ const GLYPHS = {
    mixer has levels (T1) and master (T2). Each page puts four parameters in the screen's corners,
    colored like the OP-1's encoders: blue, green, white, orange. */
 const UI = {mode:'synth', page:{synth:0, drum:0, mixer:0}, seqOn:true, seqView:true, seqMode:'synth',
-  shift:false, shiftUsed:false, oct:0, track:0, title:'untitled', dirty:false, presets:factoryPresets(), lastInst:'synth', kit:0, drum:{kit:DRUM_KITS[0].kit.slice(), parts:null}, dkey:0};
+  shift:false, shiftUsed:false, oct:0, track:0, title:'untitled', dirty:false, presets:factoryPresets(), lastInst:'synth', kit:0, drum:{kit:DRUM_KITS[0].kit.slice(), parts:null}, dkey:0, mute:[false, false, false, false]};
 const WAVES = ['sine', 'triangle', 'square', 'sawtooth'];
 const PAGES = {
   synth: [
@@ -546,10 +552,10 @@ const PAGES = {
     {name:'effect', params:['taper','turns','damp','width'], draw:t => drawFx(t)},
     {name:'lfo', params:() => P.lfoType === 'random' ? ['lamt','lrsp','ldst','lwav'] : ['lspd','lpit','lvol','lwav'], draw:t => drawArt(P.lfoType, t)}],
   mixer: [
-    {name:'levels', bare:true, params:['m1','m2','m3','m4'], draw:t => drawArt('mixer', t)},
+    {name:'levels', bare:true, params:() => UI.shift ? ['pan1','pan2','pan3','pan4'] : ['m1','m2','m3','m4'], draw:t => drawArt('mixer', t)},
     {name:'eq', params:['eqlo','eqmid','eqhi','eqamt'], draw:t => drawArt('eq', t)},
-    {name:'master fx', params:['mfreq','mrnd','mpunch','mpow'], cols:['#6E56E8', 0, '#1ED68F', 0], draw:t => drawArt('punch', t)},
-    {name:'master', bare:true, params:['master','live','drive','mrel'], draw:t => drawArt('out', t)}],
+    {name:'master fx', bare:true, params:['mf0','mf1','mf2','mf3'], draw:t => drawArt(P.mfx ? P.mfxType : 'fxoff', t)},
+    {name:'master', bare:true, params:['mleft','mright','drive','mrel'], draw:t => drawArt('out', t)}],
 };
 const TAPE_PAGE = {name:'tape', params:() => ['scrub','bars','tspeed','m' + (UI.track + 1)], draw:t => drawArt('tape', t)};
 const UTIL = {   // screens that sit over a mode: tempo, erase tape, help
@@ -566,7 +572,8 @@ const secs = v => (v / 1000).toFixed(3);
 const clock = sec => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}:${String(Math.floor(sec * 100 % 100)).padStart(2, '0')}`;
 const LFO_DIVS = [['2/1', 8], ['1/1', 4], ['1/2', 2], ['1/4', 1], ['1/8', 0.5], ['1/16', 0.25], ['1/32', 0.125]];
 const lfoHz = () => P.lfoType === 'random' ? 0.25 * Math.pow(2, P.lrsp / 100 * 6) : P.tempo / 60 / LFO_DIVS[clamp(P.lspd, 0, 6)][1];
-const valueText = name => name === 'lspd' ? LFO_DIVS[clamp(P.lspd, 0, 6)][0] : name === 'ldst' ? ['pitch', 'volume', 'all'][P.ldst]
+const valueText = name => /^pan\d$/.test(name) ? (P[name] === 50 ? 'C' : P[name] < 50 ? 'L' + (50 - P[name]) * 2 : 'R' + (P[name] - 50) * 2)
+  : name === 'lspd' ? LFO_DIVS[clamp(P.lspd, 0, 6)][0] : name === 'ldst' ? ['pitch', 'volume', 'all'][P.ldst]
   : name === 'lwav' ? (P.lwav ? '+' + P.lwav : 'off') : name === 'tspeed' ? (P.tspeed / 100).toFixed(1) : name === 'tsig' ? P.tsig + '/4'
   : name === 'scrub' ? clock(P.scrub / 100 * loopTicks() * spt()) : name === 'click' && !P.click ? 'off' : name === 'eqamt' ? (P.eqamt > 50 ? 'max' : 'clean') + ' ' + P.eqamt : name === 'dmode' ? ['to end','loop','once'][P.dmode] : name === 'ddir' ? (P.ddir ? 'rev' : 'fwd')
   : /^d(in|out)/.test(name) ? secs(P[name]) : name === 'dpit' ? (P.dpit > 0 ? '+' : '') + P.dpit
@@ -621,7 +628,7 @@ function renderShell() {
     if (l.textContent !== lab) l.textContent = lab;
     if (v.textContent !== val) v.textContent = val;
     b.setAttribute('aria-label', lab + ' ' + val + '. Drag up or down to change');
-    const cp = curPage(), cols = cp.cols || (cp.name === 'effect' && FX_TYPES[P.fxType].cols); b.style.color = (cols && cols[i]) || '';
+    const cp = curPage(), cols = cp.name === 'master fx' ? FX_TYPES[P.mfxType].cols : cp.cols || (cp.name === 'effect' && FX_TYPES[P.fxType].cols); b.style.color = (cols && cols[i]) || '';
   });
   document.querySelectorAll('[data-k]').forEach((cell, i) => {
     const n = names[i], s = SPEC[n], a = -135 + (P[n] - s.min) / (s.max - s.min) * 270;
@@ -658,6 +665,11 @@ function tPress(i) {
   }
   if (UI.util) { UI.util = null; renderShell(); return; }
   const shift = useShift();
+  if (UI.mode === 'mixer' && shift && UI.page.mixer === 0) {   // mute (the level can still be changed while muted)
+    UI.mute[i] = !UI.mute[i]; updateGains(); showHint('track ' + (i + 1) + (UI.mute[i] ? ' muted' : ' on')); markDirty(); renderShell(); return;
+  }
+  if (UI.mode === 'mixer' && i === 2 && UI.page.mixer === 2 && !shift) { P.mfx = !P.mfx; scheduleMasterFx(); showHint('master effect ' + (P.mfx ? P.mfxType : 'off')); markDirty(); renderShell(); return; }
+  if (UI.mode === 'mixer' && i === 2 && shift) { UI.page.mixer = 2; openMenu('mfx'); renderShell(); return; }
   if (UI.mode === 'tape') {
     if (shift) { tape.tracks[i] = {inst:null, events:[]}; markDirty(); }
     UI.track = i;
@@ -696,6 +708,7 @@ const MENU_DEF = {
     const x = SYNTH_PRESETS[+v]; UI.presets.synth[slot] = {mode:'synth', engine:x.engine, vals:x.vals.slice(), ring:false, env:x.env.slice()};
     applyPreset('synth', UI.presets.synth[slot]); previewInst(); showHint(x.name + ' on sound ' + (slot + 1)); markDirty();
   }},
+  mfx:{title:'master effect', col:'var(--green)', cols:1, items:() => Object.keys(FX_TYPES).map(k => [k, k]), cur:() => P.mfxType, pick:id => { P.mfxType = id; P.mfx = true; scheduleMasterFx(); showHint('master ' + id); markDirty(); }},
   lfo:{title:'lfo', col:'var(--orange)', cols:1, items:() => Object.keys(LFO_TYPES).map(k => [k, k]), cur:() => P.lfoType, pick:id => pickLfo(id)}};
 function openMenu(kind, slot = null) {
   const d = MENU_DEF[kind]; menuKind = kind; menuSlot = slot; const cur = d.cur();
@@ -1004,7 +1017,7 @@ function songState() {
   return {
     title: UI.title, tempo: P.tempo,
     settings: {engine:P.engine, syn:P.syn, digiRing:P.digiRing, fx:P.fx, key:P.key, scale:P.scale, oct:UI.oct,
-      presets:UI.presets, drum:UI.drum, fxType:P.fxType, lfoType:P.lfoType, lfoOn:P.lfoOn, params:Object.fromEntries(PERSIST.map(k => [k, P[k]]))},
+      presets:UI.presets, drum:UI.drum, mfxType:P.mfxType, mfx:P.mfx, mute:UI.mute, fxType:P.fxType, lfoType:P.lfoType, lfoOn:P.lfoOn, params:Object.fromEntries(PERSIST.map(k => [k, P[k]]))},
     patterns: [{kind:'tombola', data:{seqOn:UI.seqOn, seqMode:UI.seqMode, theta:+theta.toFixed(3),
       dots:dots.filter(d => !d.out).map(d => [+d.x.toFixed(3), +d.y.toFixed(3), d.idx])}}],
     recordings: tape.tracks.map((tr, i) => ({track:i + 1, instrument:tr.inst, ppq:PPQ, lengthTicks:loopTicks(), events:tr.events})),
@@ -1025,11 +1038,12 @@ function loadSong(s) {
   UI.drum = {kit:DRUM_KITS[0].kit.slice(), parts:null};
   if (st.drum && Array.isArray(st.drum.kit) && st.drum.kit.length === 4) UI.drum = {kit:st.drum.kit.map(Number), parts:validParts(st.drum.parts)};
   UI.kit = DRUM_KITS.findIndex(k => k.kit.join() === UI.drum.kit.join()); whenKit(syncPart);
+  P.mfxType = FX_TYPES[st.mfxType] ? st.mfxType : 'spring'; P.mfx = !!st.mfx; UI.mute = Array.isArray(st.mute) && st.mute.length === 4 ? st.mute.map(Boolean) : [false, false, false, false];
   P.fxType = FX_TYPES[st.fxType] ? st.fxType : 'spring'; P.lfoType = LFO_TYPES[st.lfoType] ? st.lfoType : 'tremolo'; P.lfoOn = st.lfoOn !== false;
   loadEngineParams();
   for (const k of PERSIST) { const v = st.params && st.params[k]; P[k] = typeof v === 'number' ? clamp(Math.round(v), SPEC[k].min, SPEC[k].max) : SPEC[k].v; }
   if (typeof s.tempo === 'number') P.tempo = clamp(s.tempo, SPEC.tempo.min, SPEC.tempo.max);
-  digiCache.clear(); ksCache.clear(); scheduleReverb(); updateGains(); updateLfo(); renderCorners();
+  digiCache.clear(); ksCache.clear(); scheduleReverb(); scheduleMasterFx(); updateGains(); updateLfo(); renderCorners();
   dots.length = 0;
   const tp = (s.patterns || []).find(p => p.kind === 'tombola');
   if (tp && tp.data) {
@@ -1083,7 +1097,7 @@ function layout() {
 addEventListener('resize', layout); layout();
 
 /* ---------- audio ---------- */
-let eqL, eqM, eqH, drv, mls, mcomp, mout, drvK = -1;
+let eqL, eqM, eqH, drv, mcomp, mkup, mfxDry, mfxSum, mfxWet, gL, gR, anL, anR, trackPan = [], drvK = -1;
 let AC = null, master, voiceBus, wetGain, analyser, conv = null, convGain = null, voices = 0, excite = 0;
 /* signal path: live notes (keys, MIDI, tombola) and the four tape tracks each have a level,
    all feed voiceBus -> tremolo -> dry/spring -> master. The LFO wobbles pitch and the tremolo. */
@@ -1093,25 +1107,32 @@ function ensureAudio() {
   const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
   try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
   AC = new C();
-  const comp = mcomp = AC.createDynamicsCompressor();
-  comp.threshold.value = -16; comp.knee.value = 12; comp.ratio.value = 4; comp.attack.value = 0.003; comp.release.value = 0.2;
-  master = AC.createGain();
+  master = AC.createGain();   // the volume knob
   eqL = AC.createBiquadFilter(); eqM = AC.createBiquadFilter(); eqH = AC.createBiquadFilter();
   eqL.type = 'lowshelf'; eqL.frequency.value = 220; eqM.type = 'peaking'; eqM.frequency.value = 1200; eqM.Q.value = 0.8; eqH.type = 'highshelf'; eqH.frequency.value = 4500;
-  drv = AC.createWaveShaper(); mls = AC.createBiquadFilter(); mls.type = 'lowshelf'; mout = AC.createGain();
-  master.connect(drv); drv.connect(eqL); eqL.connect(eqM); eqM.connect(eqH); eqH.connect(mls); mls.connect(comp); comp.connect(mout); mout.connect(AC.destination);
+  mfxDry = AC.createGain(); mfxSum = AC.createGain(); mfxWet = AC.createGain(); mfxWet.gain.value = 0;
+  drv = AC.createWaveShaper(); mcomp = AC.createDynamicsCompressor(); mkup = AC.createGain();
+  mcomp.knee.value = 18; mcomp.attack.value = 0.006;
+  mkup.channelCount = 2; mkup.channelCountMode = 'explicit'; mkup.channelInterpretation = 'speakers';   // always stereo from here on
+  const split = AC.createChannelSplitter(2), merge = AC.createChannelMerger(2), lim = AC.createDynamicsCompressor();
+  lim.threshold.value = -2; lim.knee.value = 0; lim.ratio.value = 20; lim.attack.value = 0.002; lim.release.value = 0.1;
+  gL = AC.createGain(); gR = AC.createGain(); anL = AC.createAnalyser(); anR = AC.createAnalyser(); anL.fftSize = anR.fftSize = 1024;
+  master.connect(eqL); eqL.connect(eqM); eqM.connect(eqH); eqH.connect(mfxDry); mfxDry.connect(mfxSum); mfxWet.connect(mfxSum);
+  mfxSum.connect(drv); drv.connect(mcomp); mcomp.connect(mkup); mkup.connect(split);
+  split.connect(gL, 0); split.connect(gR, 1); gL.connect(merge, 0, 0); gR.connect(merge, 0, 1); gL.connect(anL); gR.connect(anR);
+  merge.connect(lim); lim.connect(AC.destination);
   voiceBus = AC.createGain(); trem = AC.createGain();
   const dry = AC.createGain(); dry.gain.value = 0.9;
   voiceBus.connect(trem); trem.connect(dry); dry.connect(master);
   liveBus = AC.createGain(); liveBus.connect(voiceBus);
-  trackBus = [0, 1, 2, 3].map(() => { const g = AC.createGain(); g.connect(voiceBus); return g; });
+  trackPan = []; trackBus = [0, 1, 2, 3].map(i => { const g = AC.createGain(), p = AC.createStereoPanner(); g.connect(p); p.connect(voiceBus); trackPan[i] = p; return g; });
   clickBus = AC.createGain(); clickBus.connect(master);
   wetGain = AC.createGain();
   analyser = AC.createAnalyser(); analyser.fftSize = 1024;
-  wetGain.connect(analyser); analyser.connect(master);
+  wetGain.connect(master); analyser = anL;
   lfoPitch = AC.createGain(); lfoVol = AC.createGain(); lfoVol.connect(trem.gain);
   updateLfo(); updateGains();
-  rebuildReverb();
+  rebuildReverb(); rebuildMasterFx();
   const b = AC.createBuffer(1, 1, 22050), src = AC.createBufferSource();
   src.buffer = b; src.connect(AC.destination); src.start(0);
   AC.resume();
@@ -1120,15 +1141,19 @@ function updateGains() {
   if (!AC) return;
   const t = AC.currentTime, set = (p, v) => p.setTargetAtTime(v, t, 0.03);
   set(master.gain, Math.pow(P.master / 100, 1.5));
+  set(gL.gain, Math.pow(P.mleft / 80, 1.5)); set(gR.gain, Math.pow(P.mright / 80, 1.5));
   set(liveBus.gain, P.live / 100);
-  trackBus.forEach((g, i) => set(g.gain, P['m' + (i + 1)] / 100));
+  trackBus.forEach((g, i) => { set(g.gain, UI.mute[i] ? 0 : P['m' + (i + 1)] / 100); trackPan[i].pan.setTargetAtTime((P['pan' + (i + 1)] - 50) / 50, t, 0.03); });
   set(wetGain.gain, P.fx ? P.fxsend / 100 : 0);
   set(clickBus.gain, P.click / 100 * 0.5);
-  if (drvK !== P.drive) { drvK = P.drive; drv.curve = P.drive ? curve(P.drive / 100 * 0.5) : null; }   // master out: drive and release
-  mcomp.release.setTargetAtTime(0.05 + P.mrel / 100 * 0.9, t, 0.03);
-  mls.frequency.setTargetAtTime(40 * Math.pow(2, P.mfreq / 100 * 4), t, 0.03); set(mls.gain, P.mpunch / 100 * 6);   // master effect: punch
-  mcomp.threshold.setTargetAtTime(-16 - P.mpunch / 100 * 24, t, 0.03); mcomp.ratio.setTargetAtTime(4 + P.mpunch / 100 * 12, t, 0.03);
-  mcomp.attack.setTargetAtTime(0.003 + P.mrnd / 100 * 0.05, t, 0.03); set(mout.gain, 1 + P.mpow / 100 * 1.5);
+  // master out (OP-School, mixer video): drive squeezes the mix and adds make-up gain; release is how fast it lets go.
+  // Measured against the same song before the drive was touched: loud-to-quiet spread 23 -> 15 dB, median about +5 dB,
+  // peaks unchanged, energy above 4 kHz 3% -> 4-6%.
+  const d = P.drive / 100;
+  if (drvK !== P.drive) { drvK = P.drive; drv.curve = P.drive ? curve(d * 0.35) : null; }
+  mcomp.threshold.setTargetAtTime(-6 - d * 32, t, 0.03); mcomp.ratio.setTargetAtTime(1 + d * 9, t, 0.03);
+  mcomp.release.setTargetAtTime(0.05 + P.mrel / 100 * 0.95, t, 0.03); set(mkup.gain, Math.pow(10, d * 8 / 20));
+  mfxWet.gain.setTargetAtTime(P.mfx ? 1 : 0, t, 0.05);
   const ea = P.eqamt / 100 * 12; set(eqL.gain, (P.eqlo - 50) / 50 * ea); set(eqM.gain, (P.eqmid - 50) / 50 * ea); set(eqH.gain, (P.eqhi - 50) / 50 * ea);
 }
 let lfoSrc = null, lfoKey = '', lfoTimer = 0;
@@ -1490,9 +1515,9 @@ function playClick(at, accent) {
 
 /* spring reverb: a procedurally generated impulse of dispersive chirps — the "boing" of a real tank */
 function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-function springIR() {
+function springIR(v = [P.taper, P.turns, P.damp, P.width]) {
   const sr = AC.sampleRate, len = Math.floor(sr * 3.2);
-  const t = P.turns / 100, w = 0.5, d = P.damp / 100, p = P.taper / 100;
+  const t = v[1] / 100, w = 0.5, d = v[2] / 100, p = v[0] / 100;
   const buf = AC.createBuffer(2, len, sr);
   const T = 0.022 + t * 0.075, g = 0.93 - d * 0.3, Lc = 0.012 + t * 0.03;
   const fHi = 5200 - p * 2600, fLo = 130 + p * 140, ratio = fLo / fHi, noiseAmt = 0.06 + p * 0.5;
@@ -1525,8 +1550,8 @@ function springIR() {
 }
 /* send effects: a node chain per type, built from the four encoder values and crossfaded in when they change */
 function curve(k) { const n = 256, c = new Float32Array(n); for (let i = 0; i < n; i++) { const x = i / (n - 1) * 2 - 1; c[i] = Math.tanh(x * (1 + k * 12)) / Math.tanh(1 + k * 12); } return c; }
-function makeFx(type) {
-  const T = P.taper / 100, R = P.turns / 100, D = P.damp / 100, W = P.width / 100;
+function makeFx(type, v = [P.taper, P.turns, P.damp, P.width]) {
+  const T = v[0] / 100, R = v[1] / 100, D = v[2] / 100, W = v[3] / 100;
   const inp = AC.createGain(), out = AC.createGain(), nodes = [inp, out], srcs = [];
   const add = n => (nodes.push(n), n);
   switch (type) {
@@ -1570,7 +1595,7 @@ function makeFx(type) {
       inp.connect(ls); ls.connect(c); c.connect(out); out.gain.value = 0.6 + W * 2.2; break;
     }
     default: {   // spring
-      const c = add(AC.createConvolver()); c.normalize = true; c.buffer = springIR(); inp.connect(c); c.connect(out); out.gain.value = 0.15 + W * 1.4;
+      const c = add(AC.createConvolver()); c.normalize = true; c.buffer = springIR(v); inp.connect(c); c.connect(out); out.gain.value = 0.15 + W * 1.4;
     }
   }
   return {inp, out, nodes, srcs};
@@ -1579,7 +1604,8 @@ let fxCur = null;
 function rebuildReverb() {
   if (!AC) return;
   const f = makeFx(P.fxType), cg = AC.createGain(); cg.gain.value = 0;
-  voiceBus.connect(f.inp); f.out.connect(cg); cg.connect(wetGain);
+  const mono = AC.createGain(); mono.channelCount = 1; mono.channelCountMode = 'explicit'; mono.channelInterpretation = 'speakers';   // the OP-1's synth and drum effects are mono
+  voiceBus.connect(f.inp); f.out.connect(mono); mono.connect(cg); cg.connect(wetGain); f.nodes.push(mono);
   cg.gain.setTargetAtTime(1, AC.currentTime, 0.05);
   if (fxCur) {
     const o = fxCur; o.cg.gain.setTargetAtTime(0, AC.currentTime, 0.05);
@@ -1591,7 +1617,23 @@ function rebuildReverb() {
   }
   fxCur = {f, cg};
 }
-let revT = 0;
+let revT = 0, mfxCur = null, mfxT = 0;
+function rebuildMasterFx() {   // the master effect: stereo, after the EQ (spring here is the stereo reverb)
+  if (!AC) return;
+  const f = makeFx(P.mfxType, [P.mf0, P.mf1, P.mf2, P.mf3]), cg = AC.createGain(); cg.gain.value = 0;
+  eqH.connect(f.inp); f.out.connect(cg); cg.connect(mfxWet);
+  cg.gain.setTargetAtTime(1, AC.currentTime, 0.05);
+  if (mfxCur) {
+    const o = mfxCur; o.cg.gain.setTargetAtTime(0, AC.currentTime, 0.05);
+    setTimeout(() => {
+      try { eqH.disconnect(o.f.inp); } catch (e) {}
+      o.f.srcs.forEach(n => { try { n.stop(); } catch (e) {} });
+      o.f.nodes.forEach(n => { try { n.disconnect(); } catch (e) {} }); try { o.cg.disconnect(); } catch (e) {}
+    }, 500);
+  }
+  mfxCur = {f, cg}; updateGains();
+}
+function scheduleMasterFx() { clearTimeout(mfxT); mfxT = setTimeout(rebuildMasterFx, 140); }
 function scheduleReverb() { clearTimeout(revT); revT = setTimeout(rebuildReverb, 140); }
 
 /* ---------- tilt ---------- */
@@ -2011,10 +2053,10 @@ const ART = {
     g.ln(`M${ax} 6 V100 M${dx} ${sy} V100 M220 ${sy} V100`, '#2A2A2A', 1, '3 3'); g.ln('M10 100 H280', '#3A3A3A', 1.2);
     g.dot(10, 100, 3.5, AB); g.dot(ax, 6, 3.5, AG); g.dot(dx, sy, 3.5, AW); g.dot(220, sy, 3.5, AO); g.dot(rx, 100, 3.5, AB);
   }},
-  fxoff: {w:260, h:80, draw(g) {
-    const L = FX_TYPES[P.fxType].labels;
-    g.t(0, 24, L[0].toUpperCase(), '#3a5aa0', 14); g.t(0, 74, String(P.taper), '#3a5aa0', 30, 'start', 200);
-    g.t(210, 24, L[2].toUpperCase(), '#555', 14); g.t(210, 74, String(P.damp), '#555', 30, 'start', 200);
+  fxoff: {w:260, h:80, draw(g, v) {   // effect off: the first and third values stay, FX OFF in between (for the master page too)
+    const master = curPage() && curPage().name === 'master fx', L = FX_TYPES[master ? P.mfxType : P.fxType].labels, n = k => String(Math.round(v[k] * 100));
+    g.t(0, 24, L[0].toUpperCase(), '#3a5aa0', 14); g.t(0, 74, n(0), '#3a5aa0', 30, 'start', 200);
+    g.t(210, 24, L[2].toUpperCase(), '#555', 14); g.t(210, 74, n(2), '#555', 30, 'start', 200);
     g.rect(84, 34, 34, 22, AB, 'none', 1.6); g.t(101, 51, 'FX', AB, 16, 'middle'); g.num(128, 56, 'OFF', AW, 34);
   }},
   /* ----- effects (blue taper, green turns, white damp, orange width are the four effect slots) ----- */
@@ -2103,10 +2145,14 @@ const ART = {
   /* ----- mixer ----- */
   mixer: {w:290, h:108, draw(g, v) {
     [[AB], [AG], [AW], [AO]].forEach(([col], k) => {
-      const x = 30 + k * 72, lv = P['m' + (k + 1)] / 100, a = (-90 + lv * 180) * Math.PI / 180, hit = tape.hits[k] || 0;
+      const x = 30 + k * 72, lv = P['m' + (k + 1)] / 100, a = (-90 + lv * 180) * Math.PI / 180, hit = tape.hits[k] || 0, mu = UI.mute[k];
+      const pa = (P['pan' + (k + 1)] - 50) / 50 * 2.3;   // pan: the little knob turns left or right
+      g.c.globalAlpha = mu ? 0.35 : 1;
       g.ln(`M${x - 26} 30 A26 26 0 0 1 ${x + 26} 30`, ADIM, 1.6); g.ln(`M${x} 30 L${x + 26 * Math.sin(a)} ${30 - 26 * Math.cos(a)}`, AW, 1.6);
       g.dot(x + 16, 16, 2.5, hit > 0.05 ? AO : '#3a1410'); g.t(x, 26, String(k + 1), ADIM, 18, 'middle', 200);
-      g.circ(x, 50, 8, AW); g.ln(`M${x} 50 V42`, AW); g.t(x - 18, 54, 'L', AGR, 10); g.t(x + 12, 54, 'R', AGR, 10); g.num(x, 104, two(P['m' + (k + 1)]), col, 46, 'middle');
+      g.circ(x, 50, 8, col, col); g.ln(`M${x} 50 L${x + 8 * Math.sin(pa)} ${50 - 8 * Math.cos(pa)}`, '#0A0A0A', 1.6);
+      g.t(x - 18, 54, 'L', AGR, 10); g.t(x + 12, 54, 'R', AGR, 10); g.num(x, 104, two(P['m' + (k + 1)]), col, 46, 'middle');
+      g.c.globalAlpha = 1; if (mu) g.t(x, 76, 'MUTE', AO, 11, 'middle', 600);
     });
   }},
   eq: {w:290, h:100, draw(g, v) {
@@ -2122,15 +2168,14 @@ const ART = {
     g.rect(224, 6, 62, 20, AO, 'none', v[3] > 0.5 ? 2.4 : 1); g.t(255, 21, 'MAX EQ', AO, 13, 'middle');
     g.rect(224, 78, 62, 20, AB, 'none', v[3] <= 0.5 ? 2.4 : 1); g.t(255, 93, 'CLEAN', AB, 13, 'middle');
   }},
-  out: {w:270, h:132, draw(g, v) {
-    if (analyser) analyser.getFloatTimeDomainData(wave); else wave.fill(0);
-    let l = 0, r = 0; for (let i = 0; i < wave.length; i += 2) { l = Math.max(l, Math.abs(wave[i])); r = Math.max(r, Math.abs(wave[i + 1] || 0)); }
-    const m = Math.pow(P.master / 100, 1.5) * 1.4, Ln = Math.min(14, Math.round(l * m * 14 * 3)), Rn = Math.min(14, Math.round(r * m * 14 * 3));
+  out: {w:270, h:132, draw(g, v) {   // master out: left and right levels, a meter for each, drive and release
+    const peak = an => { if (!an) return 0; an.getFloatTimeDomainData(wave); let m = 0; for (let i = 0; i < 1024; i++) m = Math.max(m, Math.abs(wave[i])); return m; };
+    const Ln = Math.min(14, Math.round(peak(anL) * 14 * 1.6)), Rn = Math.min(14, Math.round(peak(anR) * 14 * 1.6));
     for (const [x, n, col] of [[0, Ln, AB], [22, Ln, AB], [48, Rn, AG], [70, Rn, AG]]) for (let k = 0; k < 14; k++) g.ln(`M${x} ${102 - k * 7} H${x + 16}`, k < n ? col : '#3a3a5a', 1.2);
     g.rect(0, 112, 18, 18, AGR); g.t(9, 126, 'L', AGR, 12, 'middle'); g.rect(48, 112, 18, 18, AGR); g.t(57, 126, 'R', AGR, 12, 'middle');
     const y1 = 104 - v[0] * 94, y2 = 104 - v[1] * 94;
     g.ln('M128 10 V104 M160 10 V104', AGR, 1.2); g.ln(`M120 ${y1} H136`, AB, 1.6); g.ln(`M152 ${y2} H168`, AG, 1.6);
-    g.t(116, y1 + 4, two(P.master), AB, 18, 'end', 200); g.t(172, y2 + 4, two(P.live), AG, 18, 'start', 200);
+    g.t(116, y1 + 4, two(P.mleft), AB, 18, 'end', 200); g.t(172, y2 + 4, two(P.mright), AG, 18, 'start', 200);
     g.rect(118, 112, 18, 18, AB); g.t(127, 126, 'L', AB, 12, 'middle'); g.rect(150, 112, 18, 18, AG); g.t(159, 126, 'R', AG, 12, 'middle');
     g.t(206, 16, 'DRIVE', '#9A9AAA', 18, 'start', 200); g.num(206, 62, two(P.drive), AW, 44); g.t(206, 82, 'RELEASE', AO, 18, 'start', 200); g.num(206, 126, two(P.mrel), AO, 44);
   }},
