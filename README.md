@@ -2,7 +2,7 @@
 
 A web instrument after the teenage engineering OP-1, built around its Tombola sequencer. It runs in the browser on phones and iPads, and plays from a MIDI keyboard.
 
-The page itself is one file, `tombola.html`. Cloud saving lives in `src/cloud.js`, and the database is defined in `dataconnect/`.
+The page itself is one file, `tombola.html`. Sign-in and saving live in `src/cloud.js`; the data rules are `firestore.rules` and `storage.rules`.
 
 ## Layout
 
@@ -46,26 +46,25 @@ You can also play from a computer keyboard: `a w s e d f t g y h u j k` play C t
 
 Open the site in Safari (iPhone) or Chrome (Android), then add it to the home screen: Share → Add to Home Screen on iPhone, or the menu → Install app on Android. It then opens full screen with no browser bars, and swiping up from the bottom edge returns to the home screen. The page blocks pinch zoom and the rubber-band bounce so a held key and a turning encoder can't trigger a zoom.
 
-## Saving songs (Firebase)
+## Signing in and saving (Firebase)
 
-Tap the song name at the top of the screen (or the album key on iPad) to open the song sheet.
+Everything plays without an account: all the engines, effects, sequencers and the tape. You only sign in to **keep** something.
 
-- You sign in with Google through **Firebase Auth**.
-- Songs are stored in **Firebase SQL Connect**, a managed Postgres database.
-- `dataconnect/schema/schema.gql` defines four tables:
-  - users
-  - songs: title, tempo, and every sound setting as JSON
-  - patterns: the Tombola's notes
-  - recordings: one row per tape track, as `[tick, note, velocity, durationTicks]` events
-- Recordings are small JSON, so nothing goes to Cloud Storage.
-- Every query and mutation in `dataconnect/connector/` is limited to the signed-in user's own rows.
+- **Sign in:** tap the song name at the top of the screen (or the COM key on iPad) and choose *sign in with Google* (**Firebase Auth**).
+- **Sounds:** holding a sound key (1–8) saves the sound. Signed out, it is kept for the session and the sheet offers to sign in; signed in, it goes to your account straight away.
+- **Songs:** *save* in the song sheet keeps the sounds, the sequencers (Tombola, Pattern, Finger, Endless) and the four tape tracks.
+- **Where it lives:**
+  - **Cloud Firestore:** `users/{uid}/presets/slots` (your sounds) and `users/{uid}/songs/{id}` (title, tempo and the song state as one JSON string, because Firestore has no arrays inside arrays).
+  - **Cloud Storage:** each tape track's notes, as `users/{uid}/songs/{id}/track-{n}.json`.
+- **Rules:** `firestore.rules` and `storage.rules` let each person read and write only the paths under their own user id. Deploy them with `firebase deploy --only firestore,storage`.
+- The older SQL Connect version (`dataconnect/`) was removed. Songs saved there were not migrated.
 
 ## Running locally
 
-Start the Auth and SQL Connect emulators. The page talks to them whenever it's served from `localhost`.
+Start the Auth, Firestore and Storage emulators. The page talks to them whenever it's served from `localhost`.
 
 ```bash
-firebase emulators:start --only auth,dataconnect --project demo-tombola
+firebase emulators:start --only auth,firestore,storage --project demo-tombola
 ```
 
 Build the page and serve it:
@@ -90,10 +89,7 @@ The app runs on **Firebase App Hosting** in its own project, `op-1-57510` (set i
   ```
   The upload skips anything in `.gitignore`.
 - **Web app config:** `src/webapp-config.json` holds the Firebase web app config, which is public by design. App Hosting reserves `/__/` paths, so `/__/firebase/init.json` isn't available there.
-- **SQL Connect:** service `tombola` on the Cloud SQL instance `tombola-fdc`, under the SQL Connect no-cost trial. Deploy it with:
-  ```bash
-  firebase deploy --only dataconnect
-  ```
+- **Firestore and Storage:** deploy the rules with `firebase deploy --only firestore,storage`. Firebase Storage must be set up once in the console (Storage → Get started).
 
 To move to plain Firebase Hosting later and save money, run:
 

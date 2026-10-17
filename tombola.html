@@ -89,7 +89,10 @@ button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 #encRing svg{width:100%;height:100%;display:block;overflow:visible}
 
 /* iPad: the OP-1's own layout, 17 x 6 units (speaker, volume and keys; display; four encoders; mode, page and sound keys; transport; two octaves) */
-body.pad #device{width:auto;height:auto;padding:0;grid-template-columns:repeat(17,var(--u));grid-template-rows:repeat(6,var(--u))}
+html.padh,html.padh body{background:#000}
+body.pad #device{--f:calc(var(--u) * .42);width:auto;height:auto;padding:var(--f);border-radius:calc(var(--u) * .5);grid-template-columns:repeat(17,var(--u));grid-template-rows:repeat(6,var(--u));
+  background:linear-gradient(var(--bg),var(--bg)) content-box,linear-gradient(135deg,#CFCDCB,#C2C0BE) border-box;
+  box-shadow:calc(var(--k) * 5) calc(var(--k) * 5) calc(var(--k) * 10) #8C8886,inset calc(var(--k) * -1) calc(var(--k) * -1) 0 rgba(120,116,113,.5),inset calc(var(--k) * 1.5) calc(var(--k) * 1.5) 0 #fff}
 body.pad #device .padonly{display:flex}
 body.pad #speaker{grid-area:1/1/3/3;cursor:default}
 body.pad #volume{grid-area:1/3/2/5;justify-content:flex-start;padding-left:calc(var(--u) * .25)}
@@ -106,8 +109,8 @@ body.pad #lift{grid-area:4/1} body.pad #drop{grid-area:4/2} body.pad #split{grid
 body.pad #rec{grid-area:5/1} body.pad #play{grid-area:5/2} body.pad #stop{grid-area:5/3}
 body.pad #octDn{grid-area:6/1} body.pad #octUp{grid-area:6/2} body.pad #shift{grid-area:6/3}
 body.pad #keys{grid-area:4/4/7/18;grid-template-rows:var(--u) calc(var(--u) * 2 + var(--gap))}
-#speaker .grill{position:relative;display:block;width:calc(var(--u) * 1.74);height:calc(var(--u) * 1.74)}
-#speaker .grill i{position:absolute;width:calc(var(--u) * .052);height:calc(var(--u) * .052);transform:translate(-50%,-50%);border-radius:50%;background:#2A2A2A}
+#speaker .grill{position:relative;display:block;width:calc(var(--u) * 1.72);height:calc(var(--u) * 1.72)}
+#speaker .grill i{position:absolute;width:calc(var(--u) * .066);height:calc(var(--u) * .066);transform:translate(-50%,-50%);border-radius:50%;background:#1B1C1C}
 .knob{--ks:calc(var(--u) * .86);position:relative;width:var(--ks);height:var(--ks);border-radius:50%;background:linear-gradient(135deg,#CFCDCB,#C2C0BE);
   box-shadow:calc(var(--k) * 5) calc(var(--k) * 5) calc(var(--k) * 10) #8C8886,inset calc(var(--k) * -1) calc(var(--k) * -1) 0 rgba(120,116,113,.5),inset calc(var(--k) * 1.5) calc(var(--k) * 1.5) 0 #fff;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:ns-resize}
 .cap{width:calc(var(--k) * 64);height:calc(var(--k) * 64);flex:none;border-radius:50%;display:flex;justify-content:center;}
@@ -266,7 +269,7 @@ body.land #keys{grid-area:5/1/8/16}
 <section id="sheet" hidden aria-label="Songs">
   <div class="box">
     <h2>songs <button class="sbtn" id="sheetClose">done</button></h2>
-    <div class="row" id="acct"><span class="muted">cloud saving loads when you open this page online</span></div>
+    <div class="row" id="acct"><span class="muted">sign-in loads when this page is online</span></div>
     <div class="row"><input id="songTitle" aria-label="Song title" value="untitled" maxlength="60"><span class="muted"><span class="k" id="bpmShow">120</span> bpm</span></div>
     <div class="row">
       <button class="sbtn pri" id="saveSong" disabled>save</button>
@@ -275,7 +278,7 @@ body.land #keys{grid-area:5/1/8/16}
       <span class="muted" id="saveState"></span>
     </div>
     <ul id="songList"></ul>
-    <p class="muted">Songs keep the sounds, the tombola pattern and the four tape tracks. The tape records notes (MIDI), not audio, so songs stay small.</p>
+    <p class="muted">Everything plays without an account. Sign in with Google only to keep your sounds, sequences and recordings: songs hold the sounds, the sequencers and the four tape tracks (notes, not audio).</p>
   </div>
 </section>
 
@@ -554,7 +557,8 @@ const GLYPHS = {
    mixer has levels (T1) and master (T2). Each page puts four parameters in the screen's corners,
    colored like the OP-1's encoders: blue, green, white, orange. */
 const UI = {mode:'synth', page:{synth:0, drum:0, mixer:0}, seqOn:false, seqView:false, seqMode:'synth', seqType:'tombola',
-  shift:false, shiftUsed:false, oct:0, track:0, title:'untitled', dirty:false, presets:factoryPresets(), lastInst:'synth', kit:0, drumEng:'sampler', drum:{kit:DRUM_KITS[0].kit.slice(), parts:null}, dkey:0, mute:[false, false, false, false]};
+  shift:false, shiftUsed:false, oct:0, track:0, title:'untitled', dirty:false, presets:factoryPresets(), lastInst:'synth', kit:0, mods:{synth:new Set(), drum:new Set()}, drumEng:'sampler', drum:{kit:DRUM_KITS[0].kit.slice(), parts:null}, dkey:0, mute:[false, false, false, false]};
+const presetMod = (pm, i) => { UI.mods[pm].add(i); window.dispatchEvent(new Event('tombola:preset')); };
 const WAVES = ['sine', 'triangle', 'square', 'sawtooth'];
 const PAGES = {
   synth: [
@@ -731,7 +735,7 @@ const MENU_DEF = {
   presets:{title:'', col:'var(--blue)', cols:2, items:() => [], cur:() => null, pick:(id, slot) => {
     const [k, v] = id.split(':');
     if (k === 'e') return pickEngine(v, slot);
-    const x = SYNTH_PRESETS[+v]; UI.presets.synth[slot] = {mode:'synth', engine:x.engine, vals:x.vals.slice(), ring:false, env:x.env.slice()};
+    const x = SYNTH_PRESETS[+v]; UI.presets.synth[slot] = {mode:'synth', engine:x.engine, vals:x.vals.slice(), ring:false, env:x.env.slice()}; presetMod('synth', slot);
     applyPreset('synth', UI.presets.synth[slot]); previewInst(); showHint(x.name + ' on sound ' + (slot + 1)); markDirty();
   }},
   mfx:{title:'master effect', col:'var(--green)', cols:1, items:() => Object.keys(FX_TYPES).map(k => [k, k]), cur:() => P.mfxType, pick:id => { P.mfxType = id; P.mfx = true; scheduleMasterFx(); showHint('master ' + id); markDirty(); }},
@@ -771,18 +775,18 @@ menuEl.addEventListener('click', e => {
 function previewInst() { const dm = instMode() === 'drum'; playInst(dm ? curDrum() : curSynth(), dm ? 38 : 60, 0.8, 0, dm ? {bus:liveBus} : {gate:0.45, bus:liveBus}); }
 function pickEngine(id, slot) {
   P.engine = id; loadEngineParams(); liveUpdate('engine');
-  if (slot !== null) UI.presets.synth[slot] = curSynth();
+  if (slot !== null) { UI.presets.synth[slot] = curSynth(); presetMod('synth', slot); }
   previewInst(); showHint(id + (slot !== null ? ' on sound ' + (slot + 1) : '')); markDirty();
 }
 function pickDBox(slot) {
   setTimeout(() => liveUpdate('preset'), 0); UI.drumEng = 'dbox';
-  if (slot !== null) UI.presets.drum[slot] = curDrum();
+  if (slot !== null) { UI.presets.drum[slot] = curDrum(); presetMod('drum', slot); }
   previewInst(); showHint('dbox' + (slot !== null ? ' on sound ' + (slot + 1) : '')); markDirty();
 }
 function pickKit(i, slot) {
   setTimeout(() => liveUpdate('preset'), 0); UI.drumEng = 'sampler';
   UI.drum = {kit:DRUM_KITS[i].kit.slice(), parts:null}; UI.kit = i; whenKit(syncPart);
-  if (slot !== null) UI.presets.drum[slot] = curDrum();
+  if (slot !== null) { UI.presets.drum[slot] = curDrum(); presetMod('drum', slot); }
   previewInst(); showHint(DRUM_KITS[i].name + (slot !== null ? ' on sound ' + (slot + 1) : '')); markDirty();
 }
 function goPage(i) { if (UI.mode === 'synth' || UI.mode === 'drum') { UI.page[UI.mode] = i; UI.seqView = false; } }
@@ -834,8 +838,8 @@ $('#tempoKey').addEventListener('click', () => {
   b.addEventListener('pointermove', e => { if (d) { setParam('master', d.v + (d.y - e.clientY) / 2); showHint('volume ' + P.master); } });
   b.addEventListener('pointerup', () => d = null); b.addEventListener('pointercancel', () => d = null);
 })();
-{ const R = 7.4, D = 2 * R + 2; let h = '';   // the speaker: holes on a hexagonal lattice, kept inside a circle
-  for (let r = -8; r <= 8; r++) for (let c = -8; c <= 8; c++) { const x = c + (r & 1 ? 0.5 : 0), y = r * 0.866; if (Math.hypot(x, y) <= R) h += `<i style="left:${((x + D / 2) / D * 100).toFixed(2)}%;top:${((y + D / 2) / D * 100).toFixed(2)}%"></i>`; }
+{ const rows = [7, 11, 11, 13, 13, 13, 13, 13, 13, 13, 11, 11, 7]; let h = '';   // the OP-1's speaker: 149 holes in 13 rows, one size
+  rows.forEach((n, r) => { for (let c = 0; c < n; c++) h += `<i style="left:${((6.5 - n / 2 + c + 0.5) / 13 * 100).toFixed(2)}%;top:${((r + 0.5) / 13 * 100).toFixed(2)}%"></i>`; });
   $('#speaker .grill').innerHTML = h; }
 /* sound keys 1-8: tap recalls a synth sound (or drum kit), hold stores the current one,
    SHIFT + key opens the engine (or kit) menu and puts the choice on that key */
@@ -862,9 +866,10 @@ document.querySelectorAll('[data-snd]').forEach(b => {
       hold = setTimeout(() => {
         saved = true; const pm = instMode();
         if (pm === 'drum') ensureParts();
-        UI.presets[pm][i] = pm === 'drum' ? curDrum() : curSynth(); markDirty();
-        savingEl.classList.add('done'); savingEl.querySelector('.w').textContent = 'saved';
-        hold = setTimeout(hideSaving, 900);
+        UI.presets[pm][i] = pm === 'drum' ? curDrum() : curSynth(); presetMod(pm, i); markDirty();
+        const inn = !!(window.TombolaCloud && window.TombolaCloud.signedIn());
+        savingEl.classList.add('done'); savingEl.querySelector('.w').textContent = inn ? 'saved' : 'saved here';
+        hold = setTimeout(() => { hideSaving(); if (!inn) askSignIn('Sign in with Google to keep this sound on your account.'); }, 900);
       }, SAVE_MS);
     }, 250);
   });
@@ -1040,7 +1045,7 @@ function tapePlay() {
   clearInterval(tape.timer); tape.timer = setInterval(schedule, 25); schedule();
 }
 function tapeStop() {
-  if (tape.recording) { tape.recording = false; flushRec(); }
+  if (tape.recording) { tape.recording = false; flushRec(); if (!(window.TombolaCloud && window.TombolaCloud.signedIn())) showHint('open the song name to sign in and save this', 3200); }
   tape.playing = false; clearInterval(tape.timer);
 }
 function retime() { // keep the playhead where it is when the tempo changes
@@ -1135,7 +1140,15 @@ function newSong() {
   for (const e of ENGINE_ORDER) P.syn[e] = ENGINES[e].def.slice();
   P.engine = 'cluster'; loadEngineParams(); renderShell();
 }
-window.Tombola = {songState, loadSong, newSong,
+function askSignIn(msg) { openSheet(); $('#saveState').textContent = msg; }
+window.Tombola = {songState, loadSong, newSong, askSignIn,
+  getPresets() { return {synth:UI.presets.synth, drum:UI.presets.drum, mods:{synth:[...UI.mods.synth], drum:[...UI.mods.drum]}}; },
+  setPresets(p) {   // sounds from the account: only well-formed slots are taken
+    for (const pm of ['synth', 'drum']) (p && Array.isArray(p[pm]) ? p[pm] : []).slice(0, 8).forEach((x, i) => {
+      if (pm === 'synth' && x && ENGINES[x.engine] && Array.isArray(x.vals)) UI.presets.synth[i] = x;
+      if (pm === 'drum' && x && Array.isArray(x.kit)) UI.presets.drum[i] = {mode:'drum', kit:x.kit, parts:validParts(x.parts), eng:x.eng === 'dbox' ? 'dbox' : 'sampler', db:Array.isArray(x.db) ? x.db : undefined};
+    }); UI.mods.synth.clear(); UI.mods.drum.clear();
+  },
   setTitle(t) { UI.title = t || 'untitled'; markDirty(); renderShell(); },
   saved() { UI.dirty = false; renderShell(); }, get dirty() { return UI.dirty; }};
 const openSheet = () => { closeRing(); $('#sheet').hidden = false; $('#songTitle').value = UI.title; window.dispatchEvent(new Event('tombola:sheet')); };
@@ -1149,13 +1162,13 @@ function layout() {
   const cs = getComputedStyle(document.documentElement), inset = k => parseFloat(cs[k]) || 0;
   const w = innerWidth - inset('paddingLeft') - inset('paddingRight'), h = innerHeight - inset('paddingTop') - inset('paddingBottom');
   const pad = w >= 900 && w > h * 1.15 && h >= 560, land = !pad && w > h * 1.15, root = document.documentElement.style;
-  document.body.classList.toggle('pad', pad); document.body.classList.toggle('land', land);
+  document.body.classList.toggle('pad', pad); document.body.classList.toggle('land', land); document.documentElement.classList.toggle('padh', pad);
   const dev = $('#device');
   if (land) {   // phone on its side: 15 x 7 units, keyboard C3 to C5
     const u = Math.floor(Math.min((w - 16 - 14 * GAP) / 15, (h - 12 - 6 * GAP) / 7));
     root.setProperty('--u', u + 'px'); dev.style.maxWidth = ''; buildKeys(15);
   } else if (pad) {
-    const u = Math.floor(Math.min((w - 24 - 16 * GAP) / 17, (h - 24 - 5 * GAP) / 6));
+    const u = Math.floor(Math.min((w - 24 - 16 * GAP) / 17.84, (h - 24 - 5 * GAP) / 6.84));
     root.setProperty('--u', u + 'px'); dev.style.maxWidth = ''; buildKeys(14);
   } else {
     let dw = Math.min(w, 520), u = (dw - 12 - 7 * GAP) / 8;

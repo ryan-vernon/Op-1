@@ -20,15 +20,9 @@
       }
     ]
   },
-  "dataconnect": {
-    "source": "dataconnect"
-  },
   "emulators": {
     "auth": {
       "port": 9099
-    },
-    "dataconnect": {
-      "port": 9399
     },
     "hosting": {
       "port": 5002
@@ -37,7 +31,13 @@
       "enabled": true,
       "port": 4000
     },
-    "singleProjectMode": true
+    "singleProjectMode": true,
+    "firestore": {
+      "port": 8080
+    },
+    "storage": {
+      "port": 9199
+    }
   },
   "apphosting": {
     "backendId": "op-1",
@@ -51,5 +51,14 @@
       "firebase-debug.*.log",
       "*-debug.log"
     ]
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json",
+    "database": "(default)",
+    "location": "us-central1"
+  },
+  "storage": {
+    "rules": "storage.rules"
   }
 }
