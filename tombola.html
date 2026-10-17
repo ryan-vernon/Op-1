@@ -95,7 +95,6 @@ body.pad #speaker{grid-area:1/1/3/3;cursor:default}
 body.pad #volume{grid-area:1/3/2/5;justify-content:flex-start;padding-left:calc(var(--u) * .25)}
 body.pad #help{grid-area:2/3} body.pad #tempoKey{grid-area:2/4}
 body.pad #display{grid-area:1/5/3/9}
-body.pad .knob{--ks:calc(var(--u) * 1.5)}
 body.pad #k0{grid-area:1/9/3/11} body.pad #k1{grid-area:1/11/3/13} body.pad #k2{grid-area:1/13/3/15} body.pad #k3{grid-area:1/15/3/17}
 body.pad #mic{grid-area:1/17} body.pad #album{grid-area:2/17}
 body.pad #m_synth{grid-area:3/1} body.pad #m_drum{grid-area:3/2} body.pad #m_tape{grid-area:3/3} body.pad #m_mixer{grid-area:3/4}
@@ -107,8 +106,8 @@ body.pad #lift{grid-area:4/1} body.pad #drop{grid-area:4/2} body.pad #split{grid
 body.pad #rec{grid-area:5/1} body.pad #play{grid-area:5/2} body.pad #stop{grid-area:5/3}
 body.pad #octDn{grid-area:6/1} body.pad #octUp{grid-area:6/2} body.pad #shift{grid-area:6/3}
 body.pad #keys{grid-area:4/4/7/18;grid-template-rows:var(--u) calc(var(--u) * 2 + var(--gap))}
-#speaker .grill{display:grid;grid-template-columns:repeat(8,5px);gap:6px 5px}
-#speaker .grill i{width:5px;height:5px;border-radius:50%;background:#2A2A2A}
+#speaker .grill{position:relative;display:block;width:calc(var(--u) * 1.74);height:calc(var(--u) * 1.74)}
+#speaker .grill i{position:absolute;width:calc(var(--u) * .052);height:calc(var(--u) * .052);transform:translate(-50%,-50%);border-radius:50%;background:#2A2A2A}
 .knob{--ks:calc(var(--u) * .86);position:relative;width:var(--ks);height:var(--ks);border-radius:50%;background:linear-gradient(135deg,#CFCDCB,#C2C0BE);
   box-shadow:calc(var(--k) * 5) calc(var(--k) * 5) calc(var(--k) * 10) #8C8886,inset calc(var(--k) * -1) calc(var(--k) * -1) 0 rgba(120,116,113,.5),inset calc(var(--k) * 1.5) calc(var(--k) * 1.5) 0 #fff;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:ns-resize}
 .cap{width:calc(var(--k) * 64);height:calc(var(--k) * 64);flex:none;border-radius:50%;display:flex;justify-content:center;}
@@ -835,7 +834,9 @@ $('#tempoKey').addEventListener('click', () => {
   b.addEventListener('pointermove', e => { if (d) { setParam('master', d.v + (d.y - e.clientY) / 2); showHint('volume ' + P.master); } });
   b.addEventListener('pointerup', () => d = null); b.addEventListener('pointercancel', () => d = null);
 })();
-$('#speaker .grill').innerHTML = '<i></i>'.repeat(88);
+{ const R = 7.4, D = 2 * R + 2; let h = '';   // the speaker: holes on a hexagonal lattice, kept inside a circle
+  for (let r = -8; r <= 8; r++) for (let c = -8; c <= 8; c++) { const x = c + (r & 1 ? 0.5 : 0), y = r * 0.866; if (Math.hypot(x, y) <= R) h += `<i style="left:${((x + D / 2) / D * 100).toFixed(2)}%;top:${((y + D / 2) / D * 100).toFixed(2)}%"></i>`; }
+  $('#speaker .grill').innerHTML = h; }
 /* sound keys 1-8: tap recalls a synth sound (or drum kit), hold stores the current one,
    SHIFT + key opens the engine (or kit) menu and puts the choice on that key */
 function applyPreset(pm, pr) {
