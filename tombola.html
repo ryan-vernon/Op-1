@@ -402,7 +402,7 @@ const KEYS = ['C','C♯','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
 const SCALES = {major:[0,2,4,7,9], minor:[0,3,5,7,10]};
 /* effects: five send effects share the same four encoder slots (taper, turns, damp, width) with their own names */
 const FX_TYPES = {
-  spring:{labels:['tone','turns','damp','send']}, delay:{labels:['size','speed','feedback','mix'], cols:[0, 0, '#6E56E8', 0]},
+  spring:{labels:['tone','turns','damp','send']}, delay:{labels:['size','feedback','speed','mix'], cols:[0, '#6E56E8', 0, 0]},
   grid:{labels:['x size','y size','z fdb','mix']}, nitro:{labels:['freq','ff','res','freq']},
   phone:{labels:['tone','phonic','baud','telematic']}, cow:{labels:['freq','delay','feedback','sideband'], cols:[0, 0, 0, '#FF4F8B']}, punch:{labels:['freq','rounds','punch','power'], cols:['#6E56E8', 0, '#1ED68F', 0]}};
 const LFO_TYPES = {element:{}, midi:{}, random:{}, tremolo:{}, value:{}};
@@ -1837,11 +1837,11 @@ function makeFx(type, v = [P.taper, P.turns, P.damp, P.width]) {
       };
       tap(1, -0.5); tap(1.27, 0.5);
       upd = (T, R, D, W) => {
-        const tm = 0.04 + T * 0.7; dls.forEach(([dl, k]) => at(dl.delayTime, tm * k)); fbs.forEach(fb => at(fb.gain, D * 0.88));
-        at(wob.frequency, 0.15 + R * 5); at(wg.gain, tm * 0.012 * (0.2 + R)); at(out.gain, W * 1.5);
+        const tm = 0.04 + T * 0.7; dls.forEach(([dl, k]) => at(dl.delayTime, tm * k)); fbs.forEach(fb => at(fb.gain, R * 0.88));   // blue size, green feedback, white speed, orange mix
+        at(wob.frequency, 0.15 + D * 5); at(wg.gain, tm * 0.012 * (0.2 + D)); at(out.gain, W * 1.5);
       };
-      dls.forEach(([dl, k]) => { dl.delayTime.value = (0.04 + T * 0.7) * k; }); wob.frequency.value = 0.15 + R * 5; wg.gain.value = (0.04 + T * 0.7) * 0.012 * (0.2 + R);
-      fbs.forEach(fb => { fb.gain.value = D * 0.88; }); out.gain.value = W * 1.5; break;
+      dls.forEach(([dl, k]) => { dl.delayTime.value = (0.04 + T * 0.7) * k; }); wob.frequency.value = 0.15 + D * 5; wg.gain.value = (0.04 + T * 0.7) * 0.012 * (0.2 + D);
+      fbs.forEach(fb => { fb.gain.value = R * 0.88; }); out.gain.value = W * 1.5; break;
     }
     case 'grid': {   // rhythmic gate locked to the tempo
       const g = add(AC.createGain()), lp = add(AC.createBiquadFilter()), o = AC.createOscillator(), og = add(AC.createGain());
@@ -2508,17 +2508,18 @@ const ART = {
       const th = th0 + 2 * Math.PI * N * k / n, u = k / n, amp = 16 * (1 - 0.55 * v[2] * u) * (1 + 0.12 * Math.sin(t * 9 + u * 12) * excite);
       pts.push([x0 + a_ * (th - th0) - 6.5 * (Math.sin(th) - 1), 60 - amp * Math.cos(th)]);
     }
-    g.ln('M40 60 H' + pts[0][0].toFixed(1) + pts.map(p => ' L' + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('') + ' H246', AW, 1.4);
+    const mix = (c1, c2, u) => '#' + [1, 3, 5].map(i => Math.round(parseInt(c1.slice(i, i + 2), 16) * (1 - u) + parseInt(c2.slice(i, i + 2), 16) * u).toString(16).padStart(2, '0')).join('');
+    g.ln('M40 60 H' + pts[0][0].toFixed(1) + pts.map(p => ' L' + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('') + ' H246', mix(AB, AW, v[0]), 1.4);   // the blue encoder (tone) turns the spring from blue to white
     g.t(140, 14, 'TURNS', AG, 14, 'middle', 400); g.t(140, 112, 'DAMP', AW, 14, 'middle', 400);
     const top = 96 - v[3] * 72; g.ln(`M270 ${top} V96`, APK, 1.6, '2 4'); g.dot(270, top, 3, APK); g.dot(270, 96, 3, APK);
   }},
   delay: {w:170, h:114, draw(g, v, t) {
     const c = g.c; c.save(); g.clip(60, 4, 106, 106);
     g.t(66, 16, 'R', APU, 10);
-    const sz = 0.6 + v[0] * 0.8, sp = 0.3 + v[1] * 2;
+    const sz = 0.6 + v[0] * 0.8, sp = 0.3 + v[2] * 2;
     for (let k = 0; k < 6; k++) {
       const ph = (k + t * sp) % 6, r = (14 + ph * 12) * sz;
-      c.globalAlpha = Math.max(0, (1 - ph / 6)) * (k === 0 ? 1 : 0.35 + v[2] * 0.65);
+      c.globalAlpha = Math.max(0, (1 - ph / 6)) * (k === 0 ? 1 : 0.35 + v[1] * 0.65);
       g.circ(110, 57, r, ph < 2 ? AB : '#3c4fa0');
     }
     c.globalAlpha = 1; c.restore(); g.rect(60, 4, 106, 106, APU, 'none', 1.2);
@@ -2534,13 +2535,40 @@ const ART = {
     const top = [p(70, 52), p(110, 38), p(140, 48), p(100, 62)], dn = q => [q[0], q[1] + hz];
     g.poly(top, AG, 'none', 1.6); g.poly([top[0], dn(top[0]), dn(top[3]), top[3]], AG); g.poly([dn(top[3]), dn(top[2]), top[2], top[3]], AG);
   }},
-  nitro: {w:362, h:110, draw(g, v, t) {
-    g.ln('M0 8 Q90 18 180 18 Q270 18 360 8', AB, 2);
-    for (let k = 0; k < 6; k++) { const y = 40 + k * (6 + v[1] * 8); g.ln(`M${150 - k * 22} ${y} H${210 + k * 22}`, AG, 1.2, '6 4'); }
-    let d = ''; for (let k = 0; k < 7; k++) { const h = 4 + (0.3 + v[2] * 0.7) * 14 * (0.5 + 0.5 * Math.sin(t * (2 + v[0] * 10) + k * 1.7)); d += `M${150 + k * 10} 30 V${30 - h} `; }
-    g.ln(d, AB, 1.2);
-    g.rect(170, 52, 20, 18, AW, 'none', 1.4, 4); g.t(180, 66, 'R', AW, 12, 'middle', 600); g.ln('M180 70 V96 M168 96 H192 L196 104 H164 Z', AW);
-    g.ln(`M20 104 H${60 + v[0] * 60} L${90 + v[0] * 60} 82 M240 104 H${280 + v[3] * 60} L${300 + v[3] * 60} 84`, AB, 1.6);
+  nitro: {w:452, h:234, draw(g, v, t) {   // after the original: blue low-pass gauge, red high-pass gauge, the road speeds up with FF, the white stick shifter moves with the white encoder
+    const c = g.c, LV = '#B5B9E8';
+    g.ln('M12 20 L100 31 H352 L440 19', AB, 1.4);
+    // two gauges: a slider with a dot (blue: low-pass frequency, red: high-pass frequency) and green tick marks
+    g.t(28, 66, 'FREQ', AB, 26, 'start', 400); g.t(424, 66, 'FREQ', AO, 26, 'end', 400);
+    const lx = 25 + v[0] * 62, rx2 = 427 - v[3] * 62;
+    g.ln(`M25 108 H${lx}`, AB, 1.4); g.dot(lx, 108, 4.5, AB); g.ln(`M427 108 H${rx2}`, AO, 1.4); g.dot(rx2, 108, 4.5, AO);
+    for (const [x1, y1, x2, y2] of [[36, 84, 41, 90], [59, 75, 59, 83], [78, 84, 73, 90], [86, 108, 94, 108]]) { g.ln(`M${x1} ${y1} L${x2} ${y2}`, AG, 1.4); g.ln(`M${452 - x1} ${y1} L${452 - x2} ${y2}`, AG, 1.4); }
+    // skyline
+    g.ln('M155 70 H168 V63 H175 V55 H182 V62 H190 V38 H202 V52 H208 V44 H214 V66 H224 V50 H232 V64 H240 V48 H246 V70 H300', '#4A4AA8', 1.4);
+    g.ln('M206 70 V40 H219 V70 M232 70 V52 H240 V70', AB, 1.4);
+    // the road: green dashes in perspective, moving faster as FF goes up
+    const sp = 0.4 + v[1] * 5;
+    for (let k = 0; k < 14; k++) {
+      const u = k / 13, y = 80 + u * u * 80 + u * 18, half = 40 + u * 150, seg = 8 + u * 22, gap = 5 + u * 14, off = ((t * sp * (6 + u * 30)) % (seg + gap));
+      c.globalAlpha = 0.45 + 0.55 * u;
+      for (let x = 226 - half - off; x < 226 + half; x += seg + gap) { const x1 = Math.max(226 - half, x), x2 = Math.min(226 + half, x + seg); if (x2 > x1) g.ln(`M${x1} ${y} H${x2}`, k < 5 ? '#1A8A8A' : AG, 1.4); }
+    }
+    c.globalAlpha = 1;
+    // dashboard
+    g.ln('M10 148 H145 L178 176 H442', AB, 1.4); g.ln('M10 160 H140 L168 186', AB, 1.4);
+    g.ln('M298 186 H452 M298 186 V222', AB, 1.4); g.ln('M186 186 V224 M262 186 V224', '#4A4AA8', 1.4);
+    for (let k = 0; k < 3; k++) g.ln(`M270 ${194 + k * 8} H288`, '#4A4AA8', 1.4);
+    g.circ(360, 205, 9, '#4A4AA8', 'none', 1.4);
+    // FF: the green marker walks across the gears 4 5 6 7
+    g.t(24, 198, 'FF', AG, 28, 'start', 400);
+    const gx = 78 + v[1] * 62; g.ln('M66 180 H146', LV, 1.4); g.ln(`M${gx} 158 V180`, AG, 1.4);
+    ['4', '5', '6', '7'].forEach((n, i) => g.t(74 + i * 22, 202, n, LV, 15, 'middle', 400));
+    [[22, AG], [38, AO], [60, '#4A4AA8'], [78, AW], [92, LV], [106, AB], [122, AG], [138, AO]].forEach(([x, col]) => g.ln(`M${x} 214 H${x + 12}`, col, 3));
+    // the stick shifter: the white encoder moves it left and right across the gate
+    const sx = 196 + v[2] * 60, by = 214;
+    g.ln(`M${sx} 168 L${226 + (sx - 226) * 0.35} ${by - 4}`, LV, 5); g.ln(`M${sx} 168 L${226 + (sx - 226) * 0.35} ${by - 4}`, '#000', 2.5);
+    g.ell(226, by, 22, 8, AB, 1.4); g.ell(226, by + 5, 28, 10, AB, 1.4);
+    g.poly([[sx - 11, 140], [sx + 11, 140], [sx + 16, 156], [sx + 8, 170], [sx - 8, 170], [sx - 16, 156]], LV, 'none', 1.6); g.t(sx, 162, 'R', AW, 17, 'middle', 600);
   }},
   phone: {w:190, h:108, draw(g, v, t) {
     const c = g.c; c.save(); c.translate(100, 56); c.rotate((v[0] - 0.5) * 0.35); c.translate(-100, -56);
@@ -2744,7 +2772,7 @@ const _fx = {punch:ART.punch, phone:ART.phone, delay:ART.delay, grid:ART.grid};
 const inner = (name, dx, dy) => (g, v, t) => { g.c.save(); g.c.translate(dx, dy); _fx[name].draw(g, v, t); g.c.restore(); };
 ART.punch = {w:316, h:132, draw(g, v, t) { inner('punch', 80, 6)(g, v, t); cornerNums(g, v, 316, 132, [['FREQ', APU, 0, 'tl', 'dial'], ['ROUNDS', AG, 1, 'tr', 'num'], ['PUNCH', AG, 2, 'bl', 'num'], ['POWER', APK, 3, 'br', 'num']]); }};
 ART.phone = {w:316, h:132, draw(g, v, t) { inner('phone', 50, 8)(g, v, t); cornerNums(g, v, 316, 132, [['TONE', AB, 0, 'tl', 'dial'], ['BAUD', AW, 2, 'tr', 'num'], ['PHONIC', AG, 1, 'bl', 'num'], ['TELEMATIC', APK, 3, 'br', 'num']]); }};
-ART.delay = {w:290, h:120, draw(g, v, t) { inner('delay', 0, 3)(g, v, t); g.t(290, 10, 'FDB', AG, 11, 'end', 500); g.num(290, 50, two2(v[2]), AG, 40, 'end'); g.t(290, 74, 'SPEED', AW, 11, 'end', 500); g.num(290, 114, two2(v[1]), AW, 40, 'end'); }};
+ART.delay = {w:290, h:120, draw(g, v, t) { inner('delay', 0, 3)(g, v, t); g.t(290, 10, 'FDB', AG, 11, 'end', 500); g.num(290, 50, two2(v[1]), AG, 40, 'end'); g.t(290, 74, 'SPEED', AW, 11, 'end', 500); g.num(290, 114, two2(v[2]), AW, 40, 'end'); }};
 ART.grid = {w:250, h:120, draw(g, v, t) { inner('grid', 0, 4)(g, v, t); g.t(250, 10, 'MIX', APK, 11, 'end', 500); g.num(250, 36, two2(v[3]), APK, 22, 'end'); }};
 /* LFOs that listen: element (tilt or mic), value, and MIDI controllers */
 const lfoBox = (g, x, y, w, h, col) => g.rect(x, y, w, h, col, 'none', 1.4);
