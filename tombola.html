@@ -126,14 +126,13 @@ body.pad #keys{grid-area:4/4/7/18;grid-template-rows:var(--u) calc(var(--u) * 2 
 #speaker .grill svg{display:block;width:100%;height:100%;overflow:visible}
 .knob{--ks:calc(var(--u) * .86);position:relative;width:var(--ks);height:var(--ks);border-radius:50%;background:linear-gradient(135deg,#D9DEEA,#C9CFDC);
   box-shadow:calc(var(--k) * 3) calc(var(--k) * 12) calc(var(--k) * 28) rgba(68,76,104,.42),inset calc(var(--k) * -1) calc(var(--k) * -1) 0 rgba(104,113,138,.5),inset calc(var(--k) * 1.5) calc(var(--k) * 1.5) 0 #fff;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:ns-resize}
-.cap{position:relative;width:calc(var(--k) * 64);height:calc(var(--k) * 64);flex:none;border-radius:50%;display:flex;justify-content:center;border:calc(var(--k) * 6.5) solid #DDE2EE;background-clip:padding-box!important;
-  box-shadow:inset calc(var(--k) * -1) calc(var(--k) * -1) calc(var(--k) * 2) rgba(0,0,0,.4)}   /* the coloured cap is a little domed: a soft shade low on the right inside its edge */
+.cap{position:relative;width:calc(var(--k) * 64);height:calc(var(--k) * 64);flex:none;border-radius:50%;display:flex;justify-content:center;border:calc(var(--k) * 6.5) solid #DDE2EE;background-clip:padding-box!important;}   /* the shading lives on the fixed layer (.knob::after), not on the turning cap */
 /* the cap turns, the light does not: gloss and shading sit on a layer that stays put, and the knob's shadow always falls straight down onto the button below */
 .knob::after{content:"";position:absolute;left:50%;top:50%;width:calc(var(--k) * 64);height:calc(var(--k) * 64);margin:calc(var(--k) * -32) 0 0 calc(var(--k) * -32);border-radius:50%;
   background:radial-gradient(circle at 33% 27%,rgba(255,255,255,.24),rgba(255,255,255,0) 48%),radial-gradient(circle at 66% 82%,rgba(0,0,0,.12),rgba(0,0,0,0) 56%);
   box-shadow:inset calc(var(--k) * -2) calc(var(--k) * -2) calc(var(--k) * 1) rgba(120,128,150,.4),inset calc(var(--k) * 2) calc(var(--k) * 2) calc(var(--k) * 2) rgba(255,255,255,.85);pointer-events:none}
 .tile.enc{z-index:3}   /* the knobs are taller than the buttons: their shadow reaches over the row below */
-.cap i{position:absolute;left:50%;top:50%;width:calc(var(--k) * 5);height:76%;transform:translate(-50%,-50%);border-radius:3px;background:rgba(0,0,0,.24);box-shadow:inset 0 calc(var(--k) * .5) calc(var(--k) * 1.5) rgba(0,0,0,.45),0 calc(var(--k) * .8) 0 rgba(255,255,255,.4)}   /* a groove straight through the middle of the cap */
+.cap i{position:absolute;left:50%;top:50%;width:calc(var(--k) * 5);height:76%;transform:translate(-50%,-50%);border-radius:3px;background:rgba(0,0,0,.24);box-shadow:inset calc(var(--k) * var(--lx,0) * 1.4) calc(var(--k) * var(--ly,1) * 1.4) calc(var(--k) * 1.5) rgba(0,0,0,.45),calc(var(--k) * var(--lx,0) * 1.1) calc(var(--k) * var(--ly,1) * 1.1) 0 rgba(255,255,255,.4)}   /* the light is fixed (upper left): --lx/--ly turn the offsets against the cap's rotation. a groove straight through the middle of the cap */
 
 /* menus on the screen: engine, drum kit, effect, LFO */
 #menu{position:absolute;inset:0;z-index:6;background:#000;display:flex;flex-direction:column;
@@ -690,7 +689,8 @@ function renderShell() {
   });
   document.querySelectorAll('[data-k]').forEach((cell, i) => {
     const n = names[i], s = SPEC[n], a = (P[n] - s.min) / (s.max - s.min) * 720;   // endless encoders: two full turns across the range, no stop
-    cell.querySelector('.cap').style.transform = `rotate(${a}deg)`;
+    { const cp = cell.querySelector('.cap'), r = a * Math.PI / 180; cp.style.transform = `rotate(${a}deg)`;
+      cp.style.setProperty('--lx', (0.7 * Math.cos(r) + 0.7 * Math.sin(r)).toFixed(3)); cp.style.setProperty('--ly', (0.7 * Math.cos(r) - 0.7 * Math.sin(r)).toFixed(3)); }
     cell.setAttribute('aria-label', labelOf(n) + ' encoder');
   });
   // no selection dots and no pressed look: the screen shows the mode and page. Only SEQ (and REC) show state.
