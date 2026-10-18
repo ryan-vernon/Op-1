@@ -102,7 +102,12 @@ body.pad #volume{grid-area:1/3/2/5;justify-content:flex-start;padding-left:calc(
 body.pad #help{grid-area:2/3} body.pad #tempoKey{grid-area:2/4}
 body.pad #display{grid-area:1/5/3/9}
 body.pad .knob{--ks:calc(var(--u) * 1.12)}   /* the Figma knob: the ring is 1.19 units across, the encoder inside it 1.12 */
-body.pad .knob{box-shadow:calc(var(--k) * 7) calc(var(--k) * 13) calc(var(--k) * 12) rgba(36,42,66,.5),calc(var(--k) * 14) calc(var(--k) * 26) calc(var(--k) * 34) rgba(36,42,66,.3),inset calc(var(--k) * -1) calc(var(--k) * -1) 0 rgba(104,113,138,.5),inset calc(var(--k) * 1.5) calc(var(--k) * 1.5) 0 #fff}   /* the encoder stands well above the surface: its shadow falls into the ring and out over the tile */
+body.pad .knob{box-shadow:calc(var(--k) * 1) calc(var(--k) * 2) calc(var(--k) * 3) rgba(36,42,66,.25),inset calc(var(--k) * -1) calc(var(--k) * -1) 0 rgba(104,113,138,.5),inset calc(var(--k) * 1.5) calc(var(--k) * 1.5) 0 #fff}
+/* the shadow the tip of the knob (the coloured cap) casts: the Figma shadow shape, falling lower right over the ring and out across the tile */
+.knob .shd{display:none}
+body.pad .knob .shd{display:block;position:absolute;left:50%;top:50%;width:calc(var(--u) * 2);height:calc(var(--u) * 2);margin:calc(var(--u) * -1) 0 0 calc(var(--u) * -1);filter:blur(calc(var(--u) * .18));pointer-events:none}
+body.pad .knob .shd::before{content:"";position:absolute;inset:0;background:linear-gradient(146deg,rgba(34,40,66,.8) 52.8%,rgba(34,40,66,0) 84%);clip-path:polygon(71.7% 97.6%,48.7% 64.6%,56.4% 42.8%,99.2% 64.6%,99.2% 97.6%)}
+body.pad .knob .cap{position:relative;z-index:1} body.pad .knob::after{z-index:2}
 body.pad .knob::before{content:"";position:absolute;inset:calc(var(--u) * -.0335);border-radius:50%;background:rgba(60,66,90,.1);border:var(--gap) solid #4A4E5A;z-index:-1;pointer-events:none;
   box-shadow:inset calc(var(--k) * 3) calc(var(--k) * 4) calc(var(--k) * 5) rgba(0,0,0,.38),calc(var(--k) * 1) calc(var(--k) * 1.5) 0 rgba(255,255,255,.9)}   /* the ring is a recess in the surface, below the knob */
 body.pad #k0{grid-area:1/9/3/11} body.pad #k1{grid-area:1/11/3/13} body.pad #k2{grid-area:1/13/3/15} body.pad #k3{grid-area:1/15/3/17}
@@ -229,10 +234,10 @@ body.land #keys{grid-area:5/1/8/16}
 
 
   <!-- encoders: blue, green, white, orange; they turn the four values in the screen's corners -->
-  <div class="tile enc" id="k0" data-k="0"><span class="knob"><span class="cap" style="background:var(--blue)"><i></i></span></span></div>
-  <div class="tile enc" id="k1" data-k="1"><span class="knob"><span class="cap" style="background:var(--green)"><i></i></span></span></div>
-  <div class="tile enc" id="k2" data-k="2"><span class="knob"><span class="cap" style="background:#F4F4F2"><i></i></span></span></div>
-  <div class="tile enc" id="k3" data-k="3"><span class="knob"><span class="cap" style="background:var(--orange)"><i></i></span></span></div>
+  <div class="tile enc" id="k0" data-k="0"><span class="knob"><i class="shd"></i><span class="cap" style="background:var(--blue)"><i></i></span></span></div>
+  <div class="tile enc" id="k1" data-k="1"><span class="knob"><i class="shd"></i><span class="cap" style="background:var(--green)"><i></i></span></span></div>
+  <div class="tile enc" id="k2" data-k="2"><span class="knob"><i class="shd"></i><span class="cap" style="background:#F4F4F2"><i></i></span></span></div>
+  <div class="tile enc" id="k3" data-k="3"><span class="knob"><i class="shd"></i><span class="cap" style="background:var(--orange)"><i></i></span></span></div>
   <button class="tile mk" id="m_synth" data-mode="synth" aria-label="Synth"><span class="disc"><svg viewBox="0 0 42 42" style="color:#5B7CFA"><path d="M4.5 23.25V25C4.5 26.5188 5.73122 27.75 7.25 27.75C8.76878 27.75 10 26.5188 10 25V17C10 15.4812 11.2312 14.25 12.75 14.25C14.2688 14.25 15.5 15.4812 15.5 17V25C15.5 26.5188 16.7312 27.75 18.25 27.75C19.7688 27.75 21 26.5188 21 25V17C21 15.4812 22.2312 14.25 23.75 14.25C25.2688 14.25 26.5 15.4812 26.5 17V25C26.5 26.5188 27.7312 27.75 29.25 27.75C30.7688 27.75 32 26.5188 32 25V17C32 15.4812 33.2312 14.25 34.75 14.25C36.2688 14.25 37.5 15.4812 37.5 17V18.75" stroke="currentColor"/></svg></span></button>
   <button class="tile mk" id="m_drum" data-mode="drum" aria-label="Drum"><span class="disc"><svg viewBox="0 0 42 42" style="color:#1ED68F"><circle cx="21" cy="20.5" r="9.5" stroke="currentColor"/><path d="M21 34V21" stroke="currentColor"/><path d="M18.5 18.5C18.5 18.2239 18.7239 18 19 18H23C23.2761 18 23.5 18.2239 23.5 18.5V22.5C23.5 22.7761 23.2761 23 23 23H21.5H20.5H19C18.7239 23 18.5 22.7761 18.5 22.5V18.5Z" fill="currentColor"/><path fill-rule="evenodd" clip-rule="evenodd" d="M22.75 23H21.75V24C21.75 23.4477 22.1977 23 22.75 23Z" fill="currentColor"/><path fill-rule="evenodd" clip-rule="evenodd" d="M19.25 23H20.25V24C20.25 23.4477 19.8023 23 19.25 23Z" fill="currentColor"/></svg></span></button>
   <button class="tile mk" id="m_tape" data-mode="tape" aria-label="Tape"><span class="disc"><svg viewBox="0 0 42 42" style="color:#FF4D3D"><circle cx="12" cy="21" r="6" stroke="currentColor"/><path d="M12 27H30" stroke="currentColor"/><circle cx="30" cy="21" r="6" stroke="currentColor"/></svg></span></button>
