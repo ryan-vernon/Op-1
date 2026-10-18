@@ -133,7 +133,7 @@ body.pad #keys{grid-area:4/4/7/18;grid-template-rows:var(--u) calc(var(--u) * 2 
   background:radial-gradient(circle at 33% 27%,rgba(255,255,255,.24),rgba(255,255,255,0) 48%),radial-gradient(circle at 66% 82%,rgba(0,0,0,.12),rgba(0,0,0,0) 56%);
   box-shadow:inset calc(var(--k) * -2) calc(var(--k) * -2) calc(var(--k) * 1) rgba(120,128,150,.4),inset calc(var(--k) * 2) calc(var(--k) * 2) calc(var(--k) * 2) rgba(255,255,255,.85);pointer-events:none}
 .tile.enc{z-index:3}   /* the knobs are taller than the buttons: their shadow reaches over the row below */
-.cap i{display:block;width:9%;height:38%;margin-top:6%;border-radius:3px;background:rgba(0,0,0,.24);box-shadow:inset 0 calc(var(--k) * .5) calc(var(--k) * 1.5) rgba(0,0,0,.45),0 calc(var(--k) * .8) 0 rgba(255,255,255,.4)}
+.cap i{position:absolute;left:50%;top:50%;width:calc(var(--k) * 5);height:76%;transform:translate(-50%,-50%);border-radius:3px;background:rgba(0,0,0,.24);box-shadow:inset 0 calc(var(--k) * .5) calc(var(--k) * 1.5) rgba(0,0,0,.45),0 calc(var(--k) * .8) 0 rgba(255,255,255,.4)}   /* a groove straight through the middle of the cap */
 
 /* menus on the screen: engine, drum kit, effect, LFO */
 #menu{position:absolute;inset:0;z-index:6;background:#000;display:flex;flex-direction:column;
@@ -279,7 +279,7 @@ body.land #keys{grid-area:5/1/8/16}
   <button class="tile padonly" id="volume" aria-label="Volume. Drag up or down"><span class="disc" style="width:calc(var(--u)*.78);height:calc(var(--u)*.78)"></span></button>
   <button class="tile padonly" id="help" aria-label="Help"><span class="disc"><svg viewBox="0 0 42 42" style="color:#2A2A2A"><rect x="7.5" y="11" width="27" height="16" rx="8" stroke="currentColor"/><path d="M21 27V33.5" stroke="currentColor"/><path fill-rule="evenodd" clip-rule="evenodd" d="M23.75 27.75H21.75V29.75C21.75 28.6454 22.6454 27.75 23.75 27.75Z" fill="currentColor"/><path fill-rule="evenodd" clip-rule="evenodd" d="M18.25 27.75H20.25V29.75C20.25 28.6454 19.3546 27.75 18.25 27.75Z" fill="currentColor"/></svg></span></button>
   <button class="tile padonly" id="tempoKey" aria-label="Tempo: tap to set"><span class="disc"><svg viewBox="0 0 42 42" style="color:#2A2A2A"><path d="M29.5 30.5H12.5V28L19 9H23L29.5 28V30.5Z" stroke="currentColor"/><path d="M21 26.5L30.5 13.5" stroke="currentColor"/><circle cx="31.25" cy="12.75" r="2.25" fill="currentColor"/></svg></span></button>
-  <button class="tile padonly off" id="mic" aria-label="Mic input (not available)"><span class="disc"><svg viewBox="0 0 42 42"><circle cx="25.5" cy="16.75" r="4.5" fill="#FF4D3D"/><path d="M23.5 18.25L12 29.75" stroke="#FF4D3D" stroke-width="3"/></svg></span></button>
+  <button class="tile padonly" id="mic" aria-label="Microphone input"><span class="disc"><svg viewBox="0 0 42 42"><circle cx="25.5" cy="16.75" r="4.5" fill="#FF4D3D"/><path d="M23.5 18.25L12 29.75" stroke="#FF4D3D" stroke-width="3"/></svg></span></button>
   <button class="tile padonly" id="album" aria-label="Songs and account"><span class="disc"><svg viewBox="0 0 16 16" fill="none" stroke="#2A2A2A" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="1.5" fill="#2A2A2A"/></svg></span></button>
   <button class="tile padonly" id="lift" aria-label="Lift: cut the selected tape track"><span class="disc"><svg viewBox="0 0 42 42" style="color:#FF4D3D"><path d="M12 31H30" stroke="currentColor"/><path d="M21 10V27" stroke="currentColor"/><path d="M30 18L21 9L12 18" stroke="currentColor"/></svg></span></button>
   <button class="tile padonly" id="drop" aria-label="Drop: paste onto the selected tape track"><span class="disc"><svg viewBox="0 0 42 42" style="color:#FF4D3D"><path d="M12 31H30" stroke="currentColor"/><path d="M21 9V26" stroke="currentColor"/><path d="M30 18L21 27L12 18" stroke="currentColor"/></svg></span></button>
@@ -374,7 +374,8 @@ const SPEC = {
   tempo:{min:40, max:240, v:120, col:'blue', label:'tempo'},
   bars: {min:1, max:16, v:4, col:'green', label:'loop'},
   scrub:{min:0, max:100, v:0, col:'blue', label:'scrub'}, tspeed:{min:50, max:200, v:100, col:'white', label:'speed', span:150},
-  tsig:{min:2, max:7, v:4, col:'green', label:'mode', span:8}, swing:{min:0, max:75, v:0, col:'white', label:'swing'},
+  tmode:{min:0, max:2, v:0, col:'green', label:'mode', span:3},
+  tsig:{min:2, max:7, v:4, col:'blue', label:'beats', span:8}, swing:{min:0, max:75, v:0, col:'white', label:'swing'},
   drive:{min:0, max:100, v:0, col:'white', label:'drive'}, mrel:{min:0, max:100, v:30, col:'orange', label:'release'},
   mleft:{min:0, max:100, v:80, col:'blue', label:'left'}, mright:{min:0, max:100, v:80, col:'green', label:'right'},
   pan1:{min:0, max:100, v:50, col:'blue', label:'pan 1'}, pan2:{min:0, max:100, v:50, col:'green', label:'pan 2'},
@@ -390,7 +391,7 @@ const SPEC = {
 };
 const P = {}; for (const k in SPEC) P[k] = SPEC[k].v;
 P.fxType = 'spring'; P.lfoType = 'tremolo'; P.lfoOn = true; P.mfxType = 'spring'; P.mfx = false;
-P.engine = 'cluster'; P.fx = true; P.digiRing = false; P.key = 0; P.scale = 'major';
+P.tref = 120; P.engine = 'cluster'; P.fx = true; P.digiRing = false; P.key = 0; P.scale = 'major';
 P.syn = {}; for (const e of ENGINE_ORDER) P.syn[e] = ENGINES[e].def.slice();
 const loadEngineParams = () => P.syn[P.engine].forEach((v, i) => P['s' + i] = v);
 loadEngineParams();
@@ -541,6 +542,10 @@ function renderCorners() {
 renderCorners();
 
 function onParam(name) {
+  // beat match keeps the tape speed locked to the tempo: the speed is what the tempo made of the tempo you had when it was switched on
+  if (name === 'tmode' && P.tmode === 1) P.tref = P.tempo / (P.tspeed / 100);
+  if (name === 'tspeed') P.tref = P.tempo / (P.tspeed / 100);
+  if (name === 'tempo' && P.tmode === 1) P.tspeed = clamp(Math.round(P.tempo / P.tref * 100), 50, 200);
   if (name === 'ehold' && !P.ehold) seqS.latch = new Set(seqS.keys);
   if (['speed','gravity','mass','shape'].includes(name)) renderCorners();
   if (name === 'gravity') peek('#gPeek', '#gIcon', P.gravity);
@@ -599,7 +604,7 @@ const PAGES = {
 };
 const TAPE_PAGE = {name:'tape', params:() => ['scrub','bars','tspeed','m' + (UI.track + 1)], draw:t => drawArt('tape', t)};
 const UTIL = {   // screens that sit over a mode: tempo, erase tape, help
-  tempo:{name:'tempo', params:['tempo','tsig','swing','click'], draw:t => drawArt('tempo', t)},
+  tempo:{name:'tempo', params:() => UI.shift ? ['tsig','swing','tspeed','click'] : ['tempo','tmode','tspeed','click'], draw:t => drawArt('tempo', t)},
   erase:{name:'erase', bare:true, params:() => TAPE_PAGE.params(), draw:t => drawArt('erase', t)},
   help:{name:'help', bare:true, params:() => PAGES.synth[0].params, draw:t => drawArt('help', t)}};
 const SEQ_TYPES = ['tombola', 'pattern', 'finger', 'endless'];
@@ -623,7 +628,7 @@ const valueText = name => /^pan\d$/.test(name) ? (P[name] === 50 ? 'C' : P[name]
   : name === 'lsrc' ? ['g-force','mic'][clamp(P.lsrc, 0, 1)]
   : name === 'prate' ? ['1/4','1/8','1/16','1/32'][clamp(P.prate, 0, 3)] : name === 'epat' ? ['up','down','up-down','random'][clamp(P.epat, 0, 3)] : name === 'ehold' ? (P.ehold ? 'on' : 'off') : name === 'fplay' ? ['A','B','A+B'][clamp(P.fplay, 0, 2)] : name === 'pgate' ? P.pgate + '%' : name === 'swing' ? P.swing + '%'
   : name === 'lspd' ? LFO_DIVS[clamp(P.lspd, 0, 6)][0] : name === 'ldst' ? ['pitch', 'volume', 'all'][P.ldst]
-  : name === 'lwav' ? (P.lwav ? '+' + P.lwav : 'off') : name === 'tspeed' ? (P.tspeed / 100).toFixed(1) : name === 'tsig' ? P.tsig + '/4'
+  : name === 'lwav' ? (P.lwav ? '+' + P.lwav : 'off') : name === 'tmode' ? ['free','beat match','sync'][clamp(P.tmode, 0, 2)] : name === 'tspeed' ? (P.tspeed / 100).toFixed(1) : name === 'tsig' ? P.tsig + '/4'
   : name === 'scrub' ? clock(P.scrub / 100 * loopTicks() * spt()) : name === 'click' && !P.click ? 'off' : name === 'eqamt' ? (P.eqamt > 50 ? 'max' : 'clean') + ' ' + P.eqamt : name === 'dmode' ? ['to end','loop','once'][P.dmode] : name === 'ddir' ? (P.ddir ? 'rev' : 'fwd')
   : /^d(in|out)/.test(name) ? secs(P[name]) : name === 'dpit' ? (P.dpit > 0 ? '+' : '') + P.dpit
   : name === 'click' && !P.click ? 'off' : String(P[name]);
@@ -681,7 +686,7 @@ function renderShell() {
     const cp = curPage(), cols = cp.name === 'master fx' ? FX_TYPES[P.mfxType].cols : cp.cols || (cp.name === 'effect' && FX_TYPES[P.fxType].cols); b.style.color = (cols && cols[i]) || '';
   });
   document.querySelectorAll('[data-k]').forEach((cell, i) => {
-    const n = names[i], s = SPEC[n], a = -135 + (P[n] - s.min) / (s.max - s.min) * 270;
+    const n = names[i], s = SPEC[n], a = (P[n] - s.min) / (s.max - s.min) * 720;   // endless encoders: two full turns across the range, no stop
     cell.querySelector('.cap').style.transform = `rotate(${a}deg)`;
     cell.setAttribute('aria-label', labelOf(n) + ' encoder');
   });
@@ -706,7 +711,7 @@ function renderShell() {
    T1 steps the synth engine, T3 turns the effect on or off, T4 turns the LFO on or off.
    SHIFT + T1 / T3 / T4 open the engine (or drum kit), effect and LFO menus; SHIFT + a sound key (1-8) opens the
    engine / kit menu and puts your choice on that key. */
-function useShift() { const s = UI.shift; if (s) { UI.shift = false; UI.shiftUsed = true; } return s; }
+function useShift() { const s = UI.shift; if (s && !kbShift) { UI.shift = false; UI.shiftUsed = true; } return s; }
 function tPress(i) {
   firstGesture(); closeRing(); closeMenu();
   if (UI.util === 'erase') {   // press all four track keys to erase the tape
@@ -984,7 +989,19 @@ function keyLight(n, on) {
   keysEl.querySelectorAll(`.key[data-off="${off}"]`).forEach(k => k.classList.toggle('on', on));
 }
 /* computer keys: a w s e d f t g y h u j k play C to C; z x change octave */
+$('#mic').addEventListener('click', async () => {
+  firstGesture(); closeRing(); closeMenu(); useShift();
+  if (micStream) { closeMic(); $('#mic').classList.remove('latched'); showHint('microphone off'); renderShell(); return; }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { showHint('this browser has no microphone access', 2600); return; }
+  try { showHint('allow the microphone', 3000); await openMic(); $('#mic').classList.add('latched'); showHint('microphone on', 1800); }
+  catch (e) { micStream = null; showHint('the microphone is blocked: allow it in the browser settings', 3600); }
+  renderShell();
+});
 const KB = 'awsedftgyhujk';
+let kbShift = false;   // the laptop's shift key holds the on-screen shift down
+window.addEventListener('keydown', e => { if (e.key === 'Shift' && !e.repeat && !kbShift) { kbShift = true; UI.shift = true; UI.shiftUsed = false; closeMenu(); renderShell(); } });
+window.addEventListener('keyup', e => { if (e.key === 'Shift' && kbShift) { kbShift = false; UI.shift = false; renderShell(); } });
+window.addEventListener('blur', () => { if (kbShift) { kbShift = false; UI.shift = false; renderShell(); } });
 const kbDown = new Set();
 window.addEventListener('keydown', e => {
   if (e.metaKey || e.ctrlKey || e.altKey || e.repeat || !$('#sheet').hidden || /INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
@@ -1346,11 +1363,15 @@ function lfoTargets() {   // how far the LFO moves pitch (cents) and volume
   return {cents:P.lpit / 100 * 120, depth:P.lvol / 100 * 0.5};
 }
 /* the element LFO listens to the phone's tilt (g-force) or its microphone */
-let micAn = null, micBuf = null, micLvl = 0;
-function startMic() {
-  if (micAn || !navigator.mediaDevices || !AC) return; micAn = 'asking';
-  navigator.mediaDevices.getUserMedia({audio:true}).then(st => { const an = AC.createAnalyser(); an.fftSize = 512; AC.createMediaStreamSource(st).connect(an); micBuf = new Float32Array(512); micAn = an; }).catch(() => { micAn = null; });
+let micAn = null, micBuf = null, micLvl = 0, micStream = null;
+async function openMic() {   // the browser asks the person for permission the first time
+  if (micStream) return micStream;
+  micStream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false, noiseSuppression:false, autoGainControl:false}});
+  if (AC) { const an = AC.createAnalyser(); an.fftSize = 512; AC.createMediaStreamSource(micStream).connect(an); micBuf = new Float32Array(512); micAn = an; }
+  return micStream;
 }
+function closeMic() { if (micStream) micStream.getTracks().forEach(t => t.stop()); micStream = null; micAn = null; }
+function startMic() { if (micAn || micStream === 'asking' || !navigator.mediaDevices || !AC) return; openMic().catch(() => { micStream = null; }); }
 function elementValue() {   // -1 .. 1
   if (P.lsrc === 0) return clamp(gdir.x, -1, 1);
   startMic(); if (micAn && micAn !== 'asking') { micAn.getFloatTimeDomainData(micBuf); let m = 0; for (const x of micBuf) m = Math.max(m, Math.abs(x)); micLvl += (Math.min(1, m * 3) - micLvl) * 0.4; }
@@ -2660,16 +2681,20 @@ const ART = {
       g.c.globalAlpha = 1; if (mu) g.t(x, 76, 'MUTE', AO, 11, 'middle', 600);
     });
   }},
-  eq: {w:290, h:100, draw(g, v) {
-    const s = k => 0.4 + v[k] * 1.2, c = g.c;
-    c.save(); c.translate(20, 62); c.scale(1, s(0)); c.translate(-20, -62);
-    g.ell(20, 30, 16, 6, AB, 1.6 / s(0)); g.ln('M4 30 V62 A16 6 0 0 0 36 62 V30', AB, 1.6 / s(0)); c.restore();
-    c.save(); c.translate(90, 72); c.scale(1, s(1)); c.translate(-90, -72);
-    g.poly('74,18 90,8 106,18 106,62 90,72 74,62', AG, 'none', 1.6 / s(1)); g.ln('M90 8 V72 M74 18 L90 28 L106 18', AG, 1.2 / s(1)); c.restore();
-    c.save(); c.translate(150, 64); c.scale(1, s(2)); c.translate(-150, -64);
-    g.poly('150,6 166,64 134,64', AW, 'none', 1.6 / s(2)); g.ln('M150 6 L150 64', AW, 1 / s(2)); c.restore();
-    g.t(20, 92, 'LOW', AB, 18, 'middle', 200); g.t(90, 92, 'MID', AG, 18, 'middle', 200); g.t(150, 92, 'HIGH', AW, 18, 'middle', 200);
-    g.ln('M196 16 H218 M212 10 L218 16 L212 22', AO, 1.4);
+  eq: {w:290, h:100, draw(g, v) {   // three solids standing on one floor: the encoders only change how tall they are; the red arrow slides between CLEAN and MAX EQ
+    const yb = 70, H = k => 12 + v[k] * 50;
+    { const h = H(0), cx = 30, rx = 17, ry = 6;   // low: a cylinder
+      g.ln(`M${cx - rx} ${yb} V${yb - h} M${cx + rx} ${yb} V${yb - h}`, AB, 1.4); g.ell(cx, yb - h, rx, ry, AB, 1.4);
+      g.ln(`M${cx - rx} ${yb} A${rx} ${ry} 0 0 0 ${cx + rx} ${yb}`, AB, 1.4); g.ln(`M${cx - rx} ${yb} A${rx} ${ry} 0 0 1 ${cx + rx} ${yb}`, AB, 0.6); }
+    { const h = H(1), cx = 100, hw = 17, hd = 8;   // mid: a box in perspective
+      const B = [[cx - hw, yb], [cx, yb + hd], [cx + hw, yb], [cx, yb - hd]], T = B.map(([x, y]) => [x, y - h]);
+      g.poly(B, AG, 'none', 1.4); g.poly(T, AG, 'none', 1.4); B.forEach(([x, y], i) => g.ln(`M${x} ${y} L${x} ${y - h}`, AG, 1.4)); }
+    { const h = H(2), cx = 170, hw = 18, hd = 8.5;   // high: a pyramid in perspective, its square base fixed
+      const B = [[cx - hw, yb], [cx, yb + hd], [cx + hw, yb], [cx, yb - hd]], ap = [cx, yb - h];
+      g.poly(B, AW, 'none', 1.4); [0, 1, 2, 3].forEach(i => g.ln(`M${B[i][0]} ${B[i][1]} L${ap[0]} ${ap[1]}`, AW, 1.4)); }
+    g.t(30, 94, 'LOW', AB, 18, 'middle', 200); g.t(100, 94, 'MID', AG, 18, 'middle', 200); g.t(170, 94, 'HIGH', AW, 18, 'middle', 200);
+    const ay = 16 + (1 - v[3]) * 66;   // 100 is MAX EQ at the top, 0 is CLEAN at the bottom
+    g.ln('M214 16 V82', '#3A3A3A', 1, '2 3'); g.ln(`M196 ${ay} H218 M212 ${ay - 6} L218 ${ay} L212 ${ay + 6}`, AO, 1.4);
     g.rect(224, 6, 62, 20, AO, 'none', v[3] > 0.5 ? 2.4 : 1); g.t(255, 21, 'MAX EQ', AO, 13, 'middle');
     g.rect(224, 78, 62, 20, AB, 'none', v[3] <= 0.5 ? 2.4 : 1); g.t(255, 93, 'CLEAN', AB, 13, 'middle');
   }},
@@ -2757,7 +2782,7 @@ Object.assign(ART, {
     g.rect(0, 0, 112, 36, '#33449a'); metro(g, 10, 8, AB); g.t(32, 28, 'BPM', AB, 24, 'start', 200);
     g.rect(0, 36, 112, 64, '#33449a'); g.num(10, 92, String(P.tempo), AB, 64);
     g.rect(0, 100, 112, 34, '#33449a'); g.t(10, 126, (P.tempo / 60).toFixed(1) + ' BPS', AW, 24, 'start', 200);
-    g.ln('M112 18 H136', AG); g.t(140, 24, P.tsig + '/4', AG, 14, 'start', 600); g.ln('M178 18 H196', AG);
+    g.ln('M112 18 H134', AG); g.t(156, 24, ['FREE', 'BEAT MATCH', 'SYNC'][clamp(P.tmode, 0, 2)], AG, 11, 'middle', 600); g.ln('M178 18 H196', AG); g.t(156, 38, P.tsig + '/4', AW, 9, 'middle', 400);
     g.t(150, 92, 'TAP', fl ? AW : '#666', 24, 'middle', 200);
     g.rect(122, 100, 56, 34, AG); g.t(150, 115, 'SWING', AG, 12, 'middle', 600); g.t(150, 130, P.swing + '%', AG, 12, 'middle', 600);
     g.rect(196, 0, 112, 36, '#33449a'); g.t(202, 28, 'T.SPEED', AW, 24, 'start', 200);
