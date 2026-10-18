@@ -1,7 +1,7 @@
 <title>Tombola</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Encode+Sans+Condensed:wght@200;300;400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Encode+Sans+Condensed:wght@100;200;300;400;500;600&display=swap">
 <style>
 /* Layout: the OP-1 as a grid of white tiles. One unit (--u) is the width of a white key.
    Phone: screen, T1–T4, transport, one octave of keys, mode bar (8 columns).
@@ -72,7 +72,7 @@ button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 #screen{position:absolute;inset:0;width:100%;height:100%;display:block}
 .corner{position:absolute;display:flex;align-items:center;gap:3cqmin;padding:5cqmin;touch-action:none;z-index:2;line-height:1}
 .corner .letter{font-size:9cqmin;font-weight:400}
-.corner .num{font-size:9cqmin;color:var(--white);font-variant-numeric:tabular-nums;min-width:1.6em;font-weight:200}
+.corner .num{font-size:9cqmin;color:var(--white);font-variant-numeric:tabular-nums;min-width:1.6em;font-weight:100}
 .corner svg{width:8.5cqmin;height:auto;overflow:visible}
 #shIcon{width:10.5cqmin}
 .corner .peek{font-size:7cqmin;color:var(--white);font-variant-numeric:tabular-nums}
@@ -174,13 +174,14 @@ body.land #keys{grid-area:5/1/8/16}
 #menu .mrow{display:flex;align-items:center;justify-content:flex-start;gap:7cqmin}
 #menu .lead{display:flex;flex-direction:column;align-items:center;gap:1.4cqmin;flex:none}
 #menu .lead .w{width:17cqmin;height:10cqmin;color:var(--blue);overflow:visible}
+#menu .lead .w *{vector-effect:non-scaling-stroke;stroke-width:2px}
 #menu .lead .n{height:28cqmin;width:auto;color:#E9E9E9;overflow:visible}
 #menu .lead .dots{width:14cqmin;height:14cqmin;color:var(--blue)}
 #menu .list>div{display:flex;flex-direction:column;align-items:flex-start}
 #menu .list>div button:not(.cur){color:var(--mc)}
 #menu .list{display:grid;grid-template-columns:repeat(var(--mcols,1),minmax(0,1fr));column-gap:6cqmin}
-#menu button{font-size:11.5cqmin;line-height:1.28;font-weight:200;text-align:left;color:var(--mc,#5B7CFA);padding:.3cqmin 2cqmin;margin-left:-2cqmin;letter-spacing:.03em;text-transform:uppercase;white-space:nowrap}
-#menu button.cur{background:var(--mc,#5B7CFA);color:#000;font-weight:300}
+#menu button{font-size:11.5cqmin;line-height:1.28;font-weight:100;text-align:left;color:var(--mc,#5B7CFA);padding:.3cqmin 2cqmin;margin-left:-2cqmin;letter-spacing:.03em;text-transform:uppercase;white-space:nowrap}
+#menu button.cur{background:var(--mc,#5B7CFA);color:#000;font-weight:100}
 #menu button:not(.cur):hover{color:#fff}
 
 /* song sheet (album) */
@@ -764,8 +765,8 @@ const MENU_DEF = {
     UI.seqType = id; UI.seqOn = true; UI.seqView = true; UI.seqMode = UI.mode === 'drum' ? 'drum' : 'synth'; seqS.next = 0; showHint(id); markDirty(); }},
   lfo:{title:'lfo', col:'var(--orange)', cols:1, items:() => Object.keys(LFO_TYPES).map(k => [k, k]), cur:() => P.lfoType, pick:id => pickLfo(id)}};
 function numSVG(str, cls) {   // one-stroke numerals as a little svg
-  let x = 0, d = ''; for (const ch of String(str)) { const [p, adv] = GLY[ch] || ['', 8]; if (p) d += `<path d="${p}" transform="translate(${x} 0)"/>`; x += adv; }
-  return `<svg class="${cls}" viewBox="-2 -2 ${x} 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:${(x + 2) / 18 * 28}cqmin"><g style="vector-effect:non-scaling-stroke">${d}</g></svg>`;
+  let x = 0, d = ''; for (const ch of String(str)) { const [p, adv] = GLY[ch] || ['', 8]; if (p) d += `<path d="${p}" transform="translate(${x} 0)" vector-effect="non-scaling-stroke"/>`; x += adv; }
+  return `<svg class="${cls}" viewBox="-2 -2 ${x} 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:${(x + 2) / 18 * 28}cqmin"><g>${d}</g></svg>`;
 }
 function menuLead(kind, slot) {
   if (kind === 'engine' || kind === 'presets') return `<div class="lead"><svg class="w" viewBox="0 0 40 24">${GLYPHS[P.engine] || ''}</svg>${numSVG((slot === null ? (UI.snd ?? 0) : slot) + 1, 'n')}</div>`;
@@ -1500,31 +1501,33 @@ function playNote(midi, vel, pan, o = {}) {
       const s = AC.createBufferSource(); s.buffer = digiBuffer(midi, inst.vals, inst.ring); s.connect(out);
       len = s.buffer.duration; out.gain.setValueAtTime(peak * 0.8, t); srcs.push(s); upd = () => false; break;   // a rendered buffer: start it again
     }
-    case 'fm': {   // topology: how the operators connect; freq: the ratio; then FM amount and detune
+    case 'fm': {   // topology: how the operators connect; freq: the ratio; then FM amount and detune. For a held key the wiring is gains, so every encoder moves the sound as it plays
       const topoAt = w => Math.min(3, Math.floor(w[0] * 4)), ratioAt = w => FM_RATIOS[Math.round(w[1] * (FM_RATIOS.length - 1))];
       const depthAt = w => f * ratioAt(w) * w[2] * 9 * (0.35 + 0.65 * vel), topo = topoAt(v);
+      const twoCarriers = w => topoAt(w) === 3 || w[3] > 0.02, two = twoCarriers(v);
       const car = AC.createOscillator(), mod = AC.createOscillator(), mg = AC.createGain();
       car.frequency.value = f; car.detune.value = sv(3) * 18; mod.frequency.value = f * ratioAt(v);
       const depth = depthAt(v), modT = 0.25 + topo * 0.35;
       mg.gain.setValueAtTime(depth + 0.01, t); mg.gain.exponentialRampToValueAtTime(depth * 0.25 + 0.01, t + modT);
       mod.connect(mg); mg.connect(car.frequency); car.connect(out); srcs.push(car, mod);
-      let m2 = null, g2 = null, c2 = null;
-      if (topo === 1 || topo === 2) {   // a second modulator, in series (1) or side by side (2)
-        m2 = AC.createOscillator(); g2 = AC.createGain(); m2.frequency.value = f * ratioAt(v) * 2; g2.gain.value = depth * 0.5;
-        m2.connect(g2); g2.connect(topo === 1 ? mod.frequency : car.frequency); srcs.push(m2);
+      let m2 = null, gs = null, gp = null, c2 = null, cg = null;
+      if (live || topo === 1 || topo === 2) {   // a second modulator: in series (1) or side by side (2)
+        m2 = AC.createOscillator(); gs = AC.createGain(); gp = AC.createGain(); m2.frequency.value = f * ratioAt(v) * 2;
+        gs.gain.value = topo === 1 ? depth * 0.5 : 0; gp.gain.value = topo === 2 ? depth * 0.5 : 0;
+        m2.connect(gs); m2.connect(gp); gs.connect(mod.frequency); gp.connect(car.frequency); srcs.push(m2);
       }
-      const twoCarriers = w => topoAt(w) === 3 || w[3] > 0.02, two = twoCarriers(v);
-      if (two) {   // detune: a second carrier against the first
-        c2 = AC.createOscillator(); c2.frequency.value = f; c2.detune.value = -sv(3) * 18 - 4; mg.connect(c2.frequency); c2.connect(out); srcs.push(c2);
+      if (live || two) {   // detune: a second carrier against the first
+        c2 = AC.createOscillator(); cg = AC.createGain(); c2.frequency.value = f; c2.detune.value = -sv(3) * 18 - 4; cg.gain.value = two ? 1 : 0;
+        mg.connect(c2.frequency); c2.connect(cg); cg.connect(out); srcs.push(c2);
       }
       if (held) { out.gain.setValueAtTime(peak * 0.7, t); sustains = true; } else ampEnv(out, t, peak * 0.85, dec);
       upd = () => {
-        const w = cur(), now = AC.currentTime;
-        if (topoAt(w) !== topo || twoCarriers(w) !== two) return false;   // a different wiring: start the note again
+        const w = cur(), now = AC.currentTime, d = depthAt(w), tp = topoAt(w);
         car.detune.setTargetAtTime(w[3] * 18, now, 0.02); mod.frequency.setTargetAtTime(f * ratioAt(w), now, 0.02);
-        const d = depthAt(w); mg.gain.cancelScheduledValues(now); mg.gain.setTargetAtTime(d * 0.25 + 0.01, now, 0.05);
-        if (g2) g2.gain.setTargetAtTime(d * 0.5, now, 0.05); if (m2) m2.frequency.setTargetAtTime(f * ratioAt(w) * 2, now, 0.02);
-        if (c2) c2.detune.setTargetAtTime(-w[3] * 18 - 4, now, 0.02);
+        mg.gain.cancelScheduledValues(now); mg.gain.setTargetAtTime(d * 0.25 + 0.01, now, 0.05);
+        if (gs) { gs.gain.setTargetAtTime(tp === 1 ? d * 0.5 : 0, now, 0.05); gp.gain.setTargetAtTime(tp === 2 ? d * 0.5 : 0, now, 0.05); m2.frequency.setTargetAtTime(f * ratioAt(w) * 2, now, 0.02); }
+        if (c2) { cg.gain.setTargetAtTime(twoCarriers(w) ? 1 : 0, now, 0.03); c2.detune.setTargetAtTime(-w[3] * 18 - 4, now, 0.02); }
+        return !(!gs && (tp === 1 || tp === 2)) && !(!c2 && twoCarriers(w));   // a one-shot note that never had those parts starts again
       };
       break;
     }
@@ -2379,7 +2382,7 @@ function artKit(c) {
     },
     t(x, y, s, col = AW, sz = 10, a = 'start', w = 400) {
       if (w === 200 && sz >= 16 && glyphOK(s)) { gnum(c, x, y, s, col, sz, a); return; }
-      c.font = `${w} ${sz}px "Encode Sans Condensed", system-ui, sans-serif`; c.fillStyle = col; c.textBaseline = 'alphabetic';
+      c.font = `${w === 200 && sz >= 16 ? 100 : w} ${sz}px "Encode Sans Condensed", system-ui, sans-serif`; c.fillStyle = col; c.textBaseline = 'alphabetic';
       c.textAlign = a === 'middle' ? 'center' : a === 'end' ? 'right' : 'left'; c.fillText(s, x, y);
     },
     num(x, y, s, col = AW, sz = 30, a = 'start') { if (glyphOK(s)) gnum(c, x, y, s, col, sz, a); else g.t(x, y, s, col, sz, a, 200); },
@@ -2459,7 +2462,8 @@ const ART = {
     });
     g.ln(`M60 10 C64 40 64 70 110 106 L160 110`, AB, 1.2, '3 3');
     g.ln(`M120 104 L280 ${88 - v[2] * 20} M160 112 L300 ${96 - v[2] * 20}`, APU, 1);
-    const ix = 150 + v[3] * 108; g.dot(ix, 108 - v[3] * 26, 3, AW); g.ln(`M${ix} ${108 - v[3] * 26} L${ix + 14} ${114 - v[3] * 26}`, AW);
+    g.ln('M150 108 H258', '#444', 1, '2 3');   // the axis the pick-up rides on
+    const ix = 150 + v[3] * 108; g.dot(ix, 108, 3, AW); g.ln(`M${ix} 108 L${ix + 10} 114`, AW);
     g.ln('M280 6 V60', APK, 1);
   }},
   pulse: {w:262, h:114, draw(g, v, t) {
