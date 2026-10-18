@@ -2487,111 +2487,13 @@ const ART = {
     g.num(130, 72, two(v[2] * 99), AO, 26, 'middle'); g.num(70, 104, two(v[3] * 99), AW, 26, 'middle');
   }},
   /* ----- synth pages ----- */
-  envelope: {w:290, h:106, draw(g, v) {
-    const ax = 10 + 14 + v[0] * 70, dx = ax + 14 + v[1] * 70, sy = 100 - v[2] * 94, rx = Math.min(282, 220 + 10 + v[3] * 52);
+  envelope: {w:290, h:106, draw(g, v) {   // attack 0 is a vertical line; the release always ends at the same point and turning it moves where the red line starts
+    const ax = 10 + v[0] * 84, dx = ax + 14 + v[1] * 70, sy = 100 - v[2] * 94, ex = 282, rs = 270 - v[3] * 52;
     g.ln(`M10 100 Q${10 + (ax - 10) * 0.3} 10 ${ax} 6`, AB, 2); g.ln(`M${ax} 6 Q${ax + (dx - ax) * 0.25} ${sy - 2} ${dx} ${sy}`, AG, 2);
-    g.ln(`M${dx} ${sy} H220`, AW, 2); g.ln(`M220 ${sy} Q${220 + (rx - 220) * 0.45} 98 ${rx} 100`, AO, 2);
-    g.ln(`M${ax} 6 V100 M${dx} ${sy} V100 M220 ${sy} V100`, '#2A2A2A', 1, '3 3'); g.ln('M10 100 H280', '#3A3A3A', 1.2);
-    g.dot(10, 100, 3.5, AB); g.dot(ax, 6, 3.5, AG); g.dot(dx, sy, 3.5, AW); g.dot(220, sy, 3.5, AO); g.dot(rx, 100, 3.5, AB);
+    g.ln(`M${dx} ${sy} H${rs}`, AW, 2); g.ln(`M${rs} ${sy} Q${rs + (ex - rs) * 0.45} 98 ${ex} 100`, AO, 2);
+    g.ln(`M${ax} 6 V100 M${dx} ${sy} V100 M${rs} ${sy} V100`, '#2A2A2A', 1, '3 3'); g.ln('M10 100 H284', '#3A3A3A', 1.2);
+    g.dot(10, 100, 3.5, AB); g.dot(ax, 6, 3.5, AG); g.dot(dx, sy, 3.5, AW); g.dot(rs, sy, 3.5, AO); g.dot(ex, 100, 3.5, AB);
   }},
-  fxoff: {w:260, h:80, draw(g, v) {   // effect off: the first and third values stay, FX OFF in between (for the master page too)
-    const master = curPage() && curPage().name === 'master fx', L = FX_TYPES[master ? P.mfxType : P.fxType].labels, n = k => String(Math.round(v[k] * 100));
-    g.t(0, 24, L[0].toUpperCase(), '#3a5aa0', 14); g.t(0, 74, n(0), '#3a5aa0', 30, 'start', 200);
-    g.t(210, 24, L[2].toUpperCase(), '#555', 14); g.t(210, 74, n(2), '#555', 30, 'start', 200);
-    g.rect(84, 34, 34, 22, AB, 'none', 1.6); g.t(101, 51, 'FX', AB, 16, 'middle'); g.num(128, 56, 'OFF', AW, 34);
-  }},
-  /* ----- effects (blue taper, green turns, white damp, orange width are the four effect slots) ----- */
-  spring: {w:276, h:118, draw(g, v, t) {
-    g.t(0, 72, 'T', AB, 40, 'start', 200);
-    const N = 6 + Math.round(v[1] * 10), x0 = 64, x1 = 214, a_ = (x1 - x0) / (2 * Math.PI * N), n = N * 24, th0 = Math.PI / 2, pts = [];
-    for (let k = 0; k <= n; k++) {
-      const th = th0 + 2 * Math.PI * N * k / n, u = k / n, amp = 16 * (1 - 0.55 * v[2] * u) * (1 + 0.12 * Math.sin(t * 9 + u * 12) * excite);
-      pts.push([x0 + a_ * (th - th0) - 6.5 * (Math.sin(th) - 1), 60 - amp * Math.cos(th)]);
-    }
-    g.ln('M40 60 H' + pts[0][0].toFixed(1) + pts.map(p => ' L' + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('') + ' H246', AW, 1.4);
-    g.t(140, 14, 'TURNS', AG, 14, 'middle', 400); g.t(140, 112, 'DAMP', AW, 14, 'middle', 400);
-    const top = 96 - v[3] * 72; g.ln(`M270 ${top} V96`, APK, 1.6, '2 4'); g.dot(270, top, 3, APK); g.dot(270, 96, 3, APK);
-  }},
-  delay: {w:170, h:114, draw(g, v, t) {
-    const c = g.c; c.save(); g.clip(60, 4, 106, 106);
-    g.t(66, 16, 'R', APU, 10);
-    const sz = 0.6 + v[0] * 0.8, sp = 0.3 + v[1] * 2;
-    for (let k = 0; k < 6; k++) {
-      const ph = (k + t * sp) % 6, r = (14 + ph * 12) * sz;
-      c.globalAlpha = Math.max(0, (1 - ph / 6)) * (k === 0 ? 1 : 0.35 + v[2] * 0.65);
-      g.circ(110, 57, r, ph < 2 ? AB : '#3c4fa0');
-    }
-    c.globalAlpha = 1; c.restore(); g.rect(60, 4, 106, 106, APU, 'none', 1.2);
-    c.globalAlpha = 0.35 + v[3] * 0.65; g.ln('M0 57 H112', AO, 1.6); g.t(0, 52, 'INPUT', AO, 10, 'start', 600); g.dot(112, 57, 2.5, AO); c.globalAlpha = 1;
-  }},
-  grid: {w:214, h:114, draw(g, v, t) {
-    const c = g.c; c.globalAlpha = 0.3 + v[3] * 0.7;
-    g.poly('10,70 120,30 210,62 100,104', AB, 'none', 1.6); g.poly('10,70 10,78 100,112 100,104', AB); g.poly('100,112 210,70 210,62 100,104', AB);
-    for (let k = 1; k < 10; k++) { g.ln(`M${10 + k * 11} ${70 - k * 4} L${100 + k * 11} ${104 - k * 4.2}`, '#33449a', 0.8); g.ln(`M${10 + k * 9} ${70 + k * 3.4} L${120 + k * 9} ${30 + k * 3.2}`, '#33449a', 0.8); }
-    c.globalAlpha = 1;
-    const cx = 105, cy = 50, sx = 0.5 + v[0], sy = 0.5 + v[1], hz = 4 + v[2] * 22, bob = Math.sin(t * P.tempo / 60 * Math.PI) * 2;
-    const p = (x, y) => [cx + (x - cx) * sx, cy + (y - cy) * sy + bob];
-    const top = [p(70, 52), p(110, 38), p(140, 48), p(100, 62)], dn = q => [q[0], q[1] + hz];
-    g.poly(top, AG, 'none', 1.6); g.poly([top[0], dn(top[0]), dn(top[3]), top[3]], AG); g.poly([dn(top[3]), dn(top[2]), top[2], top[3]], AG);
-  }},
-  nitro: {w:362, h:110, draw(g, v, t) {
-    g.ln('M0 8 Q90 18 180 18 Q270 18 360 8', AB, 2);
-    for (let k = 0; k < 6; k++) { const y = 40 + k * (6 + v[1] * 8); g.ln(`M${150 - k * 22} ${y} H${210 + k * 22}`, AG, 1.2, '6 4'); }
-    let d = ''; for (let k = 0; k < 7; k++) { const h = 4 + (0.3 + v[2] * 0.7) * 14 * (0.5 + 0.5 * Math.sin(t * (2 + v[0] * 10) + k * 1.7)); d += `M${150 + k * 10} 30 V${30 - h} `; }
-    g.ln(d, AB, 1.2);
-    g.rect(170, 52, 20, 18, AW, 'none', 1.4, 4); g.t(180, 66, 'R', AW, 12, 'middle', 600); g.ln('M180 70 V96 M168 96 H192 L196 104 H164 Z', AW);
-    g.ln(`M20 104 H${60 + v[0] * 60} L${90 + v[0] * 60} 82 M240 104 H${280 + v[3] * 60} L${300 + v[3] * 60} 84`, AB, 1.6);
-  }},
-  phone: {w:190, h:108, draw(g, v, t) {
-    const c = g.c; c.save(); c.translate(100, 56); c.rotate((v[0] - 0.5) * 0.35); c.translate(-100, -56);
-    g.ln('M20 64 Q30 34 70 30 L150 18 Q178 16 182 34 L184 50 Q182 64 160 70 L80 92 Q40 100 26 84 Z', AW, 1.6);
-    g.ln('M60 46 L120 34 M70 58 L132 46 M80 70 L140 58', AW, 1.2); c.restore();
-    const n = Math.round(v[3] * 9); for (let k = 0; k < n; k++) g.dot(100 + (k % 3) * 10, 66 + Math.floor(k / 3) * 6, 1.6, AW);
-    const a = 4 + v[1] * 10, ph = t * 6; g.ln(`M4 96 C10 ${96 - a + Math.sin(ph) * 2} 20 ${96 + a} 26 94 C30 ${96 - a} 40 ${96 + a + Math.sin(ph) * 2} 46 92`, AG, 1.4);
-    const ra = v[2] * Math.PI / 2, cs = 8 * Math.cos(ra), sn = 8 * Math.sin(ra); g.circ(170, 32, 8, AO, 'none', 1.6);
-    g.ln(`M${170 - sn} ${32 - cs} L${170 + sn} ${32 + cs} M${170 - cs} ${32 + sn} L${170 + cs} ${32 - sn}`, AO, 1);
-  }},
-  cow: {w:240, h:136, draw(g, v, t) {   // a cow with its workings showing: ring modulator (carrier), delay loop, and the sideband sidechain
-    const CY = '#2EC4F2', c = g.c;
-    g.ln('M50 34 Q46 24 38 26 L30 20 L32 28 Q20 32 16 42 L12 50 Q10 58 18 60 L26 58 Q32 54 36 50 L48 54 Q58 32 92 30 L172 26 Q200 24 208 40 Q216 34 220 44 L216 76 Q216 92 208 100 L204 128 L194 128 L194 102 Q162 108 122 104 L112 128 L102 128 L100 102 Q76 98 68 84 L64 128 L54 128 L54 80 Q50 66 50 54 Z', CY, 1.5);
-    g.ln('M28 34 Q34 30 40 32', AW, 1.2); g.dot(26, 40, 1.8, AW); g.ln('M216 44 Q228 50 226 66', CY, 1.2);
-    g.ln('M58 50 Q74 46 90 54 L104 60', AB, 1.2, '3 2'); g.ln('M100 56 L106 60 L100 64', AB, 1.2);
-    const ang = t * (1 + v[0] * 9) * 2; g.circ(118, 56, 9, AG, 'none', 1.4); g.ln(`M${118 - 5 * Math.cos(ang)} ${56 - 5 * Math.sin(ang)} L${118 + 5 * Math.cos(ang)} ${56 + 5 * Math.sin(ang)}`, AW, 1.6);
-    g.circ(120, 82, 9, AB, 'none', 1.4); const fbk = 0.4 + v[2] * 0.6; c.globalAlpha = fbk; g.dot(116, 80, 2, AG); g.dot(124, 80, 2, APK); g.dot(120, 86, 2, AW); c.globalAlpha = 1;
-    g.circ(152, 68, 20, APU, 'none', 1.4); for (let k = 0; k < 5; k++) { const h = 3 + 11 * (0.5 + 0.5 * Math.sin(t * (2 + v[0] * 14) + k * 1.3)); g.ln(`M${142 + k * 5} ${68 - h / 2} V${68 + h / 2}`, [AW, AG, APK][k % 3], 1.4); }
-    g.circ(190, 70, 9, AO, 'none', 1.2); for (let k = 0; k < 3; k++) g.ln(`M183 ${66 + k * 3} H197`, AO, 0.9);
-    const sw = 4 + v[3] * 14 * (0.4 + excite); g.ln(`M172 52 H180 V${52 - sw} H186 V52 H192 V${52 - sw} H198 V52 H204 V${52 - sw} H210`, APK, 1.6);
-    for (let k = 0; k < 21; k++) g.ln(`M${4 + k * 11} 134 V${130 - (Math.sin(t * 3 + k) * 0.5 + 0.5) * 4 * (1 + v[1] * 3)}`, AG, 1);
-  }},
-  punch: {w:170, h:104, draw(g, v, t) {
-    const k = 1 + excite * (0.1 + v[3] * 0.3);
-    g.ln('M60 30 Q60 10 80 10 Q100 10 100 30 Q100 46 80 48 Q60 46 60 30 Z', AG, 1.6); g.ln('M70 26 H90 M72 36 Q80 40 88 36', AG, 1.2);
-    g.ln('M40 96 Q50 60 80 56 Q110 60 120 96', AG, 1.6);
-    const c = g.c; const blob = (x, y, d, col) => { c.save(); c.translate(x, y); c.scale(k * (0.7 + v[2] * 0.6), k * (0.7 + v[2] * 0.6)); c.translate(-x, -y); g.ln(d, col, 1.6); c.restore(); };
-    blob(30, 58, 'M30 70 Q14 66 18 52 Q24 40 40 46 Q50 52 44 66 Z', AO); blob(130, 58, 'M130 70 Q146 66 142 52 Q136 40 120 46 Q110 52 116 66 Z', AB);
-    const r = 1 + Math.round(v[1] * 4); let d = ''; for (let i = 0; i < r; i++) d += `M${150 + i * 6} ${20 + (i % 2) * 4 - v[0] * 6} V${40 + (i % 2) * 4} `; g.ln(d, AW, 1.2);
-    g.rect(146, 84, 20, 12, APU, 'none', 1.2); g.t(156, 94, 'FX', APU, 9, 'middle');
-  }},
-  /* ----- LFOs ----- */
-  tremolo: {w:208, h:106, draw(g, v, t) {
-    g.rect(0, 26, 52, 52, APU); const a = t * lfoHz() * TAU;
-    g.ln(`M26 52 L${26 + 14 * Math.sin(a)} ${52 - 14 * Math.cos(a)}`, AB, 1.6); g.dot(26, 52, 3, AB);
-    for (let k = 0; k < 360; k += 45) { const r = k * Math.PI / 180; g.ln(`M${26 + 20 * Math.cos(r)} ${52 + 20 * Math.sin(r)} l${3 * Math.cos(r)} ${3 * Math.sin(r)}`, AB, 1); }
-    g.ln('M52 52 H70 V20 H80 M70 52 V84 H80', APU); tri(g, 80, 0, 44, AG, two(P.lpit)); tri(g, 80, 62, 44, AW, two(P.lvol)); g.ln('M124 22 H140 V52 M124 84 H140 V52 H160', APU);
-    g.rect(160, 30, 46, 46, APU); const e = 66 - v[3] * 30; g.ln(`M168 66 L198 ${e}`, AO, 1.6); g.dot(168, 66, 3, AO);
-    if (!P.lfoOn) g.t(104, 104, 'LFO OFF', AW, 12, 'middle', 600);
-  }},
-  random: {w:284, h:96, draw(g, v, t) {
-    g.poly('0,10 70,46 0,82', APU, 'none', 1.6); g.num(8, 56, two(P.lamt), APU, 26);
-    const hz = lfoHz(), step = Math.floor(t * hz), r = rng(step * 31 + 7); let d = 'M70 46 H96';
-    for (let k = 0; k < 6; k++) { const y = 34 + r() * 24; d += ` L${96 + k * 12} ${y} H${108 + k * 12}`; } d += ' L170 46';
-    g.ln(d, AG, 1.6); g.dot(100, 46, 3, AG);
-    g.rect(180, 4, 40, 34, AW, 'none', 1.6); g.ln('M186 30 Q196 10 204 22 T214 26', AG, 1.4); g.ln('M170 46 H250', APU);
-    g.rect(180, 58, 40, 34, APU); g.ln(`M186 86 L214 ${86 - 6 - v[3] * 20}`, AO, 1.6); g.dot(186, 86, 3, AO);
-    const dst = P.ldst; [[260, 40, AB], [270, 32, AG], [270, 48, AW], [280, 40, AO]].forEach(([x, y, col], i) => g.dot(x, y, i === 0 || (dst === 0 && i === 1) || (dst === 1 && i === 2) || dst === 2 ? 3 : 1.6, col));
-    if (!P.lfoOn) g.t(142, 96, 'LFO OFF', AW, 12, 'middle', 600);
-  }},
-  /* ----- drum ----- */
   dynenv: {w:300, h:86, draw(g, v) {   // what you hear: attack level, then mid level at the region point, then release level
     const y = l => 80 - l * 72, rx = 10 + (0.05 + v[3] * 0.9) * 280;
     g.ln('M10 8 H290', '#1A5A5A', 1.2, '6 4'); g.ln(`M${rx} ${y(v[1])} V80`, '#1A5A5A', 1, '2 3'); g.ln('M10 80 H290', '#1A5A5A', 1);
