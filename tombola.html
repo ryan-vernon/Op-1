@@ -140,6 +140,9 @@ body.pad #keys{grid-area:4/4/7/18;grid-template-rows:var(--u) calc(var(--u) * 2 
 #menu{position:absolute;inset:0;z-index:6;background:#000;display:flex;flex-direction:column;
   padding:5cqmin 9cqmin;overflow:auto;touch-action:pan-y}
 #menu .mrow{margin:auto 0}
+/* no scroll bar anywhere on the display; lists still scroll by touch or wheel */
+#display,#display *,#menu{scrollbar-width:none;-ms-overflow-style:none}
+#display::-webkit-scrollbar,#display *::-webkit-scrollbar,#menu::-webkit-scrollbar{display:none;width:0;height:0}
 #menu[hidden]{display:none}
 /* holding a sound key: a ring fills while it saves, so a tap never overwrites a sound */
 #saving{position:absolute;inset:0;z-index:7;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);pointer-events:none}
