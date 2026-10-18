@@ -45,7 +45,8 @@ button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 /* the dished slope around each raised button */
 .disc::before{content:"";position:absolute;inset:-10.9%;border-radius:50%;background:conic-gradient(from 300deg,#fff 0,#CDD3E0 20%,#CFD5E2 77%,#fff 100%);filter:blur(calc(var(--k) * 3));z-index:-1;pointer-events:none}
 /* only the sequencer key shows a pressed state; the screen tells you which mode or page you are on */
-#seq.on .disc{background:#B6BDCC;box-shadow:inset calc(var(--k) * 3) calc(var(--k) * 3) calc(var(--k) * 6) rgba(110,120,148,.55),inset calc(var(--k) * -1) calc(var(--k) * -1) 0 rgba(255,255,255,.8)}
+/* pressed: the whole piece of plastic, the square and the round or oval button in it, goes darker together; shift stays dark until the next key */
+.tile.down,.tile.latched,.key.on,#seq.on{filter:brightness(.87)}
 .tile.off{cursor:default}.tile.off .disc{color:rgba(42,42,42,.5)}.tile.off .disc>*{opacity:.5}
 .lbl{font-size:calc(var(--u) * .24);font-weight:600;letter-spacing:.1em}
 #rec.on .disc{background:radial-gradient(circle at 38% 30%,#FF7A5C 0,#E8452C 60%,#C7341E 100%);box-shadow:calc(var(--k) * 5) calc(var(--k) * 5) calc(var(--k) * 10) #8991A6,0 0 calc(var(--k) * 14) rgba(232,69,44,.5)}
@@ -61,11 +62,9 @@ button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 .key.wht{grid-row:2}
 .bd{width:calc(var(--k) * 64);height:calc(var(--k) * 64);border-radius:50%;flex:none;box-sizing:border-box;
   background:#1B1C1C;border:calc(var(--k) * 3) solid #CFD5E2;box-shadow:calc(var(--k) * 5) calc(var(--k) * 5) calc(var(--k) * 10) #8991A6,calc(var(--k) * 1) calc(var(--k) * 1) calc(var(--k) * 3) rgba(246,249,255,.3)}
-.key.on .bd{background:#2A2B2B;box-shadow:calc(var(--k) * 2) calc(var(--k) * 2) calc(var(--k) * 4) #8991A6,inset calc(var(--k) * 2) calc(var(--k) * 2) calc(var(--k) * 4) rgba(0,0,0,.7)}
 .pill{position:relative;width:calc(var(--k) * 64);height:calc(100% - var(--k) * 28);border-radius:999px;background:#D3D9E6;
   box-shadow:calc(var(--k) * 5) calc(var(--k) * 5) calc(var(--k) * 10) #8991A6,inset calc(var(--k) * -1) calc(var(--k) * -1) 0 rgba(104,113,138,.5),calc(var(--k) * 1) calc(var(--k) * 1) calc(var(--k) * 3) rgba(246,249,255,.3),inset calc(var(--k) * 1.5) calc(var(--k) * 1.5) 0 #fff}
 .pill::before{content:"";position:absolute;inset:calc(var(--k) * -8);border-radius:999px;background:linear-gradient(135deg,#fff 0,#CDD3E0 25%,#CFD5E2 75%,#fff 100%);filter:blur(calc(var(--k) * 3));z-index:-1;pointer-events:none}
-.key.on .pill{background:#B6BDCC;box-shadow:inset calc(var(--k) * 3) calc(var(--k) * 3) calc(var(--k) * 6) rgba(110,120,148,.55),inset calc(var(--k) * -1) calc(var(--k) * -1) 0 rgba(255,255,255,.8)}
 
 /* the display */
 #display{position:relative;background:var(--screen);border-radius:calc(var(--k) * 5);overflow:hidden;touch-action:none;min-height:0;container-type:size;color:#E9E9E9}
@@ -697,6 +696,7 @@ function renderShell() {
   const seqOk = UI.mode === 'synth' || UI.mode === 'drum';
   $('#seq').classList.toggle('off', !seqOk); $('#seq').classList.toggle('on', seqOk && UI.seqOn);
   $('#rec').classList.toggle('on', tape.recording);
+  $('#shift').classList.toggle('latched', UI.shift);
   $('#bpmShow').textContent = P.tempo;
   renderTag();
 }
@@ -830,6 +830,11 @@ $('#seq').addEventListener('click', () => {
   else { UI.seqOn = false; UI.seqView = false; }
   renderShell();
 });
+document.addEventListener('pointerdown', e => {
+  const t = e.target.closest && e.target.closest('.tile'); if (!t || t.classList.contains('enc') || t.classList.contains('key') || t.id === 'speaker') return;
+  t.classList.add('down'); const up = () => { t.classList.remove('down'); removeEventListener('pointerup', up, true); removeEventListener('pointercancel', up, true); };
+  addEventListener('pointerup', up, true); addEventListener('pointercancel', up, true);
+}, true);
 $('#shift').addEventListener('click', () => { closeMenu(); UI.shift = !UI.shift; UI.shiftUsed = false; renderShell(); });
 $('#octDn').addEventListener('click', () => { if (useShift()) { P.key = (P.key + 5) % 12; showHint('key ' + KEYS[P.key]); markDirty(); renderShell(); return; } UI.oct = Math.max(-3, UI.oct - 1); showHint('octave ' + (UI.oct > 0 ? '+' : '') + UI.oct); renderShell(); });
 $('#octUp').addEventListener('click', () => { if (useShift()) { P.scale = P.scale === 'major' ? 'minor' : 'major'; showHint(P.scale); markDirty(); renderShell(); return; } UI.oct = Math.min(3, UI.oct + 1); showHint('octave ' + (UI.oct > 0 ? '+' : '') + UI.oct); renderShell(); });
