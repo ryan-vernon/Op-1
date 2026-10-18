@@ -21,3 +21,14 @@ Limits: the audio is mono and the narrator speaks nearly all the time, so only a
 ## Not measurable from these videos
 Per-engine and per-effect knob sweeps. The narrator describes where to find things, and the demonstrations are short and spoken over.
 Recordings of a real OP-1 playing one note while turning one encoder would give exact numbers.
+
+## Round 21: digital engine and phone effect, from three more recordings
+
+Sources (audio only, analysed as spectrograms; the narration is on top, so only steady passages were used):
+- Ollie Loops, "OP-1: Synth Engines Demo" (https://www.youtube.com/watch?v=RzPKrDPWbMc), 0:07-0:31 digital pads and 0:54-1:04 digital plucks.
+- The Unperson, "Exploring Teenage Engineering OP1 Synth Engines" (https://www.youtube.com/watch?v=RMZQ_xt--ps), 13:50-14:35 digital, 15:15-15:40 phone effect.
+- Gregonater, "OP-1 Synthesizer Engines Walkthrough" (https://www.youtube.com/watch?v=DHeFyJLrUjQ), 4:42-6:25 digital.
+
+Findings:
+- **Digital:** 60-70% of the energy sits below 500 Hz, over 90% below 1 kHz, 2-4 kHz holds 2-4%, and nothing above 4 kHz. Ours was bright: 53% at 1-2 kHz and 6-8% above 4 kHz, from a hard wave fold (x7) and the sample-and-hold images. Now: fold x3.5 and two one-pole low-passes at max(1.5 kHz, 7 x pitch).
+- **Phone:** in the loudest phone passage 88% of the energy is 300 Hz to 3.4 kHz, none below 300 Hz and under 10% above 3.4 kHz, with a faint grid of clicks (a coarse sampler). Ours only added noise to the dry sound. Now it replaces the dry sound: 220-740 Hz high-pass, 2.6-4.5 kHz low-pass, a sample-and-hold and bit reducer driven by the baud encoder (hold 2-28 samples, 10 to 3 bits), a shaper (phonic) and line noise (telematic).

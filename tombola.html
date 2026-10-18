@@ -1183,23 +1183,25 @@ addEventListener('resize', layout); layout();
 const WORKLET_SRC = `
 class Digi extends AudioWorkletProcessor {   // digital: two sine oscillators, wave shaper, bit crush; all four values can move while it plays
   static get parameterDescriptors() { return [{name:'detune', defaultValue:0, automationRate:'k-rate'}]; }
-  constructor() { super(); this.p = {f:261, sh:.3, oc:.75, dt:.25, dg:.35, ring:false}; this.pa = 0; this.pb = 0; this.held = 0; this.i = 0; this.on = false; this.t = 0;
+  constructor() { super(); this.p = {f:261, sh:.3, oc:.75, dt:.25, dg:.35, ring:false}; this.pa = 0; this.pb = 0; this.held = 0; this.i = 0; this.on = false; this.t = 0; this.y1 = 0; this.y2 = 0;
     this.port.onmessage = e => Object.assign(this.p, e.data); }
   process(inputs, outputs, parameters) {
     const out = outputs[0][0], gate = inputs[0] && inputs[0][0], dc = parameters.detune[0], k = dc ? Math.pow(2, dc / 1200) : 1;
-    const {f, sh, oc, dt, dg, ring} = this.p, oct = Math.round(oc * 4) - 2, fold = 1 + sh * 7, hold = 1 + Math.floor(dg * dg * 40);
+    const {f, sh, oc, dt, dg, ring} = this.p, oct = Math.round(oc * 4) - 2, fold = 1 + sh * 3.5, hold = 1 + Math.floor(dg * dg * 40);
+    const ca = 1 - Math.exp(-6.2831853 * Math.max(1500, f * k * 7) / sampleRate);
     const levels = Math.pow(2, Math.round(12 - dg * 10)), fb = Math.pow(2, oct) * Math.pow(2, (ring ? dt * 700 : dt * 45) / 1200), sr = sampleRate;
     for (let i = 0; i < out.length; i++) {
       const g = gate ? gate[i] > 0.5 : false;
-      if (g && !this.on) { this.t = 0; this.pa = 0; this.pb = 0; }
+      if (g && !this.on) { this.t = 0; this.pa = 0; this.pb = 0; this.y1 = 0; this.y2 = 0; }
       this.on = g;
       if (!g) { out[i] = 0; continue; }
       this.pa = (this.pa + f * k / sr) % 1; this.pb = (this.pb + f * k * fb / sr) % 1;
       const a = Math.sin(6.283185307 * this.pa), b = Math.sin(6.283185307 * this.pb);
       const x = Math.sin((ring ? a * b : (a + b) * 0.5) * fold * Math.PI / 2);
       if (this.i++ % hold === 0) this.held = Math.round(x * levels / 2) / (levels / 2);
+      this.y1 += ca * (this.held - this.y1); this.y2 += ca * (this.y1 - this.y2);
       const tt = this.t++ / sr;
-      out[i] = this.held * Math.min(1, tt / 0.002) * (0.45 + 0.55 * Math.exp(-tt / 0.42)) * 0.7;
+      out[i] = this.y2 * Math.min(1, tt / 0.002) * (0.45 + 0.55 * Math.exp(-tt / 0.42)) * 0.7;
     }
     return true;
   }
@@ -1234,10 +1236,19 @@ class KS extends AudioWorkletProcessor {   // string: two waveguide strings; ton
     return true;
   }
 }
-registerProcessor('digi', Digi); registerProcessor('ks', KS);`;
+class Crush extends AudioWorkletProcessor {   // sample-rate and bit-depth reduction: the 'baud' of the phone effect
+  constructor() { super(); this.p = {hold:6, bits:8}; this.c = 0; this.v = 0; this.port.onmessage = e => Object.assign(this.p, e.data); }
+  process(inputs, outputs) {
+    const i = inputs[0] && inputs[0][0], o = outputs[0][0]; if (!i) return true;
+    const levels = Math.pow(2, this.p.bits - 1), hold = this.p.hold;
+    for (let k = 0; k < o.length; k++) { this.c += 1; if (this.c >= hold) { this.c -= hold; this.v = Math.round(i[k] * levels) / levels; } o[k] = this.v; }
+    return true;
+  }
+}
+registerProcessor('digi', Digi); registerProcessor('ks', KS); registerProcessor('crush', Crush);`;
 let workletOK = false;
 let eqL, eqM, eqH, drv, mcomp, mkup, mfxDry, mfxSum, mfxWet, gL, gR, anL, anR, trackPan = [], drvK = -1;
-let AC = null, master, voiceBus, wetGain, analyser, conv = null, convGain = null, voices = 0, excite = 0;
+let AC = null, master, voiceBus, wetGain, dryNode, analyser, conv = null, convGain = null, voices = 0, excite = 0;
 /* signal path: live notes (keys, MIDI, tombola) and the four tape tracks each have a level,
    all feed voiceBus -> tremolo -> dry/spring -> master. The LFO wobbles pitch and the tremolo. */
 let liveBus, trackBus = [], trem, lfo = null, lfoPitch, lfoVol, clickBus;
@@ -1262,7 +1273,7 @@ function ensureAudio() {
   split.connect(gL, 0); split.connect(gR, 1); gL.connect(merge, 0, 0); gR.connect(merge, 0, 1); gL.connect(anL); gR.connect(anR);
   merge.connect(lim); lim.connect(AC.destination);
   voiceBus = AC.createGain(); trem = AC.createGain();
-  const dry = AC.createGain(); dry.gain.value = 0.9;
+  const dry = dryNode = AC.createGain(); dry.gain.value = 0.9;
   voiceBus.connect(trem); trem.connect(dry); dry.connect(master);
   liveBus = AC.createGain(); liveBus.connect(voiceBus);
   trackPan = []; trackBus = [0, 1, 2, 3].map(i => { const g = AC.createGain(), p = AC.createStereoPanner(); g.connect(p); p.connect(voiceBus); trackPan[i] = p; return g; });
@@ -1284,7 +1295,8 @@ function updateGains() {
   set(gL.gain, Math.pow(P.mleft / 80, 1.5)); set(gR.gain, Math.pow(P.mright / 80, 1.5));
   set(liveBus.gain, P.live / 100);
   trackBus.forEach((g, i) => { set(g.gain, UI.mute[i] ? 0 : P['m' + (i + 1)] / 100); trackPan[i].pan.setTargetAtTime((P['pan' + (i + 1)] - 50) / 50, t, 0.03); });
-  set(wetGain.gain, P.fx ? P.fxsend / 100 : 0);
+  const ins = P.fx && P.fxType === 'phone';   // the phone effect replaces the sound (a telephone line), it is not added to it
+  set(wetGain.gain, ins ? 1 : P.fx ? P.fxsend / 100 : 0); set(dryNode.gain, ins ? 0 : 0.9);
   set(clickBus.gain, P.click / 100 * 0.5);
   // master out (OP-School, mixer video): drive squeezes the mix and adds make-up gain; release is how fast it lets go.
   // Measured against the same song before the drive was touched: loud-to-quiet spread 23 -> 15 dB, median about +5 dB,
@@ -1375,14 +1387,16 @@ function digiGen(f, sr, vals, ring) {
   const [sh, oc, dt, dg] = vals.map(v => v / 100);
   const oct = Math.round(oc * 4) - 2;
   const fB = f * Math.pow(2, oct) * Math.pow(2, (ring ? dt * 700 : dt * 45) / 1200);
-  const fold = 1 + sh * 7, hold = 1 + Math.floor(dg * dg * 40), levels = Math.pow(2, Math.round(12 - dg * 10));
-  let pa = 0, pb = 0, held = 0, i = 0;
+  const fold = 1 + sh * 3.5, hold = 1 + Math.floor(dg * dg * 40), levels = Math.pow(2, Math.round(12 - dg * 10));
+  const ca = 1 - Math.exp(-TAU * Math.max(1500, f * 7) / sr);   // two one-pole low-passes: the real engine is dark and round
+  let pa = 0, pb = 0, held = 0, i = 0, y1 = 0, y2 = 0;
   return () => {
     pa = (pa + f / sr) % 1; pb = (pb + fB / sr) % 1;
     const a = Math.sin(TAU * pa), b = Math.sin(TAU * pb);
     const x = Math.sin((ring ? a * b : (a + b) * 0.5) * fold * Math.PI / 2);
     if (i++ % hold === 0) held = Math.round(x * levels / 2) / (levels / 2);
-    return held;
+    y1 += ca * (held - y1); y2 += ca * (y1 - y2);
+    return y2;
   };
 }
 const digiCache = new Map();
@@ -1821,14 +1835,23 @@ function makeFx(type, v = [P.taper, P.turns, P.damp, P.width]) {
       upd = (T, R, D, W) => { at(hp.frequency, 20 * Math.pow(2, W * 8)); at(f.frequency, Math.min(16000, 100 * Math.pow(2, T * 7))); at(f.Q, 0.5 + D * 14); const kk = Math.round(R * 50); if (kk !== k) { k = kk; sh.curve = curve(R); } };
       upd(T, R, D, W); hp.frequency.value = 20 * Math.pow(2, W * 8); f.frequency.value = Math.min(16000, 100 * Math.pow(2, T * 7)); f.Q.value = 0.5 + D * 14; break;
     }
-    case 'phone': {
-      const hp = add(AC.createBiquadFilter()), lp = add(AC.createBiquadFilter()), sh = add(AC.createWaveShaper());
-      hp.type = 'highpass'; lp.type = 'lowpass'; inp.connect(hp); hp.connect(lp); lp.connect(sh); sh.connect(out);
-      const ns = AC.createBufferSource(), ng = add(AC.createGain()); ns.buffer = noise(); ns.loop = true;
-      ns.connect(ng); ng.connect(out); ns.start(); srcs.push(ns);
+    case 'phone': {   // a telephone line: hard band limit (about 300 Hz to 3.5 kHz), a coarse sampler (baud), a gritty shaper (phonic) and line noise (telematic)
+      const hp = add(AC.createBiquadFilter()), hp2 = add(AC.createBiquadFilter()), lp = add(AC.createBiquadFilter()), lp2 = add(AC.createBiquadFilter()), sh = add(AC.createWaveShaper()), pre = add(AC.createGain());
+      hp.type = 'highpass'; hp2.type = 'highpass'; lp.type = 'lowpass'; lp2.type = 'lowpass'; hp.Q.value = hp2.Q.value = lp.Q.value = lp2.Q.value = 0.8; pre.gain.value = 2.2;
+      const cr = workletOK ? add(new AudioWorkletNode(AC, 'crush', {numberOfInputs:1, numberOfOutputs:1, outputChannelCount:[1]})) : null;
+      inp.connect(hp); hp.connect(hp2); hp2.connect(pre);
+      const ns = AC.createBufferSource(), nb = add(AC.createBiquadFilter()), ng = add(AC.createGain()); ns.buffer = noise(); ns.loop = true; nb.type = 'bandpass'; nb.frequency.value = 1800; nb.Q.value = 0.7;
+      ns.connect(nb); nb.connect(ng); ng.connect(pre); ns.start(); srcs.push(ns);
+      if (cr) { pre.connect(cr); cr.connect(lp); } else pre.connect(lp);
+      lp.connect(lp2); lp2.connect(sh); sh.connect(out);
       let k = -1;
-      upd = (T, R, D, W) => { at(hp.frequency, 200 + T * 700); at(lp.frequency, 1800 + T * 3400); at(ng.gain, D * 0.06); at(out.gain, 0.3 + W * 0.9); const kk = Math.round(R * 50); if (kk !== k) { k = kk; sh.curve = curve(R); } };
-      upd(T, R, D, W); hp.frequency.value = 200 + T * 700; lp.frequency.value = 1800 + T * 3400; ng.gain.value = D * 0.06; out.gain.value = 0.3 + W * 0.9; break;
+      upd = (T, R, D, W) => {
+        at(hp.frequency, 220 + T * 520); at(hp2.frequency, 220 + T * 520); at(lp.frequency, 2600 + T * 1900); at(lp2.frequency, 2600 + T * 1900);
+        const kk = Math.round(R * 50); if (kk !== k) { k = kk; sh.curve = curve(0.15 + R * 0.85); }
+        if (cr) cr.port.postMessage({hold:2 + D * 26, bits:10 - D * 7});
+        at(ng.gain, 0.01 + W * 0.09); at(out.gain, 0.9 + W * 0.5);
+      };
+      upd(T, R, D, W); hp.frequency.value = hp2.frequency.value = 220 + T * 520; lp.frequency.value = lp2.frequency.value = 2600 + T * 1900; ng.gain.value = 0.01 + W * 0.09; out.gain.value = 0.9 + W * 0.5; break;
     }
     case 'cow': {   // a ring modulator: freq is the carrier, delay and feedback send the ring round again, sideband lets the loudness of the input sweep the carrier (a sidechain that shifts the pitch)
       const sum = add(AC.createGain()), ring = add(AC.createGain()), car = AC.createOscillator(), dl = add(AC.createDelay(1)), fb = add(AC.createGain()), lp = add(AC.createBiquadFilter());
