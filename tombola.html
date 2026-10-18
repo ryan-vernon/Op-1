@@ -7,7 +7,7 @@
    Phone: screen, T1–T4, transport, one octave of keys, mode bar (8 columns).
    iPad (wide screens): 18 x 12 units with a full-width 2½-octave keyboard. JS sets --u. */
 :root{--k:calc(var(--u) / 92);
-  --bg:#74716E; --tile-a:#F8F6F2; --tile-b:#EAE7E2; --ink:#2A2A2A; --screen:#000;
+  --bg:#C1C1C8; --seam:#5E6373; --tile-a:#F8F6F2; --tile-b:#EAE7E2; --ink:#2A2A2A; --screen:#000;
   --line-b:rgba(255,255,255,.13); --dim-b:rgba(236,236,234,.42);
   --blue:#5B7CFA; --lav:#5B7CFA; --green:#1ED68F; --white:#E9E9E9; --orange:#FF4D3D; --rec:#E8452C;
   --f-ui:"Encode Sans Condensed","Avenir Next Condensed",system-ui,sans-serif;
@@ -22,7 +22,8 @@ body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:var(
 button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
 button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 
-#device{display:grid;gap:var(--gap);padding:6px;width:100%;height:100%;
+#device{display:grid;gap:var(--gap);padding:6px;width:100%;height:100%;background:var(--seam);
+  box-shadow:0 calc(var(--u) * .5) calc(var(--u) * 1.2) calc(var(--u) * -.1) rgba(68,76,104,.4);
   grid-template-columns:repeat(8,minmax(0,1fr));
   grid-template-rows:minmax(140px,1fr) var(--u) var(--u) var(--u) var(--u) var(--u) calc(var(--u) * 4 + var(--gap) * 3)}
 #display{grid-column:1/-1}
@@ -33,21 +34,21 @@ button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 #device .padonly{display:none}
 
 /* tiles: flat panels with thin dark seams, raised round buttons and oval keys (after the OP-1 Figma kit) */
-.tile{border:0;margin:0;padding:0;font:inherit;color:var(--ink);background:#BCBAB8;isolation:isolate;
-  border-radius:calc(var(--k) * 5);box-shadow:inset 0 calc(var(--k) * -1.5) calc(var(--k) * 0.5) rgba(120,116,113,.5),inset 0 calc(var(--k) * 1.5) calc(var(--k) * 1) #fff;
+.tile{border:0;margin:0;padding:0;font:inherit;color:var(--ink);background:#CFD5E2;isolation:isolate;
+  border-radius:calc(var(--k) * 5);box-shadow:inset 0 calc(var(--k) * -1.5) calc(var(--k) * 0.5) rgba(104,113,138,.5),inset 0 calc(var(--k) * 1.5) calc(var(--k) * 1) #fff;
   display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;min-width:0;min-height:0;position:relative;touch-action:manipulation}
 .disc{width:calc(var(--k) * 64);height:calc(var(--k) * 64);border-radius:50%;flex:none;position:relative;
-  background:#C8C6C4;
-  box-shadow:calc(var(--k) * 5) calc(var(--k) * 5) calc(var(--k) * 10) #8C8886,inset calc(var(--k) * -1) calc(var(--k) * -1) 0 rgba(120,116,113,.5),calc(var(--k) * 1) calc(var(--k) * 1) calc(var(--k) * 3) rgba(246,243,242,.3),inset calc(var(--k) * 1.5) calc(var(--k) * 1.5) 0 #fff;
+  background:#D3D9E6;
+  box-shadow:calc(var(--k) * 5) calc(var(--k) * 5) calc(var(--k) * 10) #8991A6,inset calc(var(--k) * -1) calc(var(--k) * -1) 0 rgba(104,113,138,.5),calc(var(--k) * 1) calc(var(--k) * 1) calc(var(--k) * 3) rgba(246,249,255,.3),inset calc(var(--k) * 1.5) calc(var(--k) * 1.5) 0 #fff;
   display:flex;align-items:center;justify-content:center;font-size:calc(var(--u) * .36);font-weight:300;line-height:1}
 .disc svg{width:65.6%;height:auto;overflow:visible;fill:none;stroke-width:1.5}
 /* the dished slope around each raised button */
-.disc::before{content:"";position:absolute;inset:-10.9%;border-radius:50%;background:conic-gradient(from 300deg,#fff 0,#C0BEBC 20%,#BCBAB8 77%,#fff 100%);filter:blur(calc(var(--k) * 3));z-index:-1;pointer-events:none}
+.disc::before{content:"";position:absolute;inset:-10.9%;border-radius:50%;background:conic-gradient(from 300deg,#fff 0,#CDD3E0 20%,#CFD5E2 77%,#fff 100%);filter:blur(calc(var(--k) * 3));z-index:-1;pointer-events:none}
 /* only the sequencer key shows a pressed state; the screen tells you which mode or page you are on */
-#seq.on .disc{background:#AFADAB;box-shadow:inset calc(var(--k) * 3) calc(var(--k) * 3) calc(var(--k) * 6) rgba(150,138,134,.55),inset calc(var(--k) * -1) calc(var(--k) * -1) 0 rgba(255,255,255,.8)}
+#seq.on .disc{background:#B6BDCC;box-shadow:inset calc(var(--k) * 3) calc(var(--k) * 3) calc(var(--k) * 6) rgba(110,120,148,.55),inset calc(var(--k) * -1) calc(var(--k) * -1) 0 rgba(255,255,255,.8)}
 .tile.off{cursor:default}.tile.off .disc{color:rgba(42,42,42,.5)}.tile.off .disc>*{opacity:.5}
 .lbl{font-size:calc(var(--u) * .24);font-weight:600;letter-spacing:.1em}
-#rec.on .disc{background:radial-gradient(circle at 38% 30%,#FF7A5C 0,#E8452C 60%,#C7341E 100%);box-shadow:calc(var(--k) * 5) calc(var(--k) * 5) calc(var(--k) * 10) #8C8886,0 0 calc(var(--k) * 14) rgba(232,69,44,.5)}
+#rec.on .disc{background:radial-gradient(circle at 38% 30%,#FF7A5C 0,#E8452C 60%,#C7341E 100%);box-shadow:calc(var(--k) * 5) calc(var(--k) * 5) calc(var(--k) * 10) #8991A6,0 0 calc(var(--k) * 14) rgba(232,69,44,.5)}
 #rec.on svg circle{fill:#fff}
 
 /* keyboard: black keys 1 unit on the phone and 2 on iPad, oval white keys */
@@ -56,14 +57,15 @@ button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 .brow{grid-row:1;grid-column:1/-1;position:relative}
 .key.blk{position:absolute;top:0;bottom:0;padding:0}
 .key.blk .bd{position:absolute;top:50%;transform:translate(-50%,-50%)}
-.key.blk .dish{position:absolute;top:50%;width:calc(var(--k) * 78);height:calc(var(--k) * 78);transform:translate(-50%,-50%);border-radius:50%;background:conic-gradient(from 300deg,#fff 0,#C0BEBC 20%,#BCBAB8 77%,#fff 100%);filter:blur(calc(var(--k) * 3));pointer-events:none}
+.key.blk .dish{position:absolute;top:50%;width:calc(var(--k) * 78);height:calc(var(--k) * 78);transform:translate(-50%,-50%);border-radius:50%;background:conic-gradient(from 300deg,#fff 0,#CDD3E0 20%,#CFD5E2 77%,#fff 100%);filter:blur(calc(var(--k) * 3));pointer-events:none}
 .key.wht{grid-row:2}
 .bd{width:calc(var(--k) * 64);height:calc(var(--k) * 64);border-radius:50%;flex:none;box-sizing:border-box;
-  background:#1B1C1C;border:calc(var(--k) * 3) solid #BCBAB8;box-shadow:calc(var(--k) * 5) calc(var(--k) * 5) calc(var(--k) * 10) #8F817C,calc(var(--k) * 1) calc(var(--k) * 1) calc(var(--k) * 3) rgba(246,243,242,.3)}
-.key.on .bd{background:#2A2B2B;box-shadow:calc(var(--k) * 2) calc(var(--k) * 2) calc(var(--k) * 4) #8F817C,inset calc(var(--k) * 2) calc(var(--k) * 2) calc(var(--k) * 4) rgba(0,0,0,.7)}
-.pill{width:calc(var(--k) * 64);height:calc(100% - var(--k) * 28);border-radius:999px;background:#C8C6C4;
-  box-shadow:calc(var(--k) * 5) calc(var(--k) * 5) calc(var(--k) * 10) #8C8886,inset calc(var(--k) * -1) calc(var(--k) * -1) 0 rgba(120,116,113,.5),calc(var(--k) * 1) calc(var(--k) * 1) calc(var(--k) * 3) rgba(246,243,242,.3),inset calc(var(--k) * 1.5) calc(var(--k) * 1.5) 0 #fff}
-.key.on .pill{background:#AFADAB;box-shadow:inset calc(var(--k) * 3) calc(var(--k) * 3) calc(var(--k) * 6) rgba(150,138,134,.55),inset calc(var(--k) * -1) calc(var(--k) * -1) 0 rgba(255,255,255,.8)}
+  background:#1B1C1C;border:calc(var(--k) * 3) solid #CFD5E2;box-shadow:calc(var(--k) * 5) calc(var(--k) * 5) calc(var(--k) * 10) #8991A6,calc(var(--k) * 1) calc(var(--k) * 1) calc(var(--k) * 3) rgba(246,249,255,.3)}
+.key.on .bd{background:#2A2B2B;box-shadow:calc(var(--k) * 2) calc(var(--k) * 2) calc(var(--k) * 4) #8991A6,inset calc(var(--k) * 2) calc(var(--k) * 2) calc(var(--k) * 4) rgba(0,0,0,.7)}
+.pill{position:relative;width:calc(var(--k) * 64);height:calc(100% - var(--k) * 28);border-radius:999px;background:#D3D9E6;
+  box-shadow:calc(var(--k) * 5) calc(var(--k) * 5) calc(var(--k) * 10) #8991A6,inset calc(var(--k) * -1) calc(var(--k) * -1) 0 rgba(104,113,138,.5),calc(var(--k) * 1) calc(var(--k) * 1) calc(var(--k) * 3) rgba(246,249,255,.3),inset calc(var(--k) * 1.5) calc(var(--k) * 1.5) 0 #fff}
+.pill::before{content:"";position:absolute;inset:calc(var(--k) * -8);border-radius:999px;background:linear-gradient(135deg,#fff 0,#CDD3E0 25%,#CFD5E2 75%,#fff 100%);filter:blur(calc(var(--k) * 3));z-index:-1;pointer-events:none}
+.key.on .pill{background:#B6BDCC;box-shadow:inset calc(var(--k) * 3) calc(var(--k) * 3) calc(var(--k) * 6) rgba(110,120,148,.55),inset calc(var(--k) * -1) calc(var(--k) * -1) 0 rgba(255,255,255,.8)}
 
 /* the display */
 #display{position:relative;background:var(--screen);border-radius:calc(var(--k) * 5);overflow:hidden;touch-action:none;min-height:0;container-type:size;color:#E9E9E9}
@@ -89,15 +91,18 @@ button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 #encRing svg{width:100%;height:100%;display:block;overflow:visible}
 
 /* iPad: the OP-1's own layout, 17 x 6 units (speaker, volume and keys; display; four encoders; mode, page and sound keys; transport; two octaves) */
-html.padh,html.padh body{background:#000}
-body.pad #device{--f:calc(var(--u) * .14);width:auto;height:auto;padding:calc(var(--f) + var(--gap));border-radius:calc(var(--u) * .3);grid-template-columns:repeat(17,var(--u));grid-template-rows:repeat(6,var(--u));
-  background:var(--bg);   /* the dark line between the frame and the buttons is the same size and colour as the lines between buttons */
-  box-shadow:calc(var(--k) * 5) calc(var(--k) * 5) calc(var(--k) * 10) #8C8886,inset calc(var(--k) * 1.5) calc(var(--k) * 1.5) 0 #fff,inset calc(var(--k) * -1) calc(var(--k) * -1) 0 rgba(120,116,113,.5),inset calc(var(--k) * 3) calc(var(--k) * 3) calc(var(--k) * 4) rgba(255,255,255,.55),inset 0 0 0 var(--f) #C8C6C4}
+body.pad #device{--f:calc(var(--u) * .161);--rt:calc(var(--u) * .16);--rf:calc(var(--rt) + var(--f) + var(--gap));
+  width:auto;height:auto;padding:calc(var(--f) + var(--gap));border-radius:var(--rf);grid-template-columns:repeat(17,var(--u));grid-template-rows:repeat(6,var(--u));
+  background:var(--seam);   /* the dark line between the frame and the buttons is the same size and colour as the lines between buttons */
+  box-shadow:0 calc(var(--u) * .5) calc(var(--u) * 1.2) calc(var(--u) * -.1) rgba(68,76,104,.4),inset calc(var(--k) * 1.5) calc(var(--k) * 1.5) 0 #fff,inset calc(var(--k) * -1) calc(var(--k) * -1) 0 rgba(104,113,138,.5),inset calc(var(--k) * 3) calc(var(--k) * 3) calc(var(--k) * 4) rgba(255,255,255,.55),inset 0 0 0 var(--f) #CFD5E2}
+body.pad #speaker{border-top-left-radius:var(--rt)} body.pad #mic{border-top-right-radius:var(--rt)} body.pad #octDn{border-bottom-left-radius:var(--rt)} body.pad #keys>.wht:last-child{border-bottom-right-radius:var(--rt)}
 body.pad #device .padonly{display:flex}
 body.pad #speaker{grid-area:1/1/3/3;cursor:default}
 body.pad #volume{grid-area:1/3/2/5;justify-content:flex-start;padding-left:calc(var(--u) * .25)}
 body.pad #help{grid-area:2/3} body.pad #tempoKey{grid-area:2/4}
 body.pad #display{grid-area:1/5/3/9}
+body.pad .knob::before{content:"";position:absolute;inset:calc(var(--u) * -.05);border-radius:50%;background:#4A4E5A;z-index:-1;pointer-events:none;
+  box-shadow:inset calc(var(--k) * 2.5) calc(var(--k) * 3) calc(var(--k) * 4) rgba(0,0,0,.65),calc(var(--k) * 1.5) calc(var(--k) * 1.5) 0 rgba(255,255,255,.9),calc(var(--k) * -1) calc(var(--k) * -1) calc(var(--k) * 1) rgba(104,113,138,.55)}
 body.pad #k0{grid-area:1/9/3/11} body.pad #k1{grid-area:1/11/3/13} body.pad #k2{grid-area:1/13/3/15} body.pad #k3{grid-area:1/15/3/17}
 body.pad #mic{grid-area:1/17} body.pad #album{grid-area:2/17}
 body.pad #m_synth{grid-area:3/1} body.pad #m_drum{grid-area:3/2} body.pad #m_tape{grid-area:3/3} body.pad #m_mixer{grid-area:3/4}
@@ -109,10 +114,12 @@ body.pad #lift{grid-area:4/1} body.pad #drop{grid-area:4/2} body.pad #split{grid
 body.pad #rec{grid-area:5/1} body.pad #play{grid-area:5/2} body.pad #stop{grid-area:5/3}
 body.pad #octDn{grid-area:6/1} body.pad #octUp{grid-area:6/2} body.pad #shift{grid-area:6/3}
 body.pad #keys{grid-area:4/4/7/18;grid-template-rows:var(--u) calc(var(--u) * 2 + var(--gap))}
-#speaker .grill{position:relative;display:block;width:calc(var(--u) * 1.72);height:calc(var(--u) * 1.72)}
-#speaker .grill i{position:absolute;width:calc(var(--u) * .066);height:calc(var(--u) * .066);transform:translate(-50%,-50%);border-radius:50%;background:#1B1C1C}
-.knob{--ks:calc(var(--u) * .86);position:relative;width:var(--ks);height:var(--ks);border-radius:50%;background:linear-gradient(135deg,#CFCDCB,#C2C0BE);
-  box-shadow:calc(var(--k) * 5) calc(var(--k) * 5) calc(var(--k) * 10) #8C8886,inset calc(var(--k) * -1) calc(var(--k) * -1) 0 rgba(120,116,113,.5),inset calc(var(--k) * 1.5) calc(var(--k) * 1.5) 0 #fff;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:ns-resize}
+#speaker{--fu:calc(var(--u) * 2 / 187)}
+#speaker .grill{position:absolute;inset:0;display:block}
+#speaker .grill i{position:absolute;width:4.28%;height:4.28%;transform:translate(-50%,-50%);border-radius:50%;background:#15191D;
+  box-shadow:calc(var(--fu) * -.5) calc(var(--fu) * -.5) var(--fu) rgba(150,158,178,.9),calc(var(--fu) * 1) calc(var(--fu) * 1) calc(var(--fu) * .5) #fff}
+.knob{--ks:calc(var(--u) * .86);position:relative;width:var(--ks);height:var(--ks);border-radius:50%;background:linear-gradient(135deg,#D9DEEA,#C9CFDC);
+  box-shadow:calc(var(--k) * 3) calc(var(--k) * 12) calc(var(--k) * 28) rgba(68,76,104,.42),inset calc(var(--k) * -1) calc(var(--k) * -1) 0 rgba(104,113,138,.5),inset calc(var(--k) * 1.5) calc(var(--k) * 1.5) 0 #fff;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:ns-resize}
 .cap{width:calc(var(--k) * 64);height:calc(var(--k) * 64);flex:none;border-radius:50%;display:flex;justify-content:center;}
 /* the cap turns, the light does not: gloss and shading sit on a layer that stays put, and the knob's shadow always falls straight down onto the button below */
 .knob::after{content:"";position:absolute;left:50%;top:50%;width:calc(var(--k) * 64);height:calc(var(--k) * 64);margin:calc(var(--k) * -32) 0 0 calc(var(--k) * -32);border-radius:50%;background:radial-gradient(circle at 34% 26%,rgba(255,255,255,.38),rgba(255,255,255,0) 52%),radial-gradient(circle at 62% 86%,rgba(0,0,0,.2),rgba(0,0,0,0) 58%);pointer-events:none}
@@ -838,9 +845,8 @@ $('#tempoKey').addEventListener('click', () => {
   b.addEventListener('pointermove', e => { if (d) { setParam('master', d.v + (d.y - e.clientY) / 2); showHint('volume ' + P.master); } });
   b.addEventListener('pointerup', () => d = null); b.addEventListener('pointercancel', () => d = null);
 })();
-{ const rows = [7, 11, 11, 13, 13, 13, 13, 13, 13, 13, 11, 11, 7]; let h = '';   // the OP-1's speaker: 149 holes in 13 rows, one size
-  rows.forEach((n, r) => { for (let c = 0; c < n; c++) h += `<i style="left:${((6.5 - n / 2 + c + 0.5) / 13 * 100).toFixed(2)}%;top:${((r + 0.5) / 13 * 100).toFixed(2)}%"></i>`; });
-  $('#speaker .grill').innerHTML = h; }
+{ const HOLES = [[56.0,21.5],[68.5,21.5],[81.0,21.5],[93.5,21.5],[106.0,21.5],[118.5,21.5],[131.0,21.5],[56.0,165.5],[68.5,165.5],[81.0,165.5],[93.5,165.5],[106.0,165.5],[118.5,165.5],[131.0,165.5],[56.0,33.5],[43.5,33.5],[31.0,33.5],[68.5,33.5],[81.0,33.5],[93.5,33.5],[106.0,33.5],[118.5,33.5],[131.0,33.5],[143.5,33.5],[156.0,33.5],[56.0,141.5],[43.5,141.5],[31.0,141.5],[68.5,141.5],[81.0,141.5],[93.5,141.5],[106.0,141.5],[118.5,141.5],[131.0,141.5],[143.5,141.5],[156.0,141.5],[56.0,45.5],[43.5,45.5],[31.0,45.5],[68.5,45.5],[81.0,45.5],[93.5,45.5],[106.0,45.5],[118.5,45.5],[131.0,45.5],[143.5,45.5],[156.0,45.5],[56.0,153.5],[43.5,153.5],[31.0,153.5],[68.5,153.5],[81.0,153.5],[93.5,153.5],[106.0,153.5],[118.5,153.5],[131.0,153.5],[143.5,153.5],[156.0,153.5],[56.0,57.5],[43.5,57.5],[31.0,57.5],[18.5,57.5],[68.5,57.5],[81.0,57.5],[93.5,57.5],[106.0,57.5],[118.5,57.5],[131.0,57.5],[143.5,57.5],[156.0,57.5],[168.5,57.5],[56.0,69.5],[43.5,69.5],[31.0,69.5],[18.5,69.5],[68.5,69.5],[81.0,69.5],[93.5,69.5],[106.0,69.5],[118.5,69.5],[131.0,69.5],[143.5,69.5],[156.0,69.5],[168.5,69.5],[56.0,81.5],[43.5,81.5],[31.0,81.5],[18.5,81.5],[68.5,81.5],[81.0,81.5],[93.5,81.5],[106.0,81.5],[118.5,81.5],[131.0,81.5],[143.5,81.5],[156.0,81.5],[168.5,81.5],[56.0,93.5],[43.5,93.5],[31.0,93.5],[18.5,93.5],[68.5,93.5],[81.0,93.5],[93.5,93.5],[106.0,93.5],[118.5,93.5],[131.0,93.5],[143.5,93.5],[156.0,93.5],[168.5,93.5],[56.0,105.5],[43.5,105.5],[31.0,105.5],[18.5,105.5],[68.5,105.5],[81.0,105.5],[93.5,105.5],[106.0,105.5],[118.5,105.5],[131.0,105.5],[143.5,105.5],[156.0,105.5],[168.5,105.5],[56.0,117.5],[43.5,117.5],[31.0,117.5],[18.5,117.5],[68.5,117.5],[81.0,117.5],[93.5,117.5],[106.0,117.5],[118.5,117.5],[131.0,117.5],[143.5,117.5],[156.0,117.5],[168.5,117.5],[56.0,129.5],[43.5,129.5],[31.0,129.5],[18.5,129.5],[68.5,129.5],[81.0,129.5],[93.5,129.5],[106.0,129.5],[118.5,129.5],[131.0,129.5],[143.5,129.5],[156.0,129.5],[168.5,129.5]];   // the 149 holes of the speaker, as placed in the Figma frame (187 x 187)
+  $('#speaker .grill').innerHTML = HOLES.map(([x, y]) => `<i style="left:${(x / 1.87).toFixed(2)}%;top:${(y / 1.87).toFixed(2)}%"></i>`).join(''); }
 /* sound keys 1-8: tap recalls a synth sound (or drum kit), hold stores the current one,
    SHIFT + key opens the engine (or kit) menu and puts the choice on that key */
 function applyPreset(pm, pr) {
@@ -1168,7 +1174,7 @@ function layout() {
     const u = Math.floor(Math.min((w - 16 - 14 * GAP) / 15, (h - 12 - 6 * GAP) / 7));
     root.setProperty('--u', u + 'px'); dev.style.maxWidth = ''; buildKeys(15);
   } else if (pad) {
-    const u = Math.floor(Math.min((w - 24 - 18 * GAP) / 17.3, (h - 24 - 7 * GAP) / 6.3));
+    const u = Math.floor(Math.min((w - 24 - 18 * GAP) / 17.33, (h - 24 - 7 * GAP) / 6.33));
     root.setProperty('--u', u + 'px'); dev.style.maxWidth = ''; buildKeys(14);
   } else {
     let dw = Math.min(w, 520), u = (dw - 12 - 7 * GAP) / 8;
