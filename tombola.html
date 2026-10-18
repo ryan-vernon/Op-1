@@ -127,12 +127,14 @@ body.pad #keys{grid-area:4/4/7/18;grid-template-rows:var(--u) calc(var(--u) * 2 
   box-shadow:calc(var(--fu) * -.5) calc(var(--fu) * -.5) var(--fu) rgba(150,158,178,.9),calc(var(--fu) * 1) calc(var(--fu) * 1) calc(var(--fu) * .5) #fff}
 .knob{--ks:calc(var(--u) * .86);position:relative;width:var(--ks);height:var(--ks);border-radius:50%;background:linear-gradient(135deg,#D9DEEA,#C9CFDC);
   box-shadow:calc(var(--k) * 3) calc(var(--k) * 12) calc(var(--k) * 28) rgba(68,76,104,.42),inset calc(var(--k) * -1) calc(var(--k) * -1) 0 rgba(104,113,138,.5),inset calc(var(--k) * 1.5) calc(var(--k) * 1.5) 0 #fff;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:ns-resize}
-.cap{width:calc(var(--k) * 64);height:calc(var(--k) * 64);flex:none;border-radius:50%;display:flex;justify-content:center;}
+.cap{position:relative;width:calc(var(--k) * 64);height:calc(var(--k) * 64);flex:none;border-radius:50%;display:flex;justify-content:center;border:calc(var(--k) * 6.5) solid #DDE2EE;background-clip:padding-box!important;
+  box-shadow:inset calc(var(--k) * -1) calc(var(--k) * -1) calc(var(--k) * 2) rgba(0,0,0,.4)}   /* the coloured cap is a little domed: a soft shade low on the right inside its edge */
 /* the cap turns, the light does not: gloss and shading sit on a layer that stays put, and the knob's shadow always falls straight down onto the button below */
-.knob::after{content:"";position:absolute;left:50%;top:50%;width:calc(var(--k) * 64);height:calc(var(--k) * 64);margin:calc(var(--k) * -32) 0 0 calc(var(--k) * -32);border-radius:50%;background:radial-gradient(circle at 34% 26%,rgba(255,255,255,.38),rgba(255,255,255,0) 52%),radial-gradient(circle at 62% 86%,rgba(0,0,0,.2),rgba(0,0,0,0) 58%);pointer-events:none}
+.knob::after{content:"";position:absolute;left:50%;top:50%;width:calc(var(--k) * 64);height:calc(var(--k) * 64);margin:calc(var(--k) * -32) 0 0 calc(var(--k) * -32);border-radius:50%;
+  background:radial-gradient(circle at 33% 27%,rgba(255,255,255,.24),rgba(255,255,255,0) 48%),radial-gradient(circle at 66% 82%,rgba(0,0,0,.12),rgba(0,0,0,0) 56%);
+  box-shadow:inset calc(var(--k) * -2) calc(var(--k) * -2) calc(var(--k) * 1) rgba(120,128,150,.4),inset calc(var(--k) * 2) calc(var(--k) * 2) calc(var(--k) * 2) rgba(255,255,255,.85);pointer-events:none}
 .tile.enc{z-index:3}   /* the knobs are taller than the buttons: their shadow reaches over the row below */
-.cap i{display:block;width:9%;height:38%;margin-top:8%;border-radius:3px;background:rgba(255,255,255,.85)}
-#k2 .cap i{background:#2A2A2A}
+.cap i{display:block;width:9%;height:38%;margin-top:6%;border-radius:3px;background:rgba(0,0,0,.24);box-shadow:inset 0 calc(var(--k) * .5) calc(var(--k) * 1.5) rgba(0,0,0,.45),0 calc(var(--k) * .8) 0 rgba(255,255,255,.4)}
 
 /* menus on the screen: engine, drum kit, effect, LFO */
 #menu{position:absolute;inset:0;z-index:6;background:#000;display:flex;flex-direction:column;
