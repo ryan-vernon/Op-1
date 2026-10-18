@@ -135,8 +135,9 @@ body.pad #keys{grid-area:4/4/7/18;grid-template-rows:var(--u) calc(var(--u) * 2 
 #k2 .cap i{background:#2A2A2A}
 
 /* menus on the screen: engine, drum kit, effect, LFO */
-#menu{position:absolute;inset:0;z-index:6;background:#000;display:flex;flex-direction:column;justify-content:center;
-  padding:6cqmin 9cqmin;overflow:auto;touch-action:pan-y}
+#menu{position:absolute;inset:0;z-index:6;background:#000;display:flex;flex-direction:column;
+  padding:5cqmin 9cqmin;overflow:auto;touch-action:pan-y}
+#menu .mrow{margin:auto 0}
 #menu[hidden]{display:none}
 /* holding a sound key: a ring fills while it saves, so a tap never overwrites a sound */
 #saving{position:absolute;inset:0;z-index:7;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);pointer-events:none}
@@ -167,13 +168,13 @@ body.land #octDn{grid-area:4/13} body.land #octUp{grid-area:4/14} body.land #shi
 body.land #keys{grid-area:5/1/8/16}
 #menu .mrow{display:flex;align-items:center;justify-content:flex-start;gap:7cqmin}
 #menu .lead{display:flex;flex-direction:column;align-items:center;gap:1.4cqmin;flex:none}
-#menu .lead .w{width:11cqmin;height:6.6cqmin;color:var(--blue);overflow:visible}
-#menu .lead .n{height:15cqmin;width:auto;color:#E9E9E9;overflow:visible}
-#menu .lead .dots{width:9cqmin;height:9cqmin;color:var(--blue)}
+#menu .lead .w{width:17cqmin;height:10cqmin;color:var(--blue);overflow:visible}
+#menu .lead .n{height:28cqmin;width:auto;color:#E9E9E9;overflow:visible}
+#menu .lead .dots{width:14cqmin;height:14cqmin;color:var(--blue)}
 #menu .list>div{display:flex;flex-direction:column;align-items:flex-start}
 #menu .list>div button:not(.cur){color:var(--mc)}
 #menu .list{display:grid;grid-template-columns:repeat(var(--mcols,1),minmax(0,1fr));column-gap:6cqmin}
-#menu button{font-size:5.6cqmin;font-weight:200;text-align:left;color:var(--mc,#5B7CFA);padding:.6cqmin 1.6cqmin;margin-left:-1.6cqmin;letter-spacing:.04em;text-transform:uppercase}
+#menu button{font-size:11.5cqmin;line-height:1.28;font-weight:200;text-align:left;color:var(--mc,#5B7CFA);padding:.3cqmin 2cqmin;margin-left:-2cqmin;letter-spacing:.03em;text-transform:uppercase;white-space:nowrap}
 #menu button.cur{background:var(--mc,#5B7CFA);color:#fff;font-weight:300}
 #menu button:not(.cur):hover{color:#fff}
 
@@ -758,7 +759,7 @@ const MENU_DEF = {
   lfo:{title:'lfo', col:'var(--orange)', cols:1, items:() => Object.keys(LFO_TYPES).map(k => [k, k]), cur:() => P.lfoType, pick:id => pickLfo(id)}};
 function numSVG(str, cls) {   // one-stroke numerals as a little svg
   let x = 0, d = ''; for (const ch of String(str)) { const [p, adv] = GLY[ch] || ['', 8]; if (p) d += `<path d="${p}" transform="translate(${x} 0)"/>`; x += adv; }
-  return `<svg class="${cls}" viewBox="-2 -2 ${x} 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:${(x + 2) / 18 * 15}cqmin"><g style="vector-effect:non-scaling-stroke">${d}</g></svg>`;
+  return `<svg class="${cls}" viewBox="-2 -2 ${x} 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:${(x + 2) / 18 * 28}cqmin"><g style="vector-effect:non-scaling-stroke">${d}</g></svg>`;
 }
 function menuLead(kind, slot) {
   if (kind === 'engine' || kind === 'presets') return `<div class="lead"><svg class="w" viewBox="0 0 40 24">${GLYPHS[P.engine] || ''}</svg>${numSVG((slot === null ? (UI.snd ?? 0) : slot) + 1, 'n')}</div>`;
@@ -777,7 +778,7 @@ function openMenu(kind, slot = null) {
   menuEl.style.setProperty('--mc', d.col); menuEl.style.setProperty('--mcols', d.cols);
   menuEl.innerHTML = `<div class="mrow">${menuLead(kind, slot)}<div class="list">` +
     d.items().map(([id, label]) => `<button role="menuitem" data-id="${id}"${id === cur ? ' class="cur"' : ''}>${label}</button>`).join('') + '</div></div>';
-  menuEl.hidden = false; closeRing();
+  menuEl.hidden = false; closeRing(); const cb = menuEl.querySelector('button.cur'); if (cb) cb.scrollIntoView({block:'center'});
 }
 function closeMenu() { menuKind = null; menuEl.hidden = true; }
 menuEl.addEventListener('click', e => {
@@ -1850,21 +1851,24 @@ function makeFx(type, v = [P.taper, P.turns, P.damp, P.width]) {
     }
     case 'phone': {   // a telephone line: hard band limit (about 300 Hz to 3.5 kHz), a coarse sampler (baud), a gritty shaper (phonic) and line noise (telematic)
       const hp = add(AC.createBiquadFilter()), hp2 = add(AC.createBiquadFilter()), lp = add(AC.createBiquadFilter()), lp2 = add(AC.createBiquadFilter()), sh = add(AC.createWaveShaper()), pre = add(AC.createGain());
-      hp.type = 'highpass'; hp2.type = 'highpass'; lp.type = 'lowpass'; lp2.type = 'lowpass'; hp.Q.value = hp2.Q.value = lp.Q.value = lp2.Q.value = 0.8; pre.gain.value = 2.2;
+      hp.type = 'highpass'; hp2.type = 'highpass'; lp.type = 'lowpass'; lp2.type = 'lowpass'; hp.Q.value = hp2.Q.value = lp.Q.value = lp2.Q.value = 0.7; pre.gain.value = 1.15;
       const cr = workletOK ? add(new AudioWorkletNode(AC, 'crush', {numberOfInputs:1, numberOfOutputs:1, outputChannelCount:[1]})) : null;
       inp.connect(hp); hp.connect(hp2); hp2.connect(pre);
       const ns = AC.createBufferSource(), nb = add(AC.createBiquadFilter()), ng = add(AC.createGain()); ns.buffer = noise(); ns.loop = true; nb.type = 'bandpass'; nb.frequency.value = 1800; nb.Q.value = 0.7;
       ns.connect(nb); nb.connect(ng); ng.connect(pre); ns.start(); srcs.push(ns);
+      // line noise only rides on the sound: its level follows the loudness of what comes in, so silence stays silent
+      const rc = new Float32Array(256); for (let i = 0; i < 256; i++) rc[i] = Math.abs(i / 127.5 - 1);
+      const rect = add(AC.createWaveShaper()), fol = add(AC.createBiquadFilter()), eg = add(AC.createGain()); rect.curve = rc; fol.type = 'lowpass'; fol.frequency.value = 25; ng.gain.value = 0; inp.connect(rect); rect.connect(fol); fol.connect(eg); eg.connect(ng.gain);
       if (cr) { pre.connect(cr); cr.connect(lp); } else pre.connect(lp);
       lp.connect(lp2); lp2.connect(sh); sh.connect(out);
       let k = -1;
       upd = (T, R, D, W) => {
         at(hp.frequency, 220 + T * 520); at(hp2.frequency, 220 + T * 520); at(lp.frequency, 2600 + T * 1900); at(lp2.frequency, 2600 + T * 1900);
-        const kk = Math.round(R * 50); if (kk !== k) { k = kk; sh.curve = curve(0.15 + R * 0.85); }
-        if (cr) cr.port.postMessage({hold:2 + D * 26, bits:10 - D * 7});
-        at(ng.gain, 0.01 + W * 0.09); at(out.gain, 0.9 + W * 0.5);
+        const kk = Math.round(R * 50); if (kk !== k) { k = kk; sh.curve = curve(0.1 + R * 0.5); }
+        if (cr) cr.port.postMessage({hold:2 + D * 18, bits:10 - D * 5});
+        at(eg.gain, W * 0.5); at(out.gain, 0.5 + W * 0.25);
       };
-      upd(T, R, D, W); hp.frequency.value = hp2.frequency.value = 220 + T * 520; lp.frequency.value = lp2.frequency.value = 2600 + T * 1900; ng.gain.value = 0.01 + W * 0.09; out.gain.value = 0.9 + W * 0.5; break;
+      upd(T, R, D, W); hp.frequency.value = hp2.frequency.value = 220 + T * 520; lp.frequency.value = lp2.frequency.value = 2600 + T * 1900; eg.gain.value = W * 0.5; out.gain.value = 0.5 + W * 0.25; break;
     }
     case 'cow': {   // a ring modulator: freq is the carrier, delay and feedback send the ring round again, sideband lets the loudness of the input sweep the carrier (a sidechain that shifts the pitch)
       const sum = add(AC.createGain()), ring = add(AC.createGain()), car = AC.createOscillator(), dl = add(AC.createDelay(1)), fb = add(AC.createGain()), lp = add(AC.createBiquadFilter());
