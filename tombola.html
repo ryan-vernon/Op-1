@@ -2534,10 +2534,12 @@ const ART = {
     g.poly('10,70 120,30 210,62 100,104', AB, 'none', 1.6); g.poly('10,70 10,78 100,112 100,104', AB); g.poly('100,112 210,70 210,62 100,104', AB);
     for (let k = 1; k < 10; k++) { g.ln(`M${10 + k * 11} ${70 - k * 4} L${100 + k * 11} ${104 - k * 4.2}`, '#33449a', 0.8); g.ln(`M${10 + k * 9} ${70 + k * 3.4} L${120 + k * 9} ${30 + k * 3.2}`, '#33449a', 0.8); }
     c.globalAlpha = 1;
-    const cx = 105, cy = 50, sx = 0.5 + v[0], sy = 0.5 + v[1], hz = 4 + v[2] * 22, bob = Math.sin(t * P.tempo / 60 * Math.PI) * 2;
-    const p = (x, y) => [cx + (x - cx) * sx, cy + (y - cy) * sy + bob];
-    const top = [p(70, 52), p(110, 38), p(140, 48), p(100, 62)], dn = q => [q[0], q[1] + hz];
-    g.poly(top, AG, 'none', 1.6); g.poly([top[0], dn(top[0]), dn(top[3]), top[3]], AG); g.poly([dn(top[3]), dn(top[2]), top[2], top[3]], AG);
+    // the green block stands on the blue plate: the blue encoder stretches it along the plate's x axis, the green along its y axis (never off the plane), the white one raises it
+    const O = [10, 70], U = [90, 34], Wd = [110, -40], pt = (a, b) => [O[0] + a * U[0] + b * Wd[0], O[1] + a * U[1] + b * Wd[1]];
+    const sx = 0.16 + v[0] * 0.5, sy = 0.16 + v[1] * 0.5, hz = 4 + v[2] * 24, a0 = 0.5 - sx / 2, a1 = 0.5 + sx / 2, b0 = 0.5 - sy / 2, b1 = 0.5 + sy / 2;
+    const base = [pt(a0, b0), pt(a1, b0), pt(a1, b1), pt(a0, b1)], topf = base.map(([x, y]) => [x, y - hz]);
+    g.poly(base, AG, 'none', 1.2); g.poly(topf, AG, 'none', 1.6);
+    base.forEach(([x, y], i) => g.ln(`M${x} ${y} L${x} ${y - hz}`, AG, 1.4));
   }},
   nitro: {w:452, h:234, draw(g, v, t) {   // after the original: blue low-pass gauge, red high-pass gauge, the road speeds up with FF, the white stick shifter moves with the white encoder
     const c = g.c, LV = '#B5B9E8';
