@@ -2702,8 +2702,8 @@ const ART = {
     for (let i = 1; i < 16; i++) { const p1 = cor(i / 16, 0), p2 = cor(i / 16, 1), q1 = cor(0, i / 16), q2 = cor(1, i / 16); g.ln(`M${p1[0]} ${p1[1]} L${p2[0]} ${p2[1]}`, DP, 1); g.ln(`M${q1[0]} ${q1[1]} L${q2[0]} ${q2[1]}`, DP, 1); }
     g.poly([cor(0, 0), cor(1, 0), cor(1, 1), cor(0, 1)], AB, 'none', 1.6);
     { const l = cor(0, 1), b = cor(1, 1), r = cor(1, 0); g.ln(`M${l[0]} ${l[1]} V${l[1] + th} L${b[0]} ${b[1] + th} L${r[0]} ${r[1] + th} V${r[1]} M${b[0]} ${b[1]} V${b[1] + th}`, AB, 1.6); }
-    // the green block floats over the slab; its edges run along the slab's own axes
-    const ba = bxx, bb = BY, BC = [X(C[0] + 10), Y(C[1] - 122)], HA = [A[0] * ba / 2 * S, A[1] * ba / 2 * S], HB = [B[0] * bb / 2 * S, B[1] * bb / 2 * S], bh = 58 * S;
+    // the green block stands on the slab, touching it; its height follows the white encoder too, and its edges run along the slab's own axes
+    const ba = bxx, bb = BY, hz = X(28 + v[2] * 70), BC = [X(C[0]), Y(C[1]) - hz], HA = [A[0] * ba / 2 * S, A[1] * ba / 2 * S], HB = [B[0] * bb / 2 * S, B[1] * bb / 2 * S], bh = hz;
     const tp = [[BC[0] - HA[0] - HB[0], BC[1] - HA[1] - HB[1]], [BC[0] + HA[0] - HB[0], BC[1] + HA[1] - HB[1]], [BC[0] + HA[0] + HB[0], BC[1] + HA[1] + HB[1]], [BC[0] - HA[0] + HB[0], BC[1] - HA[1] + HB[1]]];
     g.poly(tp, AG, 'none', 1.6);
     for (const i of [1, 2, 3]) g.ln(`M${tp[i][0]} ${tp[i][1]} V${tp[i][1] + bh}`, AG, 1.6);
