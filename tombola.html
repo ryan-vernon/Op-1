@@ -2038,9 +2038,9 @@ function makeFx(type, v = [P.taper, P.turns, P.damp, P.width]) {
       lp.type = 'lowpass'; lp.Q.value = 1.1; ls.type = 'lowshelf'; ls.frequency.value = 110; ls.gain.value = 6; c.release.value = 0.12; c.knee.value = 4;
       inp.connect(lp); lp.connect(ls); ls.connect(c); c.connect(sh); sh.connect(out);
       let k = -1;
-      upd = (T, R, D, W) => { at(lp.Q, 0.9 + W * 4.5); at(ls.gain, 6 + W * 9); at(lp.frequency, Math.min(18000, 90 * Math.pow(2, T * 7.6))); at(c.threshold, -6 - D * 42); at(c.ratio, 3 + D * 17); at(c.attack, 0.002 + (1 - D) * 0.03); at(out.gain, 0.5 + W * 2.4);
+      upd = (T, R, D, W) => { at(lp.Q, 0.9 + W * 4.5); at(ls.gain, 6 + W * 9); at(lp.frequency, Math.min(18000, 90 * Math.pow(2, T * 7.6))); at(c.threshold, -6 - D * 42); at(c.ratio, 3 + D * 17); at(c.attack, 0.002 + (1 - D) * 0.03); at(out.gain, 0.4 + W * 1.3);
         const kk = Math.round(R * 40); if (kk !== k) { k = kk; sh.curve = curve(0.05 + R * 0.75); } };
-      upd(T, R, D, W); lp.frequency.value = Math.min(18000, 90 * Math.pow(2, T * 7.6)); out.gain.value = 0.5 + W * 2.4; break;
+      upd(T, R, D, W); lp.frequency.value = Math.min(18000, 90 * Math.pow(2, T * 7.6)); out.gain.value = 0.4 + W * 1.3; break;
     }
     default: {   // spring: the mix moves live; tone, turns and damping need a new impulse response
       const c = add(AC.createConvolver()); c.normalize = true; c.buffer = springIR(v); inp.connect(c); c.connect(out); out.gain.value = 0.15 + W * 1.4;
