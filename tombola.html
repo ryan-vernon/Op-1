@@ -365,8 +365,8 @@ const SPEC = {
   ldst:{min:0, max:2, v:0, col:'white', label:'dest', span:4}, lsrc:{min:0, max:1, v:0, col:'blue', label:'source', span:2},
   cc1:{min:0, max:7, v:0, col:'blue', label:'cc 1 to', span:8}, cc2:{min:0, max:7, v:2, col:'green', label:'cc 2 to', span:8}, cc3:{min:0, max:7, v:4, col:'white', label:'cc 3 to', span:8}, cc4:{min:0, max:7, v:6, col:'orange', label:'cc 4 to', span:8},
   // drum T2: dynamic envelope (manual 6.4)
-  dbp:{min:0, max:100, v:50, col:'blue', label:'pitch'}, dbw:{min:0, max:100, v:30, col:'green', label:'waveform'}, dbe:{min:0, max:100, v:35, col:'white', label:'envelope'}, dbx:{min:0, max:7, v:2, col:'orange', label:'cross mod', span:8},
-  dbr:{min:0, max:100, v:50, col:'blue', label:'osc 2 pitch'}, dbn:{min:0, max:100, v:20, col:'green', label:'osc 2 wave'}, dbd:{min:0, max:100, v:40, col:'white', label:'osc 2 env'}, dbf:{min:0, max:100, v:75, col:'orange', label:'filter'},
+  dbp:{min:0, max:100, v:50, col:'blue', label:'pitch'}, dbw:{min:0, max:100, v:30, col:'green', label:'waveform'}, dbe:{min:0, max:100, v:22, col:'white', label:'envelope'}, dbx:{min:0, max:7, v:1, col:'orange', label:'cross mod', span:8},
+  dbr:{min:0, max:100, v:50, col:'blue', label:'osc 2 pitch'}, dbn:{min:0, max:100, v:20, col:'green', label:'osc 2 wave'}, dbd:{min:0, max:100, v:28, col:'white', label:'osc 2 env'}, dbf:{min:0, max:100, v:75, col:'orange', label:'filter'},
   dyatk:{min:0, max:100, v:100, col:'blue', label:'attack'}, dymid:{min:0, max:100, v:100, col:'green', label:'mid'},
   dyrel:{min:0, max:100, v:100, col:'white', label:'release'}, dyreg:{min:0, max:100, v:50, col:'orange', label:'region'},
   // mixer T2: EQ
@@ -1325,7 +1325,45 @@ class Crush extends AudioWorkletProcessor {   // sample-rate and bit-depth reduc
     return true;
   }
 }
-registerProcessor('digi', Digi); registerProcessor('ks', KS); registerProcessor('crush', Crush);`;
+registerProcessor('digi', Digi); registerProcessor('ks', KS); registerProcessor('crush', Crush);
+class Cwo extends AudioWorkletProcessor {   // a frequency shifter inside a feedback delay: each repeat is shifted further (single sideband, after a Hilbert pair of allpass chains)
+  constructor() { super(); this.p = {shift:100, side:1, dly:0.2, fb:0.5}; this.n = sampleRate * 2; this.b = new Float32Array(this.n); this.w = 0; this.ph = 0; this.prev = 0;
+    this.k1 = [0.6923878, 0.9360654322959, 0.9882295226860, 0.9987488452737].map(a => a * a); this.k2 = [0.4021921162426, 0.8561710882420, 0.9722909545651, 0.9952884791278].map(a => a * a);
+    this.s1 = new Float32Array(16); this.s2 = new Float32Array(16); this.d = 0.2 * sampleRate; this.port.onmessage = e => Object.assign(this.p, e.data); }
+  ch(x, k, st) { for (let i = 0; i < 4; i++) { const j = i * 4, y = k[i] * (x + st[j + 3]) - st[j + 1]; st[j + 1] = st[j]; st[j] = x; st[j + 3] = st[j + 2]; st[j + 2] = y; x = y; } return x; }
+  process(inputs, outputs) {
+    const inp = inputs[0] && inputs[0][0], out = outputs[0][0], {shift, side, dly, fb} = this.p, sr = sampleRate, dt = 2 * Math.PI * shift / sr;
+    for (let i = 0; i < out.length; i++) {
+      this.d += (dly * sr - this.d) * 0.0005; const r = this.w - this.d, i0 = Math.floor(r), f = r - i0, n = this.n;
+      const dl = this.b[(i0 + n) % n] * (1 - f) + this.b[(i0 + 1 + n) % n] * f;
+      const x = (inp ? inp[i] : 0) + fb * dl, re = this.prev; this.prev = this.ch(x, this.k1, this.s1); const im = this.ch(x, this.k2, this.s2);
+      this.ph += dt; if (this.ph > 6.283185307) this.ph -= 6.283185307; const c = Math.cos(this.ph), s = Math.sin(this.ph);
+      const up = re * c - im * s, dn = re * c + im * s, ring = re * c;
+      let y = side < 0.5 ? dn * (1 - side * 2) + ring * side * 2 : ring * (2 - side * 2) + up * (side * 2 - 1);
+      y = Math.tanh(y); this.hp = (this.hp || 0) + (y - (this.hp || 0)) * 0.01; y -= this.hp; this.b[this.w] = y; this.w = (this.w + 1) % n; out[i] = y;
+    }
+    return true;
+  }
+}
+class GridFx extends AudioWorkletProcessor {   // a feedback plate: a short comb (X: the pitch of its ringing) and a longer echo (Y: the time, changed by a crossfade so the pitch never slides) feeding each other (Z)
+  constructor() { super(); this.p = {x:0.005, y:0.15, fb:0.5}; this.n = sampleRate * 2; this.bx = new Float32Array(this.n); this.by = new Float32Array(this.n); this.w = 0;
+    this.dx = 0.005 * sampleRate; this.dy = 0.15 * sampleRate; this.dy0 = this.dy; this.xf = 1; this.lp = 0; this.port.onmessage = e => Object.assign(this.p, e.data); }
+  rd(b, d) { const r = this.w - d, i0 = Math.floor(r), f = r - i0, n = this.n; return b[(i0 + n) % n] * (1 - f) + b[(i0 + 1 + n) % n] * f; }
+  process(inputs, outputs) {
+    const inp = inputs[0] && inputs[0][0], out = outputs[0][0], sr = sampleRate, {x, y, fb} = this.p;
+    if (Math.abs(y * sr - this.dy) > 40 && this.xf >= 1) { this.dy0 = this.dy; this.dy = y * sr; this.xf = 0; }
+    for (let i = 0; i < out.length; i++) {
+      this.dx += (x * sr - this.dx) * 0.002;
+      const a = this.rd(this.bx, this.dx), bNew = this.rd(this.by, this.dy), bOld = this.rd(this.by, this.dy0);
+      if (this.xf < 1) this.xf = Math.min(1, this.xf + 1 / (0.03 * sr)); const b = bOld * (1 - this.xf) + bNew * this.xf;
+      const v = inp ? inp[i] : 0; this.lp += (b - this.lp) * 0.35;
+      this.bx[this.w] = Math.tanh(v + fb * (0.62 * a + 0.38 * this.lp)); this.by[this.w] = Math.tanh(0.6 * v + fb * (0.55 * this.lp + 0.45 * a));
+      this.w = (this.w + 1) % this.n; out[i] = 0.5 * (a + b);
+    }
+    return true;
+  }
+}
+registerProcessor('cwo', Cwo); registerProcessor('gridfx', GridFx);`;
 let workletOK = false;
 let eqL, eqM, eqH, drv, mcomp, mkup, mfxDry, mfxSum, mfxWet, gL, gR, anL, anR, trackPan = [], drvK = -1;
 let AC = null, master, voiceBus, wetGain, dryNode, analyser, conv = null, convGain = null, voices = 0, excite = 0;
@@ -1355,7 +1393,7 @@ function ensureAudio() {
   voiceBus = AC.createGain(); trem = AC.createGain();
   const dry = dryNode = AC.createGain(); dry.gain.value = 0.9;
   voiceBus.connect(trem); trem.connect(dry); dry.connect(master);
-  liveBus = AC.createGain(); liveBus.connect(voiceBus);
+  liveBus = AC.createGain(); liveBus.channelCount = 1; liveBus.channelCountMode = 'explicit'; liveBus.channelInterpretation = 'speakers'; liveBus.connect(voiceBus);   // the voices are mono, as on the OP-1
   trackPan = []; trackBus = [0, 1, 2, 3].map(i => { const g = AC.createGain(), p = AC.createStereoPanner(); g.connect(p); p.connect(voiceBus); trackPan[i] = p; return g; });
   clickBus = AC.createGain(); clickBus.connect(master);
   wetGain = AC.createGain();
@@ -1649,7 +1687,7 @@ function playNote(midi, vel, pan, o = {}) {
         o2.connect(g); o2.connect(dl); dl.connect(inv); inv.connect(g); g.connect(lpf); srcs.push(o2);
       };
       const second = sv(2) > 0.02; pair(f, 0.5); if (second) pair(f / 2 * 1.004, sv(2) * 0.5);
-      if (held) { out.gain.setValueAtTime(peak * 0.6, t); sustains = true; } else ampEnv(out, t, peak * 0.6, dec);
+      if (held) { out.gain.setValueAtTime(peak * 1.1, t); sustains = true; } else ampEnv(out, t, peak * 1.1, dec);   // as loud as the reference recordings
       upd = () => {
         const w = cur(), now = AC.currentTime; if ((w[2] > 0.02) !== second) return false;
         lpf.frequency.cancelScheduledValues(now); lpf.frequency.setTargetAtTime(fcAt(w), now, 0.03); pwm.frequency.setTargetAtTime(0.5 + w[3] * 5, now, 0.03);
@@ -1859,7 +1897,7 @@ function playDrum(midi, vel, pan, inst, o = {}) {
 const dbWave = w => { const N = 32, re = new Float32Array(N + 1), im = new Float32Array(N + 1), ws = Math.max(0, 1 - 2 * w), wq = 1 - Math.abs(2 * w - 1), wsw = Math.max(0, 2 * w - 1);
   for (let n = 1; n <= N; n++) im[n] = (n === 1 ? ws : 0) + (n % 2 ? wq * 1.2 / n : 0) + wsw * 1.1 / n;
   return AC.createPeriodicWave(re, im); };
-const dbEnv = e => ({dec: e < 0.5 ? 0.04 + e / 0.5 * 1.1 : 1.14, atk: e > 0.5 ? 0.002 + (e - 0.5) * 2 * 0.25 : 0.002});
+const dbEnv = e => ({dec: e < 0.5 ? 0.025 + Math.pow(e / 0.5, 2) * 1.1 : 1.125, atk: e > 0.5 ? 0.002 + (e - 0.5) * 2 * 0.25 : 0.002});
 function playDBox(midi, vel, pan, inst, o = {}) {
   if (!AC || AC.state !== 'running' || voices > 32) return null;
   const db = inst.db, d = db.map(x => x / 100), mode = clamp(Math.round(db[3]), 0, 7), j = partOf(midi), t = Math.max(AC.currentTime, o.when || 0);
@@ -1943,31 +1981,27 @@ function makeFx(type, v = [P.taper, P.turns, P.damp, P.width]) {
       };
       tap(1, -0.5); tap(1.27, 0.5);
       upd = (T, R, D, W) => {
-        const tm = 0.04 + T * 0.7; dls.forEach(([dl, k]) => at(dl.delayTime, tm * k)); fbs.forEach(fb => at(fb.gain, R * 0.88));   // blue size, green feedback, white speed, orange mix
-        at(wob.frequency, 0.15 + D * 5); at(wg.gain, tm * 0.012 * (0.2 + D)); at(out.gain, W * 1.5);
+        const tm = (0.04 + T * 0.7) / (0.5 + D * 1.5); dls.forEach(([dl, k]) => dl.delayTime.setTargetAtTime(Math.min(1.9, tm * k), AC.currentTime, 0.12)); fbs.forEach(fb => at(fb.gain, R * 0.88));   // blue size, green feedback, white speed (like tape: a turn glides the pitch), orange mix
+        at(wob.frequency, 0.3); at(wg.gain, tm * 0.0006); at(out.gain, W * 1.5);
       };
-      dls.forEach(([dl, k]) => { dl.delayTime.value = (0.04 + T * 0.7) * k; }); wob.frequency.value = 0.15 + D * 5; wg.gain.value = (0.04 + T * 0.7) * 0.012 * (0.2 + D);
+      dls.forEach(([dl, k]) => { dl.delayTime.value = Math.min(1.9, (0.04 + T * 0.7) / (0.5 + D * 1.5) * k); }); wob.frequency.value = 0.3; wg.gain.value = (0.04 + T * 0.7) * 0.0006;
       fbs.forEach(fb => { fb.gain.value = R * 0.88; }); out.gain.value = W * 1.5; break;
     }
-    case 'grid': {   // rhythmic gate locked to the tempo
-      const g = add(AC.createGain()), lp = add(AC.createBiquadFilter()), o = AC.createOscillator(), og = add(AC.createGain());
-      lp.type = 'lowpass'; lp.frequency.value = 6000; o.type = 'square'; o.connect(og); og.connect(g.gain); o.start(); srcs.push(o);
-      inp.connect(lp); lp.connect(g); g.connect(out);
-      const zd = add(AC.createDelay(2)), zf = add(AC.createGain());   // z fdb: echoes of the gate
-      g.connect(zd); zd.connect(zf); zf.connect(zd); zd.connect(out);
-      upd = (T, R, D, W) => {
-        at(o.frequency, P.tempo / 60 * Math.pow(2, Math.floor(T * 3.99)) / 2); at(g.gain, 1 - R / 2); at(og.gain, R / 2);
-        at(out.gain, 0.3 + W * 0.7); at(zd.delayTime, 60 / P.tempo / 2); at(zf.gain, D * 0.7);
-      };
-      o.frequency.value = P.tempo / 60 * Math.pow(2, Math.floor(T * 3.99)) / 2; g.gain.value = 1 - R / 2; og.gain.value = R / 2;
-      out.gain.value = 0.3 + W * 0.7; zd.delayTime.value = 60 / P.tempo / 2; zf.gain.value = D * 0.7; break;
+    case 'grid': {   // three-dimensional feedback plate: X tunes the comb's ringing, Y the echo time, Z the feedback (it saturates), mix
+      if (!workletOK) { inp.connect(out); out.gain.value = 0; upd = () => true; break; }
+      const gw = add(new AudioWorkletNode(AC, 'gridfx', {numberOfInputs:1, numberOfOutputs:1, outputChannelCount:[1]})), hp = add(AC.createBiquadFilter());
+      hp.type = 'highpass'; hp.frequency.value = 60; inp.connect(hp); hp.connect(gw); gw.connect(out);
+      upd = (T, R, D, W) => { gw.port.postMessage({x:0.0006 * Math.pow(2, (1 - T) * 5.4), y:0.025 * Math.pow(2, R * 5), fb:D * 0.96}); at(out.gain, W * 2.4); };
+      upd(T, R, D, W); out.gain.value = W * 2.4; break;
     }
-    case 'nitro': {   // freq: low-pass cutoff; ff: drive; res: resonance; freq: a high-pass in front
+    case 'nitro': {   // two resonant filters: blue the low-pass, orange the high-pass in front, white the resonance (it sings near the top), green how far the input's own loudness opens the low-pass
       const hp = add(AC.createBiquadFilter()), f = add(AC.createBiquadFilter()), sh = add(AC.createWaveShaper());
-      hp.type = 'highpass'; f.type = 'lowpass'; inp.connect(hp); hp.connect(f); f.connect(sh); sh.connect(out); out.gain.value = 0.8;
-      let k = -1;
-      upd = (T, R, D, W) => { at(hp.frequency, 20 * Math.pow(2, W * 8)); at(f.frequency, Math.min(16000, 100 * Math.pow(2, T * 7))); at(f.Q, 0.5 + D * 14); const kk = Math.round(R * 50); if (kk !== k) { k = kk; sh.curve = curve(R); } };
-      upd(T, R, D, W); hp.frequency.value = 20 * Math.pow(2, W * 8); f.frequency.value = Math.min(16000, 100 * Math.pow(2, T * 7)); f.Q.value = 0.5 + D * 14; break;
+      const rect = add(AC.createWaveShaper()), fol = add(AC.createBiquadFilter()), eg = add(AC.createGain());
+      const rc = new Float32Array(256); for (let i = 0; i < 256; i++) rc[i] = Math.abs(i / 127.5 - 1); rect.curve = rc; fol.type = 'lowpass'; fol.frequency.value = 18;
+      hp.type = 'highpass'; f.type = 'lowpass'; sh.curve = curve(0.12); inp.connect(hp); hp.connect(f); f.connect(sh); sh.connect(out); out.gain.value = 0.8;
+      inp.connect(rect); rect.connect(fol); fol.connect(eg); eg.connect(f.frequency);
+      upd = (T, R, D, W) => { at(hp.frequency, 20 * Math.pow(2, W * 8)); at(f.frequency, Math.min(16000, 80 * Math.pow(2, T * 7.4))); at(f.Q, 0.6 + D * D * 26); at(eg.gain, R * 9000); hp.Q.value = 0.7 + D * 6; };
+      upd(T, R, D, W); hp.frequency.value = 20 * Math.pow(2, W * 8); f.frequency.value = Math.min(16000, 80 * Math.pow(2, T * 7.4)); f.Q.value = 0.6 + D * D * 26; eg.gain.value = R * 9000; break;
     }
     case 'phone': {   // a telephone line: hard band limit (about 300 Hz to 3.5 kHz), a coarse sampler (baud), a gritty shaper (phonic) and line noise (telematic)
       const hp = add(AC.createBiquadFilter()), hp2 = add(AC.createBiquadFilter()), lp = add(AC.createBiquadFilter()), lp2 = add(AC.createBiquadFilter()), sh = add(AC.createWaveShaper()), pre = add(AC.createGain());
@@ -1980,32 +2014,33 @@ function makeFx(type, v = [P.taper, P.turns, P.damp, P.width]) {
       const rc = new Float32Array(256); for (let i = 0; i < 256; i++) rc[i] = Math.abs(i / 127.5 - 1);
       const rect = add(AC.createWaveShaper()), fol = add(AC.createBiquadFilter()), eg = add(AC.createGain()); rect.curve = rc; fol.type = 'lowpass'; fol.frequency.value = 25; ng.gain.value = 0; inp.connect(rect); rect.connect(fol); fol.connect(eg); eg.connect(ng.gain);
       if (cr) { pre.connect(cr); cr.connect(lp); } else pre.connect(lp);
-      lp.connect(lp2); lp2.connect(sh); sh.connect(out);
+      const gate = add(AC.createGain()), chop = AC.createOscillator(), cg = add(AC.createGain()), cbase = add(AC.createConstantSource ? AC.createGain() : AC.createGain());   // the glitch: the line drops out at the baud rate, as much as telematic says
+      chop.type = 'square'; chop.connect(cg); gate.gain.value = 0; cbase.gain.value = 1; const one = AC.createConstantSource(); one.connect(cbase); cbase.connect(gate.gain); cg.connect(gate.gain); chop.start(); one.start(); srcs.push(chop, one);
+      lp.connect(lp2); lp2.connect(sh); sh.connect(gate); gate.connect(out);
       let k = -1;
       upd = (T, R, D, W) => {
-        at(hp.frequency, 220 + T * 520); at(hp2.frequency, 220 + T * 520); at(lp.frequency, 2600 + T * 1900); at(lp2.frequency, 2600 + T * 1900);
+        at(hp.frequency, 120 + T * 380); at(hp2.frequency, 120 + T * 380); at(lp.frequency, 2800 + T * 9000); at(lp2.frequency, 2800 + T * 9000); at(chop.frequency, 3 + D * 21); at(cg.gain, W * 0.5); at(cbase.gain, 1 - W * 0.5);
         const kk = Math.round(R * 50); if (kk !== k) { k = kk; sh.curve = curve(0.1 + R * 0.5); }
         if (cr) cr.port.postMessage({hold:2 + D * 18, bits:10 - D * 5});
         at(eg.gain, W * 0.5); at(out.gain, 0.5 + W * 0.25);
       };
-      upd(T, R, D, W); hp.frequency.value = hp2.frequency.value = 220 + T * 520; lp.frequency.value = lp2.frequency.value = 2600 + T * 1900; eg.gain.value = W * 0.5; out.gain.value = 0.5 + W * 0.25; break;
+      upd(T, R, D, W); hp.frequency.value = hp2.frequency.value = 120 + T * 380; lp.frequency.value = lp2.frequency.value = 2800 + T * 9000; eg.gain.value = W * 0.5; out.gain.value = 0.5 + W * 0.25; break;
     }
-    case 'cow': {   // a ring modulator: freq is the carrier, delay and feedback send the ring round again, sideband lets the loudness of the input sweep the carrier (a sidechain that shifts the pitch)
-      const sum = add(AC.createGain()), ring = add(AC.createGain()), car = AC.createOscillator(), dl = add(AC.createDelay(1)), fb = add(AC.createGain()), lp = add(AC.createBiquadFilter());
-      const rect = add(AC.createWaveShaper()), env = add(AC.createBiquadFilter()), sb = add(AC.createGain());
-      ring.gain.value = 0; car.connect(ring.gain); car.start(); srcs.push(car);
-      inp.connect(sum); sum.connect(ring); ring.connect(out); ring.connect(dl); dl.connect(lp); lp.connect(fb); fb.connect(sum);
-      lp.type = 'lowpass'; lp.frequency.value = 5000;
-      const rc = new Float32Array(256); for (let i = 0; i < 256; i++) rc[i] = Math.abs(i / 127.5 - 1); rect.curve = rc;
-      env.type = 'lowpass'; env.frequency.value = 14; inp.connect(rect); rect.connect(env); env.connect(sb); sb.connect(car.frequency);
-      upd = (T, R, D, W) => { at(car.frequency, 25 * Math.pow(2, T * 6.3)); at(dl.delayTime, 0.004 + R * R * 0.4); at(fb.gain, D * 0.82); at(sb.gain, W * 3000); at(out.gain, 1.3); };
-      upd(T, R, D, W); car.frequency.value = 25 * Math.pow(2, T * 6.3); dl.delayTime.value = 0.004 + R * R * 0.4; fb.gain.value = D * 0.82; sb.gain.value = W * 3000; out.gain.value = 1.3; break;
+    case 'cow': {   // CWO: a frequency-shifting echo. freq: how far each pass is shifted; delay; feedback; sideband: down, both (ring) or up
+      if (!workletOK) { inp.connect(out); out.gain.value = 0; upd = () => true; break; }
+      const cw = add(new AudioWorkletNode(AC, 'cwo', {numberOfInputs:1, numberOfOutputs:1, outputChannelCount:[1]}));
+      const chp = add(AC.createBiquadFilter()); chp.type = 'highpass'; chp.frequency.value = 70; inp.connect(cw); cw.connect(chp); chp.connect(out);
+      upd = (T, R, D, W) => { cw.port.postMessage({shift:4 * Math.pow(2, T * 8.2), dly:0.006 + R * R * 0.9, fb:D * 0.93, side:W}); at(out.gain, 1.1); };
+      upd(T, R, D, W); out.gain.value = 1.1; break;
     }
-    case 'punch': {   // freq: a low shelf boost; rounds: attack; punch: how hard it squeezes; power: output
-      const ls = add(AC.createBiquadFilter()), c = add(AC.createDynamicsCompressor());
-      ls.type = 'lowshelf'; ls.gain.value = 9; c.release.value = 0.2; inp.connect(ls); ls.connect(c); c.connect(out);
-      upd = (T, R, D, W) => { at(ls.frequency, 40 * Math.pow(2, T * 4)); at(c.threshold, -8 - D * 40); at(c.ratio, 4 + D * 16); at(c.attack, 0.001 + R * 0.05); at(out.gain, 0.6 + W * 2.2); };
-      upd(T, R, D, W); ls.frequency.value = 40 * Math.pow(2, T * 4); c.threshold.value = -8 - D * 40; c.ratio.value = 4 + D * 16; c.attack.value = 0.001 + R * 0.05; out.gain.value = 0.6 + W * 2.2; break;
+    case 'punch': {   // a hard-hitting low-pass: blue its cutoff, white how hard the compressor squeezes, green how round the clipping is, orange the power out
+      const lp = add(AC.createBiquadFilter()), ls = add(AC.createBiquadFilter()), c = add(AC.createDynamicsCompressor()), sh = add(AC.createWaveShaper());
+      lp.type = 'lowpass'; lp.Q.value = 1.1; ls.type = 'lowshelf'; ls.frequency.value = 110; ls.gain.value = 6; c.release.value = 0.12; c.knee.value = 4;
+      inp.connect(lp); lp.connect(ls); ls.connect(c); c.connect(sh); sh.connect(out);
+      let k = -1;
+      upd = (T, R, D, W) => { at(lp.Q, 0.9 + W * 4.5); at(ls.gain, 6 + W * 9); at(lp.frequency, Math.min(18000, 90 * Math.pow(2, T * 7.6))); at(c.threshold, -6 - D * 42); at(c.ratio, 3 + D * 17); at(c.attack, 0.002 + (1 - D) * 0.03); at(out.gain, 0.5 + W * 2.4);
+        const kk = Math.round(R * 40); if (kk !== k) { k = kk; sh.curve = curve(0.05 + R * 0.75); } };
+      upd(T, R, D, W); lp.frequency.value = Math.min(18000, 90 * Math.pow(2, T * 7.6)); out.gain.value = 0.5 + W * 2.4; break;
     }
     default: {   // spring: the mix moves live; tone, turns and damping need a new impulse response
       const c = add(AC.createConvolver()); c.normalize = true; c.buffer = springIR(v); inp.connect(c); c.connect(out); out.gain.value = 0.15 + W * 1.4;
