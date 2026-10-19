@@ -2908,7 +2908,7 @@ Object.assign(ART, {
     g.ln(d, '#1A8A6A', 1);
     { const mo = p.mode, c = g.c;   // one symbol: an arrow (plays while the key is down), an arrow to a bar (plays right to the end), the loop; turned round when the part is reversed
       c.save(); if (p.rev) { c.translate(554, 0); c.scale(-1, 1); }
-      g.ln(['M262 12 H284 M279 6 L284 12 L279 18', 'M262 12 H282 M277 6 L282 12 L277 18 M288 4 V20', 'M264 17 H284 A6.5 6.5 0 0 0 284 4 H266 M272 0 L265 4 L272 8'][clamp(mo, 0, 2)], AO, 1.8);
+      g.ln(['M262 12 H284 M279 6 L284 12 L279 18', 'M262 12 H282 M277 6 L282 12 L277 18 M288 4 V20', 'M279 3.5 H284 A6.5 6.5 0 0 1 284 16.5 H268 A6.5 6.5 0 0 1 268 3.5 H274 M270 -0.5 L275 3.5 L270 7.5'][clamp(mo, 0, 2)], AO, 1.8);
       c.restore(); }
     // the whole sample: the part between the blue dot (start, blue encoder) and the white dot (end, white encoder) is lit
     const bx = 10, bw = 280, by = 112, bh = 70, N = bw, pk = [], W0 = (UI.dkey % 12) * 1000;   // the big wave is this key's slot of the kit: one second
