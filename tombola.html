@@ -2805,7 +2805,7 @@ const ART = {
       const pa = (P['pan' + (k + 1)] - 50) / 50 * 2.3;   // pan: the little knob turns left or right
       g.c.globalAlpha = mu ? 0.35 : 1;
       g.ln(`M${x - 26} 30 A26 26 0 0 1 ${x + 26} 30`, ADIM, 1.6); g.ln(`M${x} 30 L${x + 26 * Math.sin(a)} ${30 - 26 * Math.cos(a)}`, AW, 1.6);
-      g.dot(x + 28, 12, 2.8, hit > 0.05 ? '#FF2E4D' : '#5A1822'); g.t(x, 26, String(k + 1), ADIM, 18, 'middle', 200);
+      g.dot(x + 28, 12, 2.8, hit > 0.05 ? '#FF2E4D' : '#A31C34'); g.t(x, 26, String(k + 1), ADIM, 18, 'middle', 200);
       g.circ(x, 50, 8, AW, 'none'); g.ln(`M${x} 50 L${x + 8 * Math.sin(pa)} ${50 - 8 * Math.cos(pa)}`, AW, 1.6);
       g.t(x - 18, 54, 'L', AGR, 10); g.t(x + 12, 54, 'R', AGR, 10); g.num(x, 104, two(P['m' + (k + 1)]), col, 46, 'middle');
       g.c.globalAlpha = 1;
