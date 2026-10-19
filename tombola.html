@@ -1238,8 +1238,8 @@ $('#songTag').addEventListener('click', openSheet); $('#album').addEventListener
 $('#sheetClose').addEventListener('click', () => { $('#sheet').hidden = true; });
 $('#songTitle').addEventListener('change', e => window.Tombola.setTitle(e.target.value.trim()));
 $('#songTitle').addEventListener('pointerdown', e => { e.stopPropagation(); const el = e.currentTarget; setTimeout(() => { el.focus(); }, 0); });   // a click always puts the cursor in the title
-$('#songTitle').addEventListener('focus', e => { if (e.target.value === 'untitled') e.target.select(); });
-$('#songTitle').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') e.target.blur(); });
+$('#songTitle').addEventListener('pointerup', e => { const el = e.currentTarget; if (el.value === 'untitled') setTimeout(() => el.select(), 0); });   // a new song's name is selected, so typing replaces it
+$('#songTitle').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter' || e.keyCode === 13) { e.preventDefault(); window.Tombola.setTitle(e.target.value.trim()); e.target.blur(); } });
 
 /* ---------- layout: phone (8 columns) or iPad (the OP-1's 17 x 6) ---------- */
 const GAP = 1;
