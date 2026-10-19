@@ -159,6 +159,23 @@ body.pad #keys{grid-area:4/4/7/18;grid-template-rows:var(--u) calc(var(--u) * 2 
 #saving .w{font-size:3.6cqmin;letter-spacing:.16em;text-transform:uppercase;color:#8a8a8a}
 #saving.done .w{color:var(--green)}
 
+/* phone in landscape, the OP-1 Field arrangement: 14 x 7 units. Mode keys down the left, a 4 x 2 screen, four 2 x 2 encoders, the 12 numbered keys, the transport row, black keys and a 14-key keyboard.
+   Roll back with LAND_FIELD = false in layout() (or open the page with ?land=classic): this block is then never used. */
+body.land.field #device{grid-template-columns:repeat(14,var(--u))}
+body.land.field #device .padonly{display:flex}
+body.land.field #device #speaker,body.land.field #device #volume{display:none}   /* the upper left is left blank */
+body.land.field #display{grid-area:1/3/3/7}
+body.land.field #k0{grid-area:1/7/3/9} body.land.field #k1{grid-area:1/9/3/11} body.land.field #k2{grid-area:1/11/3/13} body.land.field #k3{grid-area:1/13/3/15}
+body.land.field #m_synth{grid-area:1/1} body.land.field #m_drum{grid-area:2/1} body.land.field #m_tape{grid-area:3/1} body.land.field #m_mixer{grid-area:4/1}
+body.land.field #tempoKey{grid-area:3/2} body.land.field #shift{grid-area:4/2}
+body.land.field #t0{grid-area:3/3} body.land.field #t1{grid-area:3/4} body.land.field #t2{grid-area:3/5} body.land.field #t3{grid-area:3/6}
+body.land.field #snd0{grid-area:3/7} body.land.field #snd1{grid-area:3/8} body.land.field #snd2{grid-area:3/9} body.land.field #snd3{grid-area:3/10}
+body.land.field #snd4{grid-area:3/11} body.land.field #snd5{grid-area:3/12} body.land.field #snd6{grid-area:3/13} body.land.field #snd7{grid-area:3/14}
+body.land.field #octDn{grid-area:4/3} body.land.field #octUp{grid-area:4/4} body.land.field #rec{grid-area:4/5} body.land.field #play{grid-area:4/6} body.land.field #stop{grid-area:4/7}
+body.land.field #lift{grid-area:4/8} body.land.field #drop{grid-area:4/9} body.land.field #split{grid-area:4/10}
+body.land.field #help{grid-area:4/11} body.land.field #seq{grid-area:4/12} body.land.field #album{grid-area:4/13} body.land.field #mic{grid-area:4/14}
+body.land.field #keys{grid-area:5/1/8/15;grid-template-rows:var(--u) calc(var(--u) * 2 + var(--gap))}
+
 /* phone in landscape: 15 x 7 units with a two-octave keyboard (C to C) */
 body.land #device{width:auto;height:auto;padding:0;grid-template-columns:repeat(15,var(--u));grid-template-rows:repeat(7,var(--u))}
 body.land #display{grid-area:1/4/4/14}
@@ -1243,13 +1260,18 @@ $('#songTitle').addEventListener('keydown', e => { e.stopPropagation(); if (e.ke
 
 /* ---------- layout: phone (8 columns) or iPad (the OP-1's 17 x 6) ---------- */
 const GAP = 1;
+const LAND_FIELD = (() => { try { const q = new URLSearchParams(location.search).get('land'); if (q) localStorage.setItem('tombola.land', q); return localStorage.getItem('tombola.land') !== 'classic'; } catch (e) { return true; } })();   // true: the Field arrangement; false (or ?land=classic): the first landscape layout
 function layout() {
   const cs = getComputedStyle(document.documentElement), inset = k => parseFloat(cs[k]) || 0;
   const w = innerWidth - inset('paddingLeft') - inset('paddingRight'), h = innerHeight - inset('paddingTop') - inset('paddingBottom');
   const pad = w >= 900 && w > h * 1.15 && h >= 560, land = !pad && w > h * 1.15, root = document.documentElement.style;
-  document.body.classList.toggle('pad', pad); document.body.classList.toggle('land', land); document.documentElement.classList.toggle('padh', pad);
+  const field = land && LAND_FIELD;
+  document.body.classList.toggle('pad', pad); document.body.classList.toggle('land', land); document.body.classList.toggle('field', field); document.documentElement.classList.toggle('padh', pad);
   const dev = $('#device');
-  if (land) {   // phone on its side: 15 x 7 units, keyboard C3 to C5
+  if (field) {   // phone on its side, the OP-1 Field arrangement: 14 x 7 units, keyboard C3 to C5. The safe-area padding on the page keeps it clear of the notch and the home bar
+    const u = Math.floor(Math.min((w - 16 - 13 * GAP) / 14, (h - 12 - 6 * GAP) / 7));
+    root.setProperty('--u', u + 'px'); dev.style.maxWidth = ''; buildKeys(14);
+  } else if (land) {   // phone on its side: 15 x 7 units, keyboard C3 to C5
     const u = Math.floor(Math.min((w - 16 - 14 * GAP) / 15, (h - 12 - 6 * GAP) / 7));
     root.setProperty('--u', u + 'px'); dev.style.maxWidth = ''; buildKeys(15);
   } else if (pad) {
