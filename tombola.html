@@ -360,9 +360,9 @@ const SPEC = {
   lspd:{min:0, max:6, v:4, col:'blue', label:'speed', span:8},
   lpit:{min:0, max:100, v:0,  col:'green', label:'pitch'},
   lvol:{min:0, max:100, v:0,  col:'white', label:'volume'},
-  lwav:{min:0, max:100, v:0,  col:'orange', label:'env'},
+  lwav:{min:0, max:100, v:50, col:'orange', label:'env'}, lpar:{min:0, max:3, v:0, col:'orange', label:'parameter', span:4},
   lamt:{min:0, max:100, v:40, col:'blue', label:'amount'}, lrsp:{min:0, max:100, v:40, col:'green', label:'speed'},
-  ldst:{min:0, max:2, v:0, col:'white', label:'dest', span:4}, lsrc:{min:0, max:1, v:0, col:'blue', label:'source', span:2},
+  ldst:{min:0, max:3, v:3, col:'white', label:'destination', span:4}, lsrc:{min:0, max:1, v:0, col:'blue', label:'source', span:2},
   cc1:{min:0, max:7, v:0, col:'blue', label:'cc 1 to', span:8}, cc2:{min:0, max:7, v:2, col:'green', label:'cc 2 to', span:8}, cc3:{min:0, max:7, v:4, col:'white', label:'cc 3 to', span:8}, cc4:{min:0, max:7, v:6, col:'orange', label:'cc 4 to', span:8},
   // drum T2: dynamic envelope (manual 6.4)
   dbp:{min:0, max:100, v:50, col:'blue', label:'pitch'}, dbw:{min:0, max:100, v:30, col:'green', label:'waveform'}, dbe:{min:0, max:100, v:22, col:'white', label:'envelope'}, dbx:{min:0, max:7, v:1, col:'orange', label:'cross mod', span:8},
@@ -573,7 +573,7 @@ function onParam(name) {
   if (DPART[name]) writePart(name);
   if (/^(s[0-3]|atk|dcy|sus|rel|dpit|din|dinf|dout|doutf|ddir|dmode|dlvl|dyatk|dymid|dyrel|dyreg|db[pwexrndf])$/.test(name)) liveUpdate(name);
   if (['taper','turns','damp','width'].includes(name)) fxLive();
-  if (['lspd','lpit','lvol','lwav','lamt','lrsp','ldst','lsrc'].includes(name)) updateLfo();
+  if (['lspd','lpit','lvol','lwav','lamt','lrsp','ldst','lsrc','lpar'].includes(name)) updateLfo();
   if (['master','live','fxsend','click','m1','m2','m3','m4','pan1','pan2','pan3','pan4','mleft','mright','eqlo','eqmid','eqhi','eqamt'].includes(name)) updateGains();
   if (MFXP.includes(name)) mfxLive();
   if (name === 'tempo' || name === 'tspeed') { retime(); updateLfo(); fxLive(); mfxLive(); }
@@ -630,7 +630,7 @@ const UTIL = {   // screens that sit over a mode: tempo, erase tape, help
   input:{name:'input', bare:true, params:() => ['isrc', ['gmic', 'gline', 'gout'][clamp(P.isrc, 0, 2)], 'imon', 'ithr'], draw:t => drawArt('input', t)}};
 const SEQ_TYPES = ['tombola', 'pattern', 'finger', 'endless'];
 const seqS = {eseq:[], base:60, ecell:-1, eidx:-1, eT:0, eOn:1, ci:0, ecrLast:30, next:0, step:0, lastStep:0, lastT:0, flash:new Float32Array(16), play:-1, fplayRow:0, pat:Array.from({length:16}, () => new Set()), fpat:[new Array(16).fill(0), new Array(16).fill(0)], arpIdx:0, arpDir:1, keys:new Set(), latch:new Set(), cur:-1};
-const lfoParams = () => ({random:['lamt','lrsp','ldst','lwav'], element:['lsrc','lamt','ldst','lwav'], value:['lspd','lamt','ldst','lwav'], midi:['cc1','cc2','cc3','cc4']})[P.lfoType] || ['lspd','lpit','lvol','lwav'];
+const lfoParams = () => ({random:['lamt','lrsp','ldst','lwav'], element:['lsrc','lamt','ldst','lpar'], value:['lspd','lamt','ldst','lpar'], midi:['cc1','cc2','cc3','cc4']})[P.lfoType] || ['lspd','lpit','lvol','lwav'];
 const inSeqView = () => !UI.util && UI.seqOn && UI.seqView && (UI.mode === 'synth' || UI.mode === 'drum');
 const tombView = () => inSeqView() && UI.seqType === 'tombola', seqScreen = () => inSeqView() && UI.seqType !== 'tombola';
 const SEQ_PAGES = {pattern:{name:'pattern', bare:false, params:() => UI.shift ? ['pcur','prate','pmove','edir'] : ['pcur','swing','plen','ehold'], draw:t => seqRender(t)},
@@ -649,12 +649,12 @@ const lfoHz = () => P.lfoType === 'random' ? 0.25 * Math.pow(2, P.lrsp / 100 * 6
 const valueText = name => /^pan\d$/.test(name) ? (P[name] === 50 ? 'C' : P[name] < 50 ? 'L' + (50 - P[name]) * 2 : 'R' + (P[name] - 50) * 2)
   : /^cc\d$/.test(name) ? MIDI_DEST_NAME[clamp(P[name], 0, 7)] : name === 'lsrc' ? ['g-force','mic'][clamp(P.lsrc, 0, 1)]
   : name === 'prate' ? ['1/4','1/8','1/16','1/32'][clamp(P.prate, 0, 3)] : name === 'epat' ? (P.epat ? 'pattern ' + P.epat : 'none') : name === 'ehold' ? (holdOn() ? 'on' : 'off') : name === 'edir' ? ['forward', 'reverse', UI.seqType === 'pattern' ? 'cycle' : 'random'][clamp(P.edir, 0, 2)] : name === 'pcur' ? String(P.pcur + 1) : name === 'pmove' ? String(P.pmove + 1) : name === 'erot' ? String(P.erot) : name === 'ecr' ? 'crank' : name === 'fplay' ? ['A','B','A+B'][clamp(P.fplay, 0, 2)] : name === 'pgate' ? P.pgate + '%' : name === 'swing' ? P.swing + '%'
-  : name === 'lspd' ? LFO_DIVS[clamp(P.lspd, 0, 6)][0] : name === 'ldst' ? ['pitch', 'volume', 'all'][P.ldst]
-  : name === 'lwav' ? (P.lwav ? '+' + P.lwav : 'off') : name === 'isrc' ? ['mic','line in','output'][clamp(P.isrc, 0, 2)] : /^g(mic|line|out)$/.test(name) ? '+' + P[name] : name === 'tmode' ? ['free','beat match','sync'][clamp(P.tmode, 0, 2)] : name === 'tspeed' ? (P.tspeed / 100).toFixed(1) : name === 'tsig' ? P.tsig + '/4'
+  : name === 'lspd' ? LFO_DIVS[clamp(P.lspd, 0, 6)][0] : name === 'ldst' ? LFO_DEST[clamp(P.ldst, 0, 3)] : name === 'lpar' ? lfoParName()
+  : name === 'lwav' ? (Math.abs(P.lwav - 50) < 3 ? 'none' : P.lwav > 50 ? 'attack ' + lfoEnvT().toFixed(1) + 's' : 'decay ' + lfoEnvT().toFixed(1) + 's') : name === 'isrc' ? ['mic','line in','output'][clamp(P.isrc, 0, 2)] : /^g(mic|line|out)$/.test(name) ? '+' + P[name] : name === 'tmode' ? ['free','beat match','sync'][clamp(P.tmode, 0, 2)] : name === 'tspeed' ? (P.tspeed / 100).toFixed(1) : name === 'tsig' ? P.tsig + '/4'
   : name === 'scrub' ? clock(P.scrub / 100 * loopTicks() * spt()) : name === 'click' && !P.click ? 'off' : name === 'eqamt' ? (P.eqamt > 50 ? 'max' : 'clean') + ' ' + P.eqamt : name === 'dmode' ? ['off','once','loop'][clamp(P.dmode, 0, 2)] : name === 'ddir' ? (P.ddir ? 'rev' : 'fwd')
   : /^d(in|out)/.test(name) ? secs(P[name]) : name === 'dpit' ? (P.dpit > 0 ? '+' : '') + P.dpit
   : name === 'click' && !P.click ? 'off' : String(P[name]);
-const curSynth = () => ({mode:'synth', engine:P.engine, vals:P.syn[P.engine].slice(), ring:P.digiRing, env:[P.atk, P.dcy, P.sus, P.rel]});
+const curSynth = () => ({mode:'synth', engine:P.engine, vals:P.syn[P.engine].map((x, i) => clamp(x + (MOD['s' + i] || 0), 0, 100)), ring:P.digiRing, env:[modv('atk'), modv('dcy'), modv('sus'), modv('rel')]});
 const DBP = ['dbp','dbw','dbe','dbx','dbr','dbn','dbd','dbf'];
 const curDrum = () => ({mode:'drum', kit:UI.drum.kit.slice(), parts:UI.drum.parts ? UI.drum.parts.map(p => Object.assign({}, p)) : null, eng:UI.drumEng, db:DBP.map(k => P[k])});
 const instMode = () => UI.mode === 'drum' || (UI.mode !== 'synth' && UI.lastInst === 'drum') ? 'drum' : 'synth';
@@ -942,7 +942,7 @@ document.querySelectorAll('[data-snd]').forEach(b => {
     if (performance.now() - t0 > 250 && !UI.shift) { showHint('not saved', 900); return; }   // let go before the ring closed
     firstGesture(); closeRing(); const pm = instMode();
     if (useShift()) { openMenu(pm === 'drum' ? 'drum' : 'presets', i); renderShell(); return; }
-    closeMenu(); UI.snd = i; applyPreset(pm, UI.presets[pm][i]); previewInst(); showHint('sound ' + (i + 1)); markDirty(); renderShell();
+    closeMenu(); UI.snd = i; if (UI.mode === 'synth' || UI.mode === 'drum') { UI.util = null; goPage(0); } applyPreset(pm, UI.presets[pm][i]); previewInst(); showHint('sound ' + (i + 1)); markDirty(); renderShell();
   });
 });
 
@@ -1428,11 +1428,32 @@ function updateGains() {
 }
 let lfoSrc = null, lfoKey = '', lfoTimer = 0;
 const lfoConst = ty => ty === 'random' || ty === 'element';   // these drive a constant source; the others an oscillator
+const LFO_DEST = ['engine', 'envelope', 'effect', 'pitch & volume'];
+const LFO_GROUP = [['s0', 's1', 's2', 's3'], ['atk', 'dcy', 'sus', 'rel'], ['taper', 'turns', 'damp', 'width']];
+function lfoParName() { const d = clamp(P.ldst, 0, 3), k = clamp(P.lpar, 0, 3); return d === 3 ? ['pitch', 'volume', 'both', 'both'][k] : d === 0 ? labelOf('s' + k) : d === 1 ? ['attack', 'decay', 'sustain', 'release'][k] : FX_TYPES[P.fxType].labels[k]; }
+const lfoEnvT = () => Math.abs(P.lwav - 50) / 50 * 3;   // the envelope: above the middle the LFO fades in (attack), below it fades out (decay)
+let lfoNoteT = 0;
+function lfoEnvAt(now) { if (Math.abs(P.lwav - 50) < 3) return 1; const T = lfoEnvT(), u = clamp((now - lfoNoteT) / Math.max(0.01, T), 0, 1); return P.lwav > 50 ? u : 1 - u; }
 function lfoTargets() {   // how far the LFO moves pitch (cents) and volume
   if (!P.lfoOn || P.lfoType === 'midi') return {cents:0, depth:0};
-  if (P.lfoType !== 'tremolo') { const a = P.lamt / 100; return {cents:P.ldst !== 1 ? a * 120 : 0, depth:P.ldst !== 0 ? a * 0.5 : 0}; }
-  return {cents:P.lpit / 100 * 120, depth:P.lvol / 100 * 0.5};
+  if (P.lfoType === 'tremolo') return {cents:P.lpit / 100 * 120, depth:P.lvol / 100 * 0.5};
+  if (clamp(P.ldst, 0, 3) !== 3) return {cents:0, depth:0};
+  const a = P.lamt / 100, k = P.lfoType === 'random' ? 2 : clamp(P.lpar, 0, 3);
+  return {cents:k !== 1 ? a * 120 : 0, depth:k !== 0 ? a * 0.5 : 0};
 }
+const MOD = {};   // what the LFO adds to the engine, envelope and effect values, on top of where the encoders are
+let modTimer = 0, modRand = [0, 0, 0, 0], modNext = 0;
+function lfoModTick() {   // random, value and element can steer the engine, the envelope or the effect: a small step every 30 ms
+  for (const k in MOD) delete MOD[k];
+  const ty = P.lfoType, d = clamp(P.ldst, 0, 3);
+  if (!AC || !P.lfoOn || d === 3 || !['random', 'value', 'element'].includes(ty)) return;
+  const now = AC.currentTime, amt = P.lamt / 100 * (ty === 'random' ? lfoEnvAt(now) : 1), keys = LFO_GROUP[d];
+  if (ty === 'random') { if (now >= modNext) { modRand = modRand.map(() => Math.random() * 2 - 1); modNext = now + 1 / lfoHz(); } keys.forEach((k, i) => { MOD[k] = modRand[i] * amt * 50; }); }
+  else { const u = ty === 'value' ? Math.sin(now * lfoHz() * TAU) : elementValue(); MOD[keys[clamp(P.lpar, 0, 3)]] = u * amt * 50; }
+  if (d === 0) liveUpdate('s' + (ty === 'random' ? 0 : clamp(P.lpar, 0, 3)));
+  if (d === 2 && P.fxType !== 'spring') fxLive();
+}
+const modv = k => clamp(P[k] + (MOD[k] || 0), 0, 100);
 /* the element LFO listens to the phone's tilt (g-force) or its microphone */
 const curGain = () => [P.gmic, P.gline, P.gout][clamp(P.isrc, 0, 2)];
 let micAn = null, micBuf = null, micLvl = 0, micStream = null, micMon = null, micGain = null, inLvl = 0;
@@ -1480,14 +1501,16 @@ function updateLfo() {
     step(); lfoTimer = setInterval(step, Math.max(40, 1000 / hz));
   } else if (type === 'element') lfoTimer = setInterval(() => lfoSrc.offset.setTargetAtTime(elementValue(), AC.currentTime, 0.03), 30);
   else lfoSrc.frequency.setTargetAtTime(hz, t, 0.05);   // tremolo and value: a sine locked to the tempo
+  clearInterval(modTimer); for (const k in MOD) delete MOD[k]; if (['random', 'value', 'element'].includes(type) && clamp(P.ldst, 0, 3) !== 3) modTimer = setInterval(lfoModTick, 30);
   const {cents, depth} = lfoTargets();
   lfoPitch.gain.setTargetAtTime(cents, t, 0.05); trem.gain.setTargetAtTime(1 - depth, t, 0.05); lfoVol.gain.setTargetAtTime(depth, t, 0.05);
 }
-function lfoEnvKick() {   // "env": the LFO fades in over up to two seconds after each new note
-  if (!AC || !P.lfoOn || P.lwav < 2) return;
-  const T = P.lwav / 100 * 2, t = AC.currentTime, {cents, depth} = lfoTargets();
-  for (const [p, a, b] of [[lfoPitch.gain, 0, cents], [lfoVol.gain, 0, depth], [trem.gain, 1, 1 - depth]]) {
-    p.cancelScheduledValues(t); p.setValueAtTime(a, t); p.linearRampToValueAtTime(b, t + T);
+function lfoEnvKick() {   // the envelope (orange): after each new note the LFO fades in (attack) or out (decay); in the middle it is simply on
+  if (!AC) return; lfoNoteT = AC.currentTime;
+  if (!P.lfoOn || Math.abs(P.lwav - 50) < 3 || !['tremolo', 'random'].includes(P.lfoType)) return;
+  const T = lfoEnvT(), t = AC.currentTime, {cents, depth} = lfoTargets(), up = P.lwav > 50;
+  for (const [p, off, on] of [[lfoPitch.gain, 0, cents], [lfoVol.gain, 0, depth], [trem.gain, 1, 1 - depth]]) {
+    p.cancelScheduledValues(t); p.setValueAtTime(up ? off : on, t); p.linearRampToValueAtTime(up ? on : off, t + T);
   }
 }
 /* iOS only unlocks audio on touchend/click (not touchstart/pointerdown), and Web Audio is muted by the
@@ -2050,7 +2073,7 @@ function makeFx(type, v = [P.taper, P.turns, P.damp, P.width]) {
   }
   return {inp, out, nodes, srcs, upd};
 }
-function fxLive() { if (AC && fxCur && fxCur.f.upd && fxCur.f.upd(P.taper / 100, P.turns / 100, P.damp / 100, P.width / 100) === false) scheduleReverb(); }
+function fxLive() { if (AC && fxCur && fxCur.f.upd && fxCur.f.upd(modv('taper') / 100, modv('turns') / 100, modv('damp') / 100, modv('width') / 100) === false) scheduleReverb(); }
 function mfxLive() { if (AC && mfxCur && mfxCur.f.upd && mfxCur.f.upd(P.mf0 / 100, P.mf1 / 100, P.mf2 / 100, P.mf3 / 100) === false) scheduleMasterFx(); }
 let fxCur = null;
 function rebuildReverb() {
@@ -2614,7 +2637,20 @@ function reel(g, x, y, r, spin = 0, col = AW) {
   g.circ(x, y, r, col, 'none', 1.6); g.circ(x, y, r * 0.28, col); g.circ(x, y, 3, col);
   for (const k of [-90, 30, 150]) { const a = (k * Math.PI / 180) + spin; g.ln(`M${x + r * 0.3 * Math.cos(a)} ${y + r * 0.3 * Math.sin(a)} L${x + r * 0.85 * Math.cos(a)} ${y + r * 0.85 * Math.sin(a)}`, col, 1.4); }
 }
-const tri = (g, x, y, s, col, label) => { g.poly([[x, y], [x + s, y + s / 2], [x, y + s]], col, 'none', 1.6); g.num(x + 6, y + s / 2 + 9, label, col, 24); };
+const tri = (g, x, y, s, col, label) => { g.poly([[x, y], [x + s, y + s / 2], [x, y + s]], col, 'none', 1.6); g.num(x + 5, y + s / 2 + 6, label, col, 17); };   // the number sits clear of the triangle's sides
+const envRamp = (g, x, y, w, h) => {   // the LFO envelope as a ramp: rising = fades in, falling = fades out, flat at the top = straight away
+  const x0 = x + 6, x1 = x + w - 6, top = y + 8, bot = y + h - 8, k = Math.abs(P.lwav - 50) / 50, xe = x0 + (x1 - x0) * Math.max(0.08, k);
+  if (Math.abs(P.lwav - 50) < 3) { g.ln(`M${x0} ${top} H${x1}`, AO, 1.6); g.dot(x0, top, 3, AO); }
+  else if (P.lwav > 50) { g.ln(`M${x0} ${bot} L${xe} ${top} H${x1}`, AO, 1.6); g.dot(x0, bot, 3, AO); }
+  else { g.ln(`M${x0} ${top} L${xe} ${bot} H${x1}`, AO, 1.6); g.dot(x0, top, 3, AO); } };
+const destIcon = (g, x, y, col) => {   // what the LFO is aimed at: engine, envelope, effect, or pitch and volume
+  const d = clamp(P.ldst, 0, 3);
+  if (d === 0) g.ln(`M${x - 12} ${y + 6} V${y - 6} H${x - 6} V${y + 6} H${x} V${y - 6} H${x + 6} V${y + 6} H${x + 12}`, col, 1.4);
+  else if (d === 1) g.ln(`M${x - 13} ${y + 7} L${x - 7} ${y - 7} L${x - 1} ${y} H${x + 6} L${x + 13} ${y + 7}`, col, 1.4);
+  else if (d === 2) g.t(x, y + 6, 'FX', col, 16, 'middle', 300);
+  else { g.circ(x - 8, y + 4, 3, col, 'none', 1.2); g.ln(`M${x - 5} ${y + 4} V${y - 8}`, col, 1.2); g.ln(`M${x + 2} ${y - 3} H${x + 6} L${x + 11} ${y - 8} V${y + 8} L${x + 6} ${y + 3} H${x + 2} Z`, col, 1.2); } };
+const parDots = (g, x, y, all) => {   // the colour wheel: which of the four parameters (all of them for random)
+  g.circ(x, y, 16, '#3A3A5A', 'none', 1.2); [[-9, 0, AB], [0, -9, AG], [9, 0, AW], [0, 9, AO]].forEach(([dx, dy, col], k) => g.dot(x + dx, y + dy, all || k === clamp(P.lpar, 0, 3) ? 3 : 1.6, all || k === clamp(P.lpar, 0, 3) ? col : '#4A4A5E')); };
 const swv = (g, x, y, col, k = 1) => { const c = g.c; c.save(); c.translate(x, y); c.scale(k, k); g.ln('M0 12 V4 a2.5 2.5 0 0 1 5 0 v6 a2.5 2.5 0 0 0 5 0 V4 a2.5 2.5 0 0 1 5 0 v6 a2.5 2.5 0 0 0 5 0 V0', col, 1.6 / k); c.restore(); };
 
 const ART = {
@@ -2686,7 +2722,7 @@ const ART = {
     const pulse = 1 + excite * 0.12;
     g.poly(g.hexp(30, 30, 20 * pulse, 30), '#22306E'); g.num(30, 40, two(topo + 1), AB, 26, 'middle');
     g.poly(g.hexp(74, 50, 24 * pulse, 30), AG); g.num(74, 60, two(v[1] * 99), AG, 26, 'middle');
-    g.num(130, 72, two(v[2] * 99), AO, 26, 'middle'); g.num(70, 104, two(v[3] * 99), AW, 26, 'middle');
+    g.num(130, 72, two(v[3] * 99), AO, 26, 'middle'); g.num(70, 104, two(v[2] * 99), AW, 26, 'middle');
   }},
   /* ----- synth pages ----- */
   envelope: {w:290, h:106, draw(g, v) {   // attack 0 is a vertical line; the release always ends at the same point and turning it moves where the red line starts
@@ -2824,23 +2860,21 @@ const ART = {
     g.rect(146, 84, 20, 12, APU, 'none', 1.2); g.t(156, 94, 'FX', APU, 9, 'middle');
   }},
   /* ----- LFOs ----- */
-  tremolo: {w:208, h:106, draw(g, v, t) {
-    g.rect(0, 26, 52, 52, APU); const a = t * lfoHz() * TAU;
-    g.ln(`M26 52 L${26 + 14 * Math.sin(a)} ${52 - 14 * Math.cos(a)}`, AB, 1.6); g.dot(26, 52, 3, AB);
+  tremolo: {w:208, h:106, draw(g, v, t) {   // the clock: its hand stays where the blue encoder puts it (the speed); pitch and volume; the envelope ramp
+    g.rect(0, 26, 52, 52, APU); const a = (-135 + clamp(P.lspd, 0, 6) / 6 * 270) * Math.PI / 180;
+    g.ln(`M26 52 L${26 + 15 * Math.sin(a)} ${52 - 15 * Math.cos(a)}`, AB, 1.6); g.dot(26, 52, 3, AB);
     for (let k = 0; k < 360; k += 45) { const r = k * Math.PI / 180; g.ln(`M${26 + 20 * Math.cos(r)} ${52 + 20 * Math.sin(r)} l${3 * Math.cos(r)} ${3 * Math.sin(r)}`, AB, 1); }
     g.ln('M52 52 H70 V20 H80 M70 52 V84 H80', APU); tri(g, 80, 0, 44, AG, two(P.lpit)); tri(g, 80, 62, 44, AW, two(P.lvol)); g.ln('M124 22 H140 V52 M124 84 H140 V52 H160', APU);
-    g.rect(160, 30, 46, 46, APU); const e = 66 - v[3] * 30; g.ln(`M168 66 L198 ${e}`, AO, 1.6); g.dot(168, 66, 3, AO);
-    if (!P.lfoOn) g.t(104, 104, 'LFO OFF', AW, 12, 'middle', 600);
+    g.rect(160, 30, 46, 46, APU); envRamp(g, 160, 30, 46, 46);
   }},
-  random: {w:284, h:96, draw(g, v, t) {
-    g.poly('0,10 70,46 0,82', APU, 'none', 1.6); g.num(8, 56, two(P.lamt), APU, 26);
+  random: {w:284, h:96, draw(g, v, t) {   // amount, speed, the destination (every parameter in it), the envelope
+    g.poly('0,10 70,46 0,82', APU, 'none', 1.6); g.num(7, 54, two(P.lamt), APU, 20);
     const hz = lfoHz(), step = Math.floor(t * hz), r = rng(step * 31 + 7); let d = 'M70 46 H96';
     for (let k = 0; k < 6; k++) { const y = 34 + r() * 24; d += ` L${96 + k * 12} ${y} H${108 + k * 12}`; } d += ' L170 46';
-    g.ln(d, AG, 1.6); g.dot(100, 46, 3, AG);
-    g.rect(180, 4, 40, 34, AW, 'none', 1.6); g.ln('M186 30 Q196 10 204 22 T214 26', AG, 1.4); g.ln('M170 46 H250', APU);
-    g.rect(180, 58, 40, 34, APU); g.ln(`M186 86 L214 ${86 - 6 - v[3] * 20}`, AO, 1.6); g.dot(186, 86, 3, AO);
-    const dst = P.ldst; [[260, 40, AB], [270, 32, AG], [270, 48, AW], [280, 40, AO]].forEach(([x, y, col], i) => g.dot(x, y, i === 0 || (dst === 0 && i === 1) || (dst === 1 && i === 2) || dst === 2 ? 3 : 1.6, col));
-    if (!P.lfoOn) g.t(142, 96, 'LFO OFF', AW, 12, 'middle', 600);
+    g.ln(d, AG, 1.6); g.ln('M96 18 H160', '#1A4A3A', 1.4); g.dot(96 + P.lrsp / 100 * 64, 18, 3, AG);
+    g.rect(180, 4, 40, 34, AW, 'none', 1.6); destIcon(g, 200, 21, AG); g.ln('M170 46 H250', APU); g.ln('M200 38 V58', APU);
+    g.rect(180, 58, 40, 34, APU); envRamp(g, 180, 58, 40, 34);
+    parDots(g, 266, 46, true);
   }},
   /* ----- drum ----- */
   dynenv: {w:300, h:86, draw(g, v) {   // what you hear: attack level, then mid level at the region point, then release level
@@ -3003,19 +3037,19 @@ ART.phone = {w:316, h:132, draw(g, v, t) { inner('phone', 50, 8)(g, v, t); corne
 ART.delay = {w:290, h:120, draw(g, v, t) { inner('delay', 0, 3)(g, v, t); g.t(290, 10, 'FDB', AG, 11, 'end', 500); g.num(290, 50, two2(v[1]), AG, 40, 'end'); g.t(290, 74, 'SPEED', AW, 11, 'end', 500); g.num(290, 114, two2(v[2]), AW, 40, 'end'); }};
 /* LFOs that listen: element (tilt or mic), value, and MIDI controllers */
 const lfoBox = (g, x, y, w, h, col) => g.rect(x, y, w, h, col, 'none', 1.4);
-const amp = (g, x, y, col, n) => { g.poly([[x, y], [x, y + 44], [x + 40, y + 22]], col, 'none', 1.4); g.num(x + 3, y + 29, n, AG, 18); };
+const amp = (g, x, y, col, n) => { g.poly([[x, y], [x, y + 44], [x + 40, y + 22]], col, 'none', 1.4); g.num(x + 4, y + 28, n, AG, 15); };
 const stack = (g, x, y, col) => { for (let k = 2; k >= 0; k--) g.rect(x + k * 3, y - k * 3, 36, 36, col, k ? 'none' : '#000', 1.2); };
 const destDots = (g, x, y) => { g.circ(x, y, 16, AGR, 'none', 1.2); [[0, -9, 0], [8, 5, 1], [-8, 5, 2]].forEach(([dx, dy, k]) => g.dot(x + dx, y + dy, 2.6, P.ldst === 2 || P.ldst === k ? AG : '#555')); };
-ART.element = {w:250, h:92, draw(g, v, t) {
+ART.element = {w:250, h:92, draw(g, v, t) {   // source (tilt or the input), amount, destination, destination parameter
   lfoBox(g, 0, 22, 44, 44, AB); if (P.lsrc === 0) g.t(22, 52, 'G', AB, 26, 'middle', 200); else { g.rect(17, 30, 10, 18, AB, 'none', 1.4, 5); g.ln('M12 44 Q22 58 32 44 M22 54 V60', AB, 1.4); }
   g.ln('M44 44 H62', AB, 1.4); amp(g, 62, 22, AG, two2(v[1]));
-  g.ln('M102 44 H118', AG, 1.4); stack(g, 118, 26, AW); const q = (t * 2) % 1; g.ln(`M124 ${44 + 8 * Math.sin(q * 6.28)} q4 -10 8 0 t8 0 t8 0`, AB, 1.2);
-  g.ln('M160 44 H190', AW, 1.4); destDots(g, 214, 44);
+  g.ln('M102 44 H118', AG, 1.4); stack(g, 118, 26, AW); destIcon(g, 136, 44, AB);
+  g.ln('M160 44 H190', AW, 1.4); parDots(g, 214, 44, false);
 }};
-ART.value = {w:230, h:80, draw(g, v, t) {
-  lfoBox(g, 0, 18, 40, 44, AB); g.t(20, 50, String(Math.round(Math.abs(Math.sin(t * lfoHz() * TAU)) * 9)), AB, 22, 'middle', 200);
-  g.ln('M40 40 H56', AB, 1.4); amp(g, 56, 18, AG, two2(v[1])); g.ln('M96 40 H112', AG, 1.4); stack(g, 112, 22, AW); g.t(122, 46, 'F', AW, 14, 'start', 400);
-  g.ln('M152 40 H168', AW, 1.4); destDots(g, 192, 40);
+ART.value = {w:230, h:80, draw(g, v, t) {   // speed (the tempo division), amount, destination, destination parameter
+  lfoBox(g, 0, 18, 40, 44, AB); g.t(20, 46, LFO_DIVS[clamp(P.lspd, 0, 6)][0], AB, 14, 'middle', 300);
+  g.ln('M40 40 H56', AB, 1.4); amp(g, 56, 18, AG, two2(v[1])); g.ln('M96 40 H112', AG, 1.4); stack(g, 112, 22, AW); destIcon(g, 130, 40, AB);
+  g.ln('M152 40 H168', AW, 1.4); parDots(g, 192, 40, false);
 }};
 ART.midi = {w:260, h:128, draw(g, v, t) {   // four gauges: the needle points at the destination the encoder has chosen; icon, CC box and the lines running to one bus
   const S = 0.257, X = x => x * S, Y = y => y * S, COL = ['#6E8BFF', '#00E58F', '#DFD9FF', '#FF3355'], DOT = ['#6E8BFF', '#3A3A7A', '#00E58F', '#0B4558', '#FFFFFF', '#5A5A6E', '#FF3355', '#4A1C2C'], LN = '#4B3F6B';
