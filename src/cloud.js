@@ -36,17 +36,15 @@ async function config() {
 function renderAcct() {
   acct.innerHTML = '';
   if (!user) {
-    const b = document.createElement('button'); b.className = 'sbtn pri'; b.textContent = 'sign in with Google';
+    const b = document.createElement('button'); b.textContent = 'sign in';
     b.onclick = signIn; acct.append(b);
-    const n = document.createElement('span'); n.className = 'muted'; n.textContent = 'to keep sounds, sequences and recordings';
-    acct.append(n);
   } else {
     const n = document.createElement('span'); n.textContent = user.displayName || user.email || 'signed in';
-    const b = document.createElement('button'); b.className = 'sbtn'; b.textContent = 'sign out';
+    const b = document.createElement('button'); b.textContent = 'sign out';
     b.onclick = () => A.signOut(auth);
     acct.append(n, b);
   }
-  saveBtn.textContent = user ? 'save' : 'sign in to save';
+  saveBtn.textContent = 'save';
 }
 async function signIn() {
   if (!auth) { say('sign-in is not available right now'); return false; }
@@ -90,10 +88,9 @@ async function refresh() {
     const s = d.data(), li = document.createElement('li');
     const open = document.createElement('button'); open.className = 'open';
     const when = s.updatedAt && s.updatedAt.toDate ? s.updatedAt.toDate().toLocaleDateString(undefined, {month: 'short', day: 'numeric'}) : '';
-    open.innerHTML = `<span></span><span class="muted">${s.tempo} bpm · ${when}</span>`;
-    open.firstChild.textContent = s.title + (d.id === songId ? '  ·  open' : '');
+    open.textContent = s.title; if (d.id === songId) open.classList.add('cur');
     open.onclick = () => load(d.id);
-    const del = document.createElement('button'); del.className = 'del'; del.textContent = 'delete';
+    const del = document.createElement('button'); del.className = 'del'; del.textContent = '×';
     del.setAttribute('aria-label', 'Delete ' + s.title);
     del.onclick = async () => {
       if (!confirm(`Delete “${s.title}”? Its tape tracks and sequences go with it.`)) return;
@@ -104,7 +101,7 @@ async function refresh() {
     };
     li.append(open, del); list.append(li);
   });
-  if (snap.empty) list.innerHTML = '<li><span class="muted" style="padding:12px 2px">No saved songs yet.</span></li>';
+  if (snap.empty) list.innerHTML = '';
 }
 
 async function save() {
